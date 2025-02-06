@@ -26,11 +26,23 @@ def initialize_rag():
         # Initialize Pinecone
         pc = PineconeClient(api_key=PINECONE_API_KEY)
 
-        # Initialize embeddings with CPU
+        # Initialize embeddings         
         embeddings = HuggingFaceEmbeddings(
-            model_name='all-MiniLM-L6-v2',
-            model_kwargs={'device': 'cpu'}  # Force CPU usage
-        )
+        model_name='all-MiniLM-L6-v2',
+        model_kwargs={
+            'device': 'cpu',
+            'torch_dtype': 'float32'
+        },
+        encode_kwargs={
+            'normalize_embeddings': True,
+            'batch_size': 32
+        }
+    )
+except Exception as e:
+    st.error(f"Error initializing embeddings: {str(e)}")
+    st.stop()
+
+    
 
         # Initialize vector store with new class
         index_name = "pdfinfo"
