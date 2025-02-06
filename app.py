@@ -27,12 +27,12 @@ def initialize_rag():
         pc = PineconeClient(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings with CPU and additional parameters
+        # Initialize embeddings with CPU and additional parameters
         try:
             embeddings = HuggingFaceEmbeddings(
                 model_name='all-MiniLM-L6-v2',
                 model_kwargs={
-                    'device': 'cpu',
-                    'torch_dtype': 'float32'
+                    'device': 'cpu'
                 },
                 encode_kwargs={
                     'normalize_embeddings': True,
