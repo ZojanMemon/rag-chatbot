@@ -13,45 +13,42 @@ if "messages" not in st.session_state:
 
 def initialize_rag():
     try:
-        # API Keys from secrets
-        PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
-        GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    # API Keys from secrets
+    PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
+    GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+    
+    if not GOOGLE_API_KEY or not PINECONE_API_KEY:
+        st.error("Please set up API keys in Streamlit Cloud secrets")
+        st.stop()
         
-        if not GOOGLE_API_KEY or not PINECONE_API_KEY:
-            st.error("Please set up API keys in Streamlit Cloud secrets")
-            st.stop()
-            
-        genai.configure(api_key=GOOGLE_API_KEY)
+    genai.configure(api_key=GOOGLE_API_KEY)
 
-        # Initialize Pinecone
-        pc = PineconeClient(api_key=PINECONE_API_KEY)
+    # Initialize Pinecone
+    pc = PineconeClient(api_key=PINECONE_API_KEY)
 
-        # Initialize embeddings with CPU and additional parameters
-        # Initialize embeddings with CPU and additional parameters
-        try:
-            embeddings = HuggingFaceEmbeddings(
-                model_name='all-MiniLM-L6-v2',
-                model_kwargs={
-                    'device': 'cpu'
-                },
-                encode_kwargs={
-                    'normalize_embeddings': True,
-                    'batch_size': 32
-                }
-            )
-        except Exception as e:
-            st.error(f"Error initializing embeddings: {str(e)}")
-            st.stop()
-
-        # Initialize vector store with new class
-        index_name = "pdfinfo"
-        vectorstore = PineconeVectorStore(
-            client=pc,
-            index_name=index_name,
-            embedding=embeddings,
-            text_key="text"
+    # Initialize embeddings with CPU and additional parameters
+    try:
+        embeddings = HuggingFaceEmbeddings(
+            model_name='all-MiniLM-L6-v2',
+            model_kwargs={
+                'device': 'cpu'
+            },
+            encode_kwargs={
+                'normalize_embeddings': True,
+                'batch_size': 32
+            }
         )
+    except Exception as e:
+        st.error(f"Error initializing embeddings: {str(e)}")
+        st.stop()
 
+    # Initialize vector store with new class
+    index_name = "pdfinfo"
+    vectorstore = PineconeVectorStore(
+        index=pc.Index(index_name),
+        embedding=embeddings,
+        text_key="text"
+    )
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
             model="gemini-pro",
