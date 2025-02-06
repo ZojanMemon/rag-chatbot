@@ -1,0 +1,30 @@
+# Create .gitignore
+with open("c:/Users/dell/Desktop/colab/.gitignore", "w") as f:
+    f.write("""# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Local development settings
+.env
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/
+
+# System Files
+.DS_Store
+Thumbs.db
+""")
