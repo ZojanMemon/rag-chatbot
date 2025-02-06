@@ -4,7 +4,7 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_pinecone import PineconeVectorStore  # Updated import
+from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
 
 # Initialize session state for chat history
@@ -26,23 +26,22 @@ def initialize_rag():
         # Initialize Pinecone
         pc = PineconeClient(api_key=PINECONE_API_KEY)
 
-        # Initialize embeddings         
-        embeddings = HuggingFaceEmbeddings(
-        model_name='all-MiniLM-L6-v2',
-        model_kwargs={
-            'device': 'cpu',
-            'torch_dtype': 'float32'
-        },
-        encode_kwargs={
-            'normalize_embeddings': True,
-            'batch_size': 32
-        }
-    )
-except Exception as e:
-    st.error(f"Error initializing embeddings: {str(e)}")
-    st.stop()
-
-    
+        # Initialize embeddings with CPU and additional parameters
+        try:
+            embeddings = HuggingFaceEmbeddings(
+                model_name='all-MiniLM-L6-v2',
+                model_kwargs={
+                    'device': 'cpu',
+                    'torch_dtype': 'float32'
+                },
+                encode_kwargs={
+                    'normalize_embeddings': True,
+                    'batch_size': 32
+                }
+            )
+        except Exception as e:
+            st.error(f"Error initializing embeddings: {str(e)}")
+            st.stop()
 
         # Initialize vector store with new class
         index_name = "pdfinfo"
@@ -94,7 +93,11 @@ Provide a comprehensive answer that includes every detail from the context:""",
 
 def main():
     # Page config
-    st.set_page_config(page_title="Disaster Management RAG Chatbot", page_icon="🤖")
+    st.set_page_config(
+        page_title="Disaster Management RAG Chatbot",
+        page_icon="🤖",
+        layout="wide"
+    )
     
     # Header
     st.title("Disaster Management RAG Chatbot 🤖")
@@ -106,43 +109,60 @@ def main():
         # Initialize RAG system
         qa_chain = initialize_rag()
 
-        # Display chat history
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        # Create two columns
+        col1, col2 = st.columns([2, 1])
 
-        # Chat input
-        if prompt := st.chat_input("Ask your question here"):
-            # Display user message
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            st.session_state.messages.append({"role": "user", "content": prompt})
+        with col1:
+            # Display chat history
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
-            # Display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    response = qa_chain({"query": prompt})
-                    st.markdown(response['result'])
-            st.session_state.messages.append({"role": "assistant", "content": response['result']})
+            # Chat input
+            if prompt := st.chat_input("Ask your question here"):
+                # Display user message
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+                st.session_state.messages.append({"role": "user", "content": prompt})
+
+                # Display assistant response
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking..."):
+                        response = qa_chain({"query": prompt})
+                        st.markdown(response['result'])
+                st.session_state.messages.append({"role": "assistant", "content": response['result']})
+
+        # Sidebar with information
+        with col2:
+            st.title("About")
+            st.markdown("""
+            ### Features
+            This chatbot uses:
+            - 🧠 Gemini Pro for text generation
+            - 🔍 Pinecone for vector storage
+            - ⚡ LangChain for the RAG pipeline
+            
+            ### Topics
+            You can ask questions about:
+            - 📋 Disaster management procedures
+            - 🚨 Emergency protocols
+            - 🛡️ Safety measures
+            - 📊 Risk assessment
+            - 🏥 Relief operations
+            
+            ### Tips
+            - Be specific in your questions
+            - Ask about one topic at a time
+            - Use clear, simple language
+            """)
+
+            # Add a clear chat button
+            if st.button("Clear Chat History"):
+                st.session_state.messages = []
+                st.rerun()
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
-
-    # Sidebar with information
-    with st.sidebar:
-        st.title("About")
-        st.markdown("""
-        This chatbot uses:
-        - Gemini Pro for text generation
-        - Pinecone for vector storage
-        - LangChain for the RAG pipeline
-        
-        You can ask questions about:
-        - Disaster management procedures
-        - Emergency protocols
-        - Safety measures
-        - And more!
-        """)
 
 if __name__ == "__main__":
     main()
