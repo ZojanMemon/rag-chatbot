@@ -258,10 +258,10 @@ Follow these strict guidelines:
 
 Context: {context}
 
-Question: {question}
+Query: {query}
 
 Remember: Respond ONLY in {current_language}, maintaining language purity and consistency throughout the response.""",
-            input_variables=["context", "question", "current_language"]
+            input_variables=["context", "query", "current_language"]
         )
 
         # Create custom chain type
@@ -336,7 +336,7 @@ def main():
                         else:
                             response = qa_chain({
                                 "context": "",  # This will be filled by the retriever
-                                "question": prompt,
+                                "query": prompt,
                                 "current_language": st.session_state.language
                             })
                             response_text = response['result']
