@@ -80,26 +80,27 @@ def initialize_rag():
             return_source_documents=True,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant specializing in disaster management. Analyze the provided context carefully and follow these rules:
+                    template="""You are a knowledgeable assistant specializing in disaster management. You have access to specific documentation about disaster management procedures and protocols.
 
-1. First, examine if the context contains meaningful information (not just numbers or irrelevant text)
-2. If the context contains relevant disaster management information:
-   - Provide a detailed and comprehensive answer
-   - Include all relevant facts and descriptions from the context
-   - Use clear formatting and structure in your response
-   - Stay faithful to the source material
-   - Do not add information from outside the context
+If the provided context contains ANY relevant information about disaster management (even if partial), use that information to construct a helpful response. Only respond with an apology if the context is completely irrelevant or empty.
 
-3. If the context is irrelevant or contains no meaningful information:
-   - Respond with: "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
+Here's how you should process the response:
 
-Remember: Only provide the apology response when the context truly lacks relevant information. If there's any useful information in the context, use it to construct a helpful answer.
+1. If the context contains ANY relevant disaster management information:
+   - Extract and present all relevant information
+   - Structure your response clearly
+   - Use bullet points or sections if appropriate
+   - Include specific details from the context
+   - If the information is partial, still provide what's available
+
+2. ONLY if the context is completely irrelevant or contains no disaster management information:
+   Respond with: "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
 
 Context: {context}
 
 Question: {question}
 
-Response:""",
+Provide a detailed response based on the context above:""",
                     input_variables=["context", "question"],
                 )
             }
