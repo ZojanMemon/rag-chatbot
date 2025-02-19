@@ -11,6 +11,11 @@ from pinecone import Pinecone as PineconeClient
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+def is_meaningful_context(context):
+    # Check if context contains actual content (not just numbers)
+    meaningful_words = [word for word in context.split() if not word.isdigit()]
+    return len(meaningful_words) > 5
+
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -72,27 +77,29 @@ def initialize_rag():
             llm=llm,
             chain_type="stuff",
             retriever=retriever,
-            return_source_documents=True,  # Changed to True to see retrieved documents
+            return_source_documents=True,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
+                    template="""You are a detailed and thorough assistant specializing in disaster management. Analyze the provided context carefully and follow these rules:
 
-1. ONLY use information from the provided context to answer questions
-2. If the context is empty or does not contain relevant information, respond with:
-   "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
-3. If the context contains relevant information:
-   - Provide a complete and detailed answer using ALL information from the context
-   - Do not summarize or shorten any details
-   - Include every relevant fact and description from the source text
-   - Use the same detailed language as the original document
-   - Structure the answer in a clear, readable format
-4. Never make up information or use knowledge outside of the provided context
+1. First, examine if the context contains meaningful information (not just numbers or irrelevant text)
+2. If the context contains relevant disaster management information:
+   - Provide a detailed and comprehensive answer
+   - Include all relevant facts and descriptions from the context
+   - Use clear formatting and structure in your response
+   - Stay faithful to the source material
+   - Do not add information from outside the context
+
+3. If the context is irrelevant or contains no meaningful information:
+   - Respond with: "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
+
+Remember: Only provide the apology response when the context truly lacks relevant information. If there's any useful information in the context, use it to construct a helpful answer.
 
 Context: {context}
 
 Question: {question}
 
-Response (strictly based on the context provided above):""",
+Response:""",
                     input_variables=["context", "question"],
                 )
             }
@@ -149,6 +156,9 @@ def main():
                                     for i, doc in enumerate(response['source_documents']):
                                         st.write(f"Document {i+1}:")
                                         st.write(doc.page_content[:200] + "...")
+                                        # Check if context is meaningful
+                                        if not is_meaningful_context(doc.page_content):
+                                            st.write("⚠️ This document may not contain meaningful content")
                                 else:
                                     st.write("No documents retrieved")
                         
