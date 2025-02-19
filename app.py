@@ -227,14 +227,8 @@ def initialize_rag():
         )
 
         # Create the QA chain with improved multilingual prompt
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template="""You are a multilingual disaster management assistant that strictly communicates in either English or Sindhi based on the user's selected language preference. Current language: {current_language}
+        PROMPT = PromptTemplate(
+            template="""You are a multilingual disaster management assistant that strictly communicates in either English or Sindhi based on the user's selected language preference. Current language: {current_language}
 
 Follow these strict guidelines:
 
@@ -267,10 +261,24 @@ Context: {context}
 Question: {question}
 
 Remember: Respond ONLY in {current_language}, maintaining language purity and consistency throughout the response.""",
-                    input_variables=["context", "question", "current_language"],
-                )
-            }
+            input_variables=["context", "question", "current_language"]
         )
+
+        # Create custom chain type
+        chain_type_kwargs = {
+            "prompt": PROMPT,
+            "verbose": True
+        }
+
+        # Create the QA chain
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            return_source_documents=False,
+            chain_type_kwargs=chain_type_kwargs
+        )
+
         return qa_chain, llm
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
@@ -326,13 +334,11 @@ def main():
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
                         else:
-                            # Create input dictionary with query and current language
-                            chain_input = {
-                                "query": prompt,
-                                "current_language": st.session_state.language,
-                                "question": prompt  # Required by the prompt template
-                            }
-                            response = qa_chain(chain_input)
+                            response = qa_chain({
+                                "context": "",  # This will be filled by the retriever
+                                "question": prompt,
+                                "current_language": st.session_state.language
+                            })
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
