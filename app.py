@@ -6,29 +6,59 @@ from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
-import pandas as pd
 from datetime import datetime
-import csv
+from fpdf import FPDF
 import io
+import textwrap
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Add timestamp to messages
-if "messages_with_time" not in st.session_state:
-    st.session_state.messages_with_time = []
+def create_chat_pdf():
+    """Generate a PDF file of chat history with proper formatting."""
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Set up the PDF
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Add content
+    pdf.set_font("Arial", size=12)
+    for message in st.session_state.messages:
+        # Role header
+        pdf.set_font("Arial", "B", 12)
+        role = "Bot" if message["role"] == "assistant" else "User"
+        pdf.cell(0, 10, f"{role}:", ln=True)
+        
+        # Message content with proper wrapping
+        pdf.set_font("Arial", size=11)
+        text = message["content"]
+        wrapped_text = textwrap.fill(text, width=85)  # Wrap text at 85 characters
+        for line in wrapped_text.split('\n'):
+            pdf.cell(0, 7, line, ln=True)
+        pdf.ln(5)  # Add space between messages
+    
+    return pdf.output(dest='S').encode('latin1')
 
-def download_chat_history():
-    """Generate a CSV file of chat history."""
+def create_chat_text():
+    """Generate a formatted text file of chat history."""
     output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(['Timestamp', 'Role', 'Message'])
-    for msg in st.session_state.messages_with_time:
-        writer.writerow([msg['timestamp'], msg['role'], msg['content']])
-    csv_data = output.getvalue()
+    output.write("Disaster Management Chatbot - Conversation Log\n")
+    output.write("="*50 + "\n\n")
+    
+    for message in st.session_state.messages:
+        role = "Bot" if message["role"] == "assistant" else "User"
+        output.write(f"{role}:\n")
+        output.write(f"{message['content']}\n")
+        output.write("-"*50 + "\n\n")
+    
+    text_data = output.getvalue()
     output.close()
-    return csv_data
+    return text_data
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
@@ -182,18 +212,10 @@ def main():
 
             # Chat input
             if prompt := st.chat_input("Ask your question here"):
-                # Get current timestamp
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                
                 # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
                 st.session_state.messages.append({"role": "user", "content": prompt})
-                st.session_state.messages_with_time.append({
-                    "timestamp": current_time,
-                    "role": "user",
-                    "content": prompt
-                })
 
                 # Display assistant response
                 with st.chat_message("assistant"):
@@ -204,13 +226,7 @@ def main():
                             response = qa_chain({"query": prompt})
                             response_text = response['result']
                         st.markdown(response_text)
-                
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
-                st.session_state.messages_with_time.append({
-                    "timestamp": current_time,
-                    "role": "assistant",
-                    "content": response_text
-                })
 
         # Sidebar with information
         with col2:
@@ -237,22 +253,31 @@ def main():
             """)
 
             # Add buttons for chat management
-            col_clear, col_download = st.columns(2)
+            st.markdown("### Chat Management")
+            col_clear, col_download_text, col_download_pdf = st.columns(3)
             
             with col_clear:
                 if st.button("Clear Chat"):
                     st.session_state.messages = []
-                    st.session_state.messages_with_time = []
                     st.rerun()
             
-            with col_download:
+            with col_download_text:
                 if st.download_button(
-                    label="Download Chat",
-                    data=download_chat_history(),
-                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                    mime="text/csv"
+                    label="Download Text",
+                    data=create_chat_text(),
+                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d')}.txt",
+                    mime="text/plain"
                 ):
-                    st.success("Chat history downloaded successfully!")
+                    st.success("Chat history downloaded as text!")
+            
+            with col_download_pdf:
+                if st.download_button(
+                    label="Download PDF",
+                    data=create_chat_pdf(),
+                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d')}.pdf",
+                    mime="application/pdf"
+                ):
+                    st.success("Chat history downloaded as PDF!")
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
