@@ -116,13 +116,8 @@ def initialize_rag():
         try:
             embeddings = HuggingFaceEmbeddings(
                 model_name='all-MiniLM-L6-v2',
-                model_kwargs={
-                    'device': 'cpu'
-                },
-                encode_kwargs={
-                    'normalize_embeddings': True,
-                    'batch_size': 32
-                }
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
             )
         except Exception as e:
             st.error(f"Error initializing embeddings: {str(e)}")
@@ -154,17 +149,22 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a specialized Disaster Management Assistant. Use the following rules:
+                    template="""You are a specialized Disaster Management Assistant with access to a comprehensive knowledge base. Follow these instructions carefully:
 
-1. If the context contains relevant information:
-   - Provide a complete and detailed answer using ALL information from the context
-   - Include every relevant fact and description
-   - Use clear, professional language
+1. ALWAYS try to answer from the provided context first:
+   - If the context contains ANY relevant information, use it to provide an answer
+   - Even if the context only partially answers the question, provide that information
+   - Combine and structure information from different parts of the context if available
+
+2. When using the context:
+   - Include specific details and examples from the context
+   - Use professional and clear language
    - Structure the answer in a readable format
 
-2. If the context doesn't contain relevant information:
-   - Politely inform that the question is outside the scope of available information
-   - Suggest asking questions about disaster management, emergency procedures, or safety measures
+3. Only if the context has absolutely NO relevant information:
+   - Clearly state that the specific information is not in your current knowledge base
+   - Suggest related topics that are available in your knowledge base
+   - Guide the user to rephrase their question if needed
 
 Context: {context}
 
@@ -227,30 +227,37 @@ def main():
                             
                             # Enhanced irrelevant response detection
                             irrelevant_patterns = [
-                                "context provided includes",
-                                "based on the context provided",
-                                "the context does not provide",
-                                "i don't see any information",
-                                "no specific information",
-                                "cannot find relevant information"
+                                "context provided includes the numbers",
+                                "based on the numbers in the context",
+                                "cannot provide specific information about",
+                                "i cannot provide specific details about",
+                                "i cannot provide information about",
+                                "i don't have access to specific information"
                             ]
                             
                             if any(pattern in response.lower() for pattern in irrelevant_patterns):
-                                response = """I apologize, but I don't have specific information to answer that question. To help you better:
+                                # Try to get a more focused response
+                                focused_prompt = f"Using the available disaster management documentation, what information can you provide about {prompt}? If the specific details are not available, what related information do we have?"
+                                qa_response = qa_chain({"query": focused_prompt})
+                                response = qa_response['result']
+                                
+                                # If still no relevant information
+                                if any(pattern in response.lower() for pattern in irrelevant_patterns):
+                                    response = """While I don't have the exact information you're looking for, I can help you find related information in our disaster management knowledge base. 
 
-1. Try asking about specific aspects of:
-   - Disaster management procedures
-   - Emergency protocols
-   - Safety measures
-   - Risk assessment
-   - Relief operations
+To get the most relevant information:
+1. Try focusing on specific aspects like:
+   - Specific disaster types or scenarios
+   - Particular phases of disaster management
+   - Concrete procedures or protocols
 
-2. Be specific about:
-   - The type of disaster
-   - The phase of management (preparation, response, recovery)
-   - The specific procedure or protocol you're interested in
+2. You can also rephrase your question to focus on:
+   - Available emergency procedures
+   - Documented safety protocols
+   - Standard operating procedures
+   - Risk assessment methods
 
-This will help me provide accurate and relevant information from my knowledge base."""
+Would you like to know about any of these related topics?"""
                         
                         st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
