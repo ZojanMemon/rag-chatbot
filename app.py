@@ -2,7 +2,7 @@ import streamlit as st
 from langchain_google_genai import ChatGoogleGenerativeAI
 import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
+from langchain.chains import RetrievalQA, StuffDocumentsChain, LLMChain
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
@@ -226,7 +226,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with improved multilingual prompt
+        # Create custom prompt
         PROMPT = PromptTemplate(
             template="""You are a multilingual disaster management assistant that strictly communicates in either English or Sindhi based on the user's selected language preference. Current language: {current_language}
 
@@ -258,25 +258,25 @@ Follow these strict guidelines:
 
 Context: {context}
 
-Query: {query}
+Question: {query}
 
 Remember: Respond ONLY in {current_language}, maintaining language purity and consistency throughout the response.""",
             input_variables=["context", "query", "current_language"]
         )
 
-        # Create custom chain type
-        chain_type_kwargs = {
-            "prompt": PROMPT,
-            "verbose": True
-        }
-
-        # Create the QA chain
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
+        # Create the QA chain with custom combine_documents_chain
+        qa_chain = RetrievalQA(
+            combine_documents_chain=StuffDocumentsChain(
+                llm_chain=LLMChain(
+                    llm=llm,
+                    prompt=PROMPT,
+                    verbose=True
+                ),
+                document_variable_name="context",
+            ),
             retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
             return_source_documents=False,
-            chain_type_kwargs=chain_type_kwargs
+            input_key="query",
         )
 
         return qa_chain, llm
@@ -334,11 +334,12 @@ def main():
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
                         else:
-                            response = qa_chain({
-                                "context": "",  # This will be filled by the retriever
+                            # Run the chain with all required parameters
+                            chain_inputs = {
                                 "query": prompt,
                                 "current_language": st.session_state.language
-                            })
+                            }
+                            response = qa_chain(chain_inputs)
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
