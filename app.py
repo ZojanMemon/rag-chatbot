@@ -60,20 +60,25 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
-1. Provide a complete and detailed answer using ALL information from the context
-2. Do not summarize or shorten any details
-3. Include every relevant fact and description from the source text
-4. Use the same detailed language as the original document
-5. Structure the answer in a clear, readable format
+            # Create the QA chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+    return_source_documents=False,
+    chain_type_kwargs={
+        "prompt": PromptTemplate(
+            template="""You are a knowledgeable assistant specializing in disaster management. Use the following rules:
+
+1. If the context contains relevant information:
+   - Provide a complete and detailed answer using the information
+   - Include all relevant facts and descriptions
+   - Use clear, structured formatting
+
+2. If the context does NOT contain relevant information:
+   - Politely inform the user that the question is outside the scope of the disaster management knowledge base
+   - Suggest they ask questions related to disaster management topics instead
+   - DO NOT make up information or use unrelated numbers from the context
 
 Context: {context}
 
