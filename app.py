@@ -63,41 +63,17 @@ def initialize_rag():
         # Create a retriever with debug info
         retriever = vectorstore.as_retriever(
             search_kwargs={
-                "k": 4,
-                "score_threshold": 0.5  # Add minimum similarity threshold
+                "k": 4  # Number of documents to retrieve
             }
         )
 
-        # Create the QA chain
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=retriever,
-            return_source_documents=True,  # Changed to True to see retrieved documents
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
+     # Create a retriever with debug info
+retriever = vectorstore.as_retriever(
+    search_kwargs={
+        "k": 4  # Number of documents to retrieve
+    }
+)
 
-1. ONLY use information from the provided context to answer questions
-2. If the context is empty or does not contain relevant information, respond with:
-   "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
-3. If the context contains relevant information:
-   - Provide a complete and detailed answer using ALL information from the context
-   - Do not summarize or shorten any details
-   - Include every relevant fact and description from the source text
-   - Use the same detailed language as the original document
-   - Structure the answer in a clear, readable format
-4. Never make up information or use knowledge outside of the provided context
-
-Context: {context}
-
-Question: {question}
-
-Response (strictly based on the context provided above):""",
-                    input_variables=["context", "question"],
-                )
-            }
-        )
         return qa_chain
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
