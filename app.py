@@ -11,6 +11,51 @@ from pinecone import Pinecone as PineconeClient
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+def is_general_chat(query):
+    """Check if the query is a general chat or greeting."""
+    general_phrases = [
+        'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening',
+        'how are you', 'what\'s up', 'nice to meet you', 'thanks', 'thank you',
+        'bye', 'goodbye', 'see you', 'who are you', 'what can you do'
+    ]
+    return any(phrase in query.lower() for phrase in general_phrases)
+
+def get_general_response(query):
+    """Generate appropriate responses for general chat."""
+    query_lower = query.lower()
+    
+    if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+        return "Hello! I'm your disaster management assistant. How can I help you today?"
+    
+    elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+        return f"Thank you, {query}! I'm here to help you with disaster management related questions."
+    
+    elif 'how are you' in query_lower:
+        return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
+    
+    elif 'thank' in query_lower:
+        return "You're welcome! Feel free to ask any questions about disaster management."
+    
+    elif 'bye' in query_lower or 'goodbye' in query_lower:
+        return "Goodbye! If you have more questions about disaster management later, feel free to ask."
+    
+    elif 'who are you' in query_lower:
+        return "I'm a specialized chatbot designed to help with disaster management information and procedures. I can answer questions about emergency protocols, safety measures, and disaster response strategies."
+    
+    elif 'what can you do' in query_lower:
+        return """I can help you with various disaster management topics, including:
+- Emergency response procedures
+- Disaster preparedness
+- Safety protocols
+- Risk assessment
+- Relief operations
+- And more related to disaster management
+
+Feel free to ask specific questions about these topics!"""
+    
+    else:
+        return "I'm specialized in disaster management topics. While I can't help with general topics, I'd be happy to answer any questions about disaster management, emergency procedures, or safety protocols."
+
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -52,7 +97,7 @@ def initialize_rag():
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-pro",
             temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
             max_retries=3,
@@ -60,25 +105,20 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-            # Create the QA chain
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-    return_source_documents=False,
-    chain_type_kwargs={
-        "prompt": PromptTemplate(
-            template="""You are a knowledgeable assistant specializing in disaster management. Use the following rules:
-
-1. If the context contains relevant information:
-   - Provide a complete and detailed answer using the information
-   - Include all relevant facts and descriptions
-   - Use clear, structured formatting
-
-2. If the context does NOT contain relevant information:
-   - Politely inform the user that the question is outside the scope of the disaster management knowledge base
-   - Suggest they ask questions related to disaster management topics instead
-   - DO NOT make up information or use unrelated numbers from the context
+        # Create the QA chain with original prompt
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            return_source_documents=False,
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
+1. Provide a complete and detailed answer using ALL information from the context
+2. Do not summarize or shorten any details
+3. Include every relevant fact and description from the source text
+4. Use the same detailed language as the original document
+5. Structure the answer in a clear, readable format
 
 Context: {context}
 
@@ -89,7 +129,7 @@ Provide a comprehensive answer that includes every detail from the context:""",
                 )
             }
         )
-        return qa_chain
+        return qa_chain, llm
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
         st.stop()
@@ -110,7 +150,7 @@ def main():
 
     try:
         # Initialize RAG system
-        qa_chain = initialize_rag()
+        qa_chain, llm = initialize_rag()
 
         # Create two columns
         col1, col2 = st.columns([2, 1])
@@ -131,9 +171,13 @@ def main():
                 # Display assistant response
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
-                        response = qa_chain({"query": prompt})
-                        st.markdown(response['result'])
-                st.session_state.messages.append({"role": "assistant", "content": response['result']})
+                        if is_general_chat(prompt):
+                            response_text = get_general_response(prompt)
+                        else:
+                            response = qa_chain({"query": prompt})
+                            response_text = response['result']
+                        st.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
 
         # Sidebar with information
         with col2:
