@@ -37,10 +37,10 @@ def create_chat_pdf():
         # Message content with proper wrapping
         pdf.set_font("Arial", size=11)
         text = message["content"]
-        wrapped_text = textwrap.fill(text, width=85)  # Wrap text at 85 characters
+        wrapped_text = textwrap.fill(text, width=85)
         for line in wrapped_text.split('\n'):
             pdf.cell(0, 7, line, ln=True)
-        pdf.ln(5)  # Add space between messages
+        pdf.ln(5)
     
     return pdf.output(dest='S').encode('latin1')
 
@@ -120,13 +120,11 @@ def initialize_rag():
         # Initialize Pinecone
         pc = PineconeClient(api_key=PINECONE_API_KEY)
 
-        # Initialize embeddings with CPU and additional parameters
+        # Initialize embeddings
         try:
             embeddings = HuggingFaceEmbeddings(
                 model_name='all-MiniLM-L6-v2',
-                model_kwargs={
-                    'device': 'cpu'
-                },
+                model_kwargs={'device': 'cpu'},
                 encode_kwargs={
                     'normalize_embeddings': True,
                     'batch_size': 32
@@ -136,7 +134,7 @@ def initialize_rag():
             st.error(f"Error initializing embeddings: {str(e)}")
             st.stop()
 
-        # Initialize vector store with new class
+        # Initialize vector store
         index_name = "pdfinfo"
         vectorstore = PineconeVectorStore(
             index=pc.Index(index_name),
@@ -154,7 +152,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with original prompt
+        # Create the QA chain with improved prompt
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -162,18 +160,26 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
-1. Provide a complete and detailed answer using ALL information from the context
-2. Do not summarize or shorten any details
-3. Include every relevant fact and description from the source text
-4. Use the same detailed language as the original document
-5. Structure the answer in a clear, readable format
+                    template="""You are a knowledgeable disaster management assistant. Use the following guidelines to answer questions:
+
+1. If the context contains relevant information:
+   - Provide a detailed and comprehensive answer using the information
+   - Include specific details and procedures from the source
+   - Structure the response in a clear, readable format
+   - Use professional and precise language
+
+2. If the context does NOT contain sufficient information:
+   - Provide a general, informative response based on common disaster management principles
+   - Be honest about not having specific details
+   - Offer to help with related topics that are within your knowledge base
+   - Never make up specific numbers or procedures
+   - Guide the user towards asking more specific questions about disaster management
 
 Context: {context}
 
 Question: {question}
 
-Provide a comprehensive answer that includes every detail from the context:""",
+Response (remember to be natural and helpful):""",
                     input_variables=["context", "question"],
                 )
             }
