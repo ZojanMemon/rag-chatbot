@@ -11,11 +11,6 @@ from pinecone import Pinecone as PineconeClient
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-def is_meaningful_context(context):
-    # Check if context contains actual content (not just numbers)
-    meaningful_words = [word for word in context.split() if not word.isdigit()]
-    return len(meaningful_words) > 5
-
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -57,7 +52,7 @@ def initialize_rag():
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-pro",
+            model="gemini-2.0-flash-exp",
             temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
             max_retries=3,
@@ -65,42 +60,26 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create a retriever with debug info
-        retriever = vectorstore.as_retriever(
-            search_kwargs={
-                "k": 4  # Number of documents to retrieve
-            }
-        )
-
         # Create the QA chain
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=retriever,
-            return_source_documents=True,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a knowledgeable assistant specializing in disaster management. You have access to specific documentation about disaster management procedures and protocols.
-
-If the provided context contains ANY relevant information about disaster management (even if partial), use that information to construct a helpful response. Only respond with an apology if the context is completely irrelevant or empty.
-
-Here's how you should process the response:
-
-1. If the context contains ANY relevant disaster management information:
-   - Extract and present all relevant information
-   - Structure your response clearly
-   - Use bullet points or sections if appropriate
-   - Include specific details from the context
-   - If the information is partial, still provide what's available
-
-2. ONLY if the context is completely irrelevant or contains no disaster management information:
-   Respond with: "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
+                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
+1. Provide a complete and detailed answer using ALL information from the context
+2. Do not summarize or shorten any details
+3. Include every relevant fact and description from the source text
+4. Use the same detailed language as the original document
+5. Structure the answer in a clear, readable format
 
 Context: {context}
 
 Question: {question}
 
-Provide a detailed response based on the context above:""",
+Provide a comprehensive answer that includes every detail from the context:""",
                     input_variables=["context", "question"],
                 )
             }
@@ -148,25 +127,10 @@ def main():
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
                         response = qa_chain({"query": prompt})
-                        
-                        # Debug information in sidebar
-                        with col2:
-                            with st.expander("Debug Info"):
-                                st.write("Retrieved Documents:")
-                                if 'source_documents' in response:
-                                    for i, doc in enumerate(response['source_documents']):
-                                        st.write(f"Document {i+1}:")
-                                        st.write(doc.page_content[:200] + "...")
-                                        # Check if context is meaningful
-                                        if not is_meaningful_context(doc.page_content):
-                                            st.write("⚠️ This document may not contain meaningful content")
-                                else:
-                                    st.write("No documents retrieved")
-                        
                         st.markdown(response['result'])
                 st.session_state.messages.append({"role": "assistant", "content": response['result']})
 
-        # Information sidebar
+        # Sidebar with information
         with col2:
             st.title("About")
             st.markdown("""
