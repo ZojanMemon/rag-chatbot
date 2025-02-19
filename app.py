@@ -11,8 +11,6 @@ from pinecone import Pinecone as PineconeClient
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-
-
 def is_general_question(question):
     # Expanded list of patterns to catch more variations
     general_patterns = {
@@ -54,9 +52,6 @@ def is_general_question(question):
             return True, "general_question"
             
     return False, None
-
-
-
 
 def get_general_response(category):
     responses = {
@@ -101,8 +96,6 @@ For example:
     }
     
     return responses.get(category, responses['about_bot'])
-
-
 
 def initialize_rag():
     try:
@@ -187,41 +180,63 @@ Response:""",
         st.error(f"Error initializing RAG system: {str(e)}")
         st.stop()
 
-
-
 def main():
-    # [Previous code remains the same until the chat input section]
+    # Page config
+    st.set_page_config(
+        page_title="Disaster Management RAG Chatbot",
+        page_icon="🤖",
+        layout="wide"
+    )
+    
+    # Header
+    st.title("Disaster Management RAG Chatbot 🤖")
+    st.markdown("""
+    This chatbot can answer questions about disaster management based on the provided documentation.
+    """)
 
-    # Chat input
-    if prompt := st.chat_input("Ask your question here"):
-        # Display user message
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    try:
+        # Initialize RAG system
+        qa_chain = initialize_rag()
 
-        # Display assistant response
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                is_general, category = is_general_question(prompt)
-                
-                if is_general:
-                    response = get_general_response(category)
-                else:
-                    qa_response = qa_chain({"query": prompt})
-                    response = qa_response['result']
-                    
-                    # Enhanced irrelevant response detection
-                    irrelevant_patterns = [
-                        "context provided includes",
-                        "based on the context provided",
-                        "the context does not provide",
-                        "i don't see any information",
-                        "no specific information",
-                        "cannot find relevant information"
-                    ]
-                    
-                    if any(pattern in response.lower() for pattern in irrelevant_patterns):
-                        response = """I apologize, but I don't have specific information to answer that question. To help you better:
+        # Create two columns
+        col1, col2 = st.columns([2, 1])
+
+        with col1:
+            # Display chat history
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+
+            # Chat input
+            if prompt := st.chat_input("Ask your question here"):
+                # Display user message
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+                st.session_state.messages.append({"role": "user", "content": prompt})
+
+                # Display assistant response
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking..."):
+                        is_general, category = is_general_question(prompt)
+                        
+                        if is_general:
+                            response = get_general_response(category)
+                        else:
+                            qa_response = qa_chain({"query": prompt})
+                            response = qa_response['result']
+                            
+                            # Enhanced irrelevant response detection
+                            irrelevant_patterns = [
+                                "context provided includes",
+                                "based on the context provided",
+                                "the context does not provide",
+                                "i don't see any information",
+                                "no specific information",
+                                "cannot find relevant information"
+                            ]
+                            
+                            if any(pattern in response.lower() for pattern in irrelevant_patterns):
+                                response = """I apologize, but I don't have specific information to answer that question. To help you better:
 
 1. Try asking about specific aspects of:
    - Disaster management procedures
@@ -236,11 +251,9 @@ def main():
    - The specific procedure or protocol you're interested in
 
 This will help me provide accurate and relevant information from my knowledge base."""
-                
-                st.markdown(response)
-        st.session_state.messages.append({"role": "assistant", "content": response})
-
-
+                        
+                        st.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
 
         # Sidebar with information
         with col2:
