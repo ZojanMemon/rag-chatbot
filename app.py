@@ -60,30 +60,39 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
-1. Provide a complete and detailed answer using ALL information from the context
-2. Do not summarize or shorten any details
-3. Include every relevant fact and description from the source text
-4. Use the same detailed language as the original document
-5. Structure the answer in a clear, readable format
+
+# Create the QA chain
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+    return_source_documents=False,
+    chain_type_kwargs={
+        "prompt": PromptTemplate(
+            template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
+
+1. ONLY use information from the provided context to answer questions
+2. If the context does not contain relevant information, respond with:
+   "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
+3. If the context contains relevant information:
+   - Provide a complete and detailed answer using ALL information from the context
+   - Do not summarize or shorten any details
+   - Include every relevant fact and description from the source text
+   - Use the same detailed language as the original document
+   - Structure the answer in a clear, readable format
+4. Never make up information or use knowledge outside of the provided context
 
 Context: {context}
 
 Question: {question}
 
-Provide a comprehensive answer that includes every detail from the context:""",
-                    input_variables=["context", "question"],
-                )
-            }
+Response (strictly based on the context provided above):""",
+            input_variables=["context", "question"],
         )
+    }
+)        
+
+
         return qa_chain
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
