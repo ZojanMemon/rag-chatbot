@@ -11,38 +11,6 @@ from pinecone import Pinecone as PineconeClient
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-def is_general_question(question):
-    general_patterns = [
-        "hi", "hello", "hey", "how are you", "help", "what can you do",
-        "who are you", "what is this", "good morning", "good afternoon",
-        "good evening", "thanks", "thank you"
-    ]
-    return any(pattern in question.lower() for pattern in general_patterns)
-
-def get_general_response(question):
-    responses = {
-        "greeting": """Hello! I am a Disaster Management chatbot. I can help you with:
-- Disaster management procedures
-- Emergency protocols
-- Safety measures
-- Risk assessment
-- Relief operations
-
-Please ask specific questions about disaster management, and I'll provide detailed information from my knowledge base.""",
-        
-        "help": """I can assist you with disaster management related questions such as:
-- "What are the key steps in emergency evacuation?"
-- "How to prepare for natural disasters?"
-- "What are the best practices for disaster response?"
-- "What safety measures should be taken during a specific disaster?"
-
-Please ask your question, and I'll provide detailed information from authentic disaster management sources."""
-    }
-
-    if any(word in question.lower() for word in ["hi", "hello", "hey", "good"]):
-        return responses["greeting"]
-    return responses["help"]
-
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -84,7 +52,7 @@ def initialize_rag():
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-pro",
+            model="gemini-2.0-flash-exp",
             temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
             max_retries=3,
@@ -92,7 +60,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with updated prompt
+        # Create the QA chain
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -100,23 +68,18 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a specialized Disaster Management Assistant. Use the following rules:
-
-1. If the context contains relevant information:
-   - Provide a complete and detailed answer using ALL information from the context
-   - Include every relevant fact and description
-   - Use clear, professional language
-   - Structure the answer in a readable format
-
-2. If the context doesn't contain relevant information:
-   - Politely inform that the question is outside the scope of available information
-   - Suggest asking questions about disaster management, emergency procedures, or safety measures
+                    template="""You are a detailed and thorough assistant. For this question, you must follow these rules:
+1. Provide a complete and detailed answer using ALL information from the context
+2. Do not summarize or shorten any details
+3. Include every relevant fact and description from the source text
+4. Use the same detailed language as the original document
+5. Structure the answer in a clear, readable format
 
 Context: {context}
 
 Question: {question}
 
-Response:""",
+Provide a comprehensive answer that includes every detail from the context:""",
                     input_variables=["context", "question"],
                 )
             }
@@ -163,25 +126,9 @@ def main():
                 # Display assistant response
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
-                        if is_general_question(prompt):
-                            response = get_general_response(prompt)
-                        else:
-                            qa_response = qa_chain({"query": prompt})
-                            response = qa_response['result']
-                            
-                            # Check if response seems irrelevant
-                            if any(phrase in response.lower() for phrase in ["context provided includes", "based on the context provided"]):
-                                response = """I apologize, but I don't have specific information to answer that question. Please ask questions related to:
-- Disaster management procedures
-- Emergency protocols
-- Safety measures
-- Risk assessment
-- Relief operations
-
-This will help me provide accurate and helpful information from my knowledge base."""
-                            
-                        st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                        response = qa_chain({"query": prompt})
+                        st.markdown(response['result'])
+                st.session_state.messages.append({"role": "assistant", "content": response['result']})
 
         # Sidebar with information
         with col2:
