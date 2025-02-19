@@ -326,7 +326,13 @@ def main():
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
                         else:
-                            response = qa_chain({"query": prompt, "current_language": st.session_state.language})
+                            # Create input dictionary with query and current language
+                            chain_input = {
+                                "query": prompt,
+                                "current_language": st.session_state.language,
+                                "question": prompt  # Required by the prompt template
+                            }
+                            response = qa_chain(chain_input)
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
