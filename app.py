@@ -12,90 +12,36 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 def is_general_question(question):
-    # Expanded list of patterns to catch more variations
-    general_patterns = {
-        'greeting': [
-            "hi", "hello", "hey", "greetings", "good morning", "good afternoon", 
-            "good evening", "how are you", "what's up", "howdy"
-        ],
-        'about_bot': [
-            "who are you", "what are you", "what can you do", "what do you do",
-            "help me", "how can you help", "what is this", "tell me about yourself",
-            "your purpose", "your capabilities", "what should i ask"
-        ],
-        'gratitude': [
-            "thanks", "thank you", "appreciate", "grateful", "helpful"
-        ],
-        'general_chat': [
-            "how's it going", "nice to meet you", "pleasure", "bye", "goodbye",
-            "see you", "talk to you later"
-        ]
-    }
-    
-    # Convert question to lowercase for matching
-    question_lower = question.lower()
-    
-    # Check each category of patterns
-    for category, patterns in general_patterns.items():
-        if any(pattern in question_lower for pattern in patterns):
-            return True, category
-            
-    # Check for question words without context
-    question_words = ["what", "how", "can", "could", "would", "will", "should"]
-    if any(word in question_lower.split() for word in question_words):
-        # Look for disaster-related keywords
-        disaster_keywords = ["disaster", "emergency", "crisis", "safety", "protocol", 
-                           "procedure", "management", "risk", "hazard", "evacuation",
-                           "response", "relief", "rescue", "preparation", "plan"]
-        # If it's a question but doesn't contain disaster-related keywords
-        if not any(keyword in question_lower for keyword in disaster_keywords):
-            return True, "general_question"
-            
-    return False, None
+    general_patterns = [
+        "hi", "hello", "hey", "how are you", "help", "what can you do",
+        "who are you", "what is this", "good morning", "good afternoon",
+        "good evening", "thanks", "thank you"
+    ]
+    return any(pattern in question.lower() for pattern in general_patterns)
 
-def get_general_response(category):
+def get_general_response(question):
     responses = {
-        'greeting': """Hello! I'm your Disaster Management Assistant. I'm here to help you with:
-- Disaster management procedures and protocols
-- Emergency response strategies
-- Safety measures and risk assessment
-- Relief operations and evacuation plans
+        "greeting": """Hello! I am a Disaster Management chatbot. I can help you with:
+- Disaster management procedures
+- Emergency protocols
+- Safety measures
+- Risk assessment
+- Relief operations
 
-How can I assist you today?""",
-
-        'about_bot': """I am a specialized Disaster Management Assistant that can help you with:
-- Detailed information about disaster management procedures
-- Emergency protocols and response strategies
-- Safety measures and preventive actions
-- Risk assessment and mitigation
-- Relief operation planning and execution
-
-You can ask me specific questions like:
-1. "What are the key steps in emergency evacuation?"
-2. "How should we prepare for natural disasters?"
-3. "What are the best practices for disaster response?"
-4. "What safety measures should be taken during [specific disaster]?"
-5. "How to create an effective disaster management plan?"
-
-Feel free to ask any disaster management related question!""",
-
-        'gratitude': """You're welcome! If you have any more questions about disaster management, emergency procedures, or safety measures, feel free to ask.""",
-
-        'general_chat': """I'm focused on providing information about disaster management. Please feel free to ask any specific questions about emergency procedures, safety measures, or disaster response strategies.""",
-
-        'general_question': """I'm a specialized Disaster Management Assistant. To help you better, could you please:
-1. Ask specific questions about disaster management
-2. Include keywords related to emergencies, safety, or procedures
-3. Mention the specific aspect of disaster management you're interested in
-
-For example:
-- "What are the emergency evacuation procedures?"
+Please ask specific questions about disaster management, and I'll provide detailed information from my knowledge base.""",
+        
+        "help": """I can assist you with disaster management related questions such as:
+- "What are the key steps in emergency evacuation?"
 - "How to prepare for natural disasters?"
-- "What safety measures are important during a crisis?"
-"""
+- "What are the best practices for disaster response?"
+- "What safety measures should be taken during a specific disaster?"
+
+Please ask your question, and I'll provide detailed information from authentic disaster management sources."""
     }
-    
-    return responses.get(category, responses['about_bot'])
+
+    if any(word in question.lower() for word in ["hi", "hello", "hey", "good"]):
+        return responses["greeting"]
+    return responses["help"]
 
 def initialize_rag():
     try:
@@ -116,8 +62,13 @@ def initialize_rag():
         try:
             embeddings = HuggingFaceEmbeddings(
                 model_name='all-MiniLM-L6-v2',
-                model_kwargs={'device': 'cpu'},
-                encode_kwargs={'normalize_embeddings': True, 'batch_size': 32}
+                model_kwargs={
+                    'device': 'cpu'
+                },
+                encode_kwargs={
+                    'normalize_embeddings': True,
+                    'batch_size': 32
+                }
             )
         except Exception as e:
             st.error(f"Error initializing embeddings: {str(e)}")
@@ -149,22 +100,17 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a specialized Disaster Management Assistant with access to a comprehensive knowledge base. Follow these instructions carefully:
+                    template="""You are a specialized Disaster Management Assistant. Use the following rules:
 
-1. ALWAYS try to answer from the provided context first:
-   - If the context contains ANY relevant information, use it to provide an answer
-   - Even if the context only partially answers the question, provide that information
-   - Combine and structure information from different parts of the context if available
-
-2. When using the context:
-   - Include specific details and examples from the context
-   - Use professional and clear language
+1. If the context contains relevant information:
+   - Provide a complete and detailed answer using ALL information from the context
+   - Include every relevant fact and description
+   - Use clear, professional language
    - Structure the answer in a readable format
 
-3. Only if the context has absolutely NO relevant information:
-   - Clearly state that the specific information is not in your current knowledge base
-   - Suggest related topics that are available in your knowledge base
-   - Guide the user to rephrase their question if needed
+2. If the context doesn't contain relevant information:
+   - Politely inform that the question is outside the scope of available information
+   - Suggest asking questions about disaster management, emergency procedures, or safety measures
 
 Context: {context}
 
@@ -217,48 +163,23 @@ def main():
                 # Display assistant response
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
-                        is_general, category = is_general_question(prompt)
-                        
-                        if is_general:
-                            response = get_general_response(category)
+                        if is_general_question(prompt):
+                            response = get_general_response(prompt)
                         else:
                             qa_response = qa_chain({"query": prompt})
                             response = qa_response['result']
                             
-                            # Enhanced irrelevant response detection
-                            irrelevant_patterns = [
-                                "context provided includes the numbers",
-                                "based on the numbers in the context",
-                                "cannot provide specific information about",
-                                "i cannot provide specific details about",
-                                "i cannot provide information about",
-                                "i don't have access to specific information"
-                            ]
+                            # Check if response seems irrelevant
+                            if any(phrase in response.lower() for phrase in ["context provided includes", "based on the context provided"]):
+                                response = """I apologize, but I don't have specific information to answer that question. Please ask questions related to:
+- Disaster management procedures
+- Emergency protocols
+- Safety measures
+- Risk assessment
+- Relief operations
+
+This will help me provide accurate and helpful information from my knowledge base."""
                             
-                            if any(pattern in response.lower() for pattern in irrelevant_patterns):
-                                # Try to get a more focused response
-                                focused_prompt = f"Using the available disaster management documentation, what information can you provide about {prompt}? If the specific details are not available, what related information do we have?"
-                                qa_response = qa_chain({"query": focused_prompt})
-                                response = qa_response['result']
-                                
-                                # If still no relevant information
-                                if any(pattern in response.lower() for pattern in irrelevant_patterns):
-                                    response = """While I don't have the exact information you're looking for, I can help you find related information in our disaster management knowledge base. 
-
-To get the most relevant information:
-1. Try focusing on specific aspects like:
-   - Specific disaster types or scenarios
-   - Particular phases of disaster management
-   - Concrete procedures or protocols
-
-2. You can also rephrase your question to focus on:
-   - Available emergency procedures
-   - Documented safety protocols
-   - Standard operating procedures
-   - Risk assessment methods
-
-Would you like to know about any of these related topics?"""
-                        
                         st.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
