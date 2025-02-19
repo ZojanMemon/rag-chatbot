@@ -60,18 +60,26 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
+        # Create a retriever with debug info
+        retriever = vectorstore.as_retriever(
+            search_kwargs={
+                "k": 4,
+                "score_threshold": 0.5  # Add minimum similarity threshold
+            }
+        )
+
         # Create the QA chain
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-            return_source_documents=False,
+            retriever=retriever,
+            return_source_documents=True,  # Changed to True to see retrieved documents
             chain_type_kwargs={
                 "prompt": PromptTemplate(
                     template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
 
 1. ONLY use information from the provided context to answer questions
-2. If the context does not contain relevant information, respond with:
+2. If the context is empty or does not contain relevant information, respond with:
    "I apologize, but I don't have enough information in my knowledge base to answer this question. I can only provide information about disaster management topics that are contained in my documentation."
 3. If the context contains relevant information:
    - Provide a complete and detailed answer using ALL information from the context
@@ -133,10 +141,22 @@ def main():
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
                         response = qa_chain({"query": prompt})
+                        
+                        # Debug information in sidebar
+                        with col2:
+                            with st.expander("Debug Info"):
+                                st.write("Retrieved Documents:")
+                                if 'source_documents' in response:
+                                    for i, doc in enumerate(response['source_documents']):
+                                        st.write(f"Document {i+1}:")
+                                        st.write(doc.page_content[:200] + "...")
+                                else:
+                                    st.write("No documents retrieved")
+                        
                         st.markdown(response['result'])
                 st.session_state.messages.append({"role": "assistant", "content": response['result']})
 
-        # Sidebar with information
+        # Information sidebar
         with col2:
             st.title("About")
             st.markdown("""
