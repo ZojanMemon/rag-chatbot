@@ -6,10 +6,29 @@ from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
+import pandas as pd
+from datetime import datetime
+import csv
+import io
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+# Add timestamp to messages
+if "messages_with_time" not in st.session_state:
+    st.session_state.messages_with_time = []
+
+def download_chat_history():
+    """Generate a CSV file of chat history."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Timestamp', 'Role', 'Message'])
+    for msg in st.session_state.messages_with_time:
+        writer.writerow([msg['timestamp'], msg['role'], msg['content']])
+    csv_data = output.getvalue()
+    output.close()
+    return csv_data
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
@@ -163,10 +182,18 @@ def main():
 
             # Chat input
             if prompt := st.chat_input("Ask your question here"):
+                # Get current timestamp
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
                 # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
                 st.session_state.messages.append({"role": "user", "content": prompt})
+                st.session_state.messages_with_time.append({
+                    "timestamp": current_time,
+                    "role": "user",
+                    "content": prompt
+                })
 
                 # Display assistant response
                 with st.chat_message("assistant"):
@@ -177,7 +204,13 @@ def main():
                             response = qa_chain({"query": prompt})
                             response_text = response['result']
                         st.markdown(response_text)
+                
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
+                st.session_state.messages_with_time.append({
+                    "timestamp": current_time,
+                    "role": "assistant",
+                    "content": response_text
+                })
 
         # Sidebar with information
         with col2:
@@ -203,10 +236,23 @@ def main():
             - Use clear, simple language
             """)
 
-            # Add a clear chat button
-            if st.button("Clear Chat History"):
-                st.session_state.messages = []
-                st.rerun()
+            # Add buttons for chat management
+            col_clear, col_download = st.columns(2)
+            
+            with col_clear:
+                if st.button("Clear Chat"):
+                    st.session_state.messages = []
+                    st.session_state.messages_with_time = []
+                    st.rerun()
+            
+            with col_download:
+                if st.download_button(
+                    label="Download Chat",
+                    data=download_chat_history(),
+                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                ):
+                    st.success("Chat history downloaded successfully!")
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
