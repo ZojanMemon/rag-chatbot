@@ -135,31 +135,31 @@ def get_general_response(query):
     
     if st.session_state.language == "سنڌي":
         if any(greeting in query_lower for greeting in ['سلام', 'هيلو', 'السلام عليڪم']):
-            return "وعليڪم السلام! مان توهان جو آفت جي انتظام جو مددگار آهيان. مان توهان جي ڪيئن مدد ڪري سگھان ٿو؟"
+            return "السلام عليڪم! مان توهان جو آفت جي انتظام جو مددگار آهيان. مان توهان جي ڪهڙي مدد ڪري سگهان ٿو؟"
         elif 'ڪيئن آهيو' in query_lower:
             return "مان ٺيڪ آهيان، توهان جي پڇڻ جو شڪريو! مان آفت جي انتظام جي معلومات ۾ توهان جي مدد ڪرڻ لاءِ تيار آهيان."
         elif 'شڪريو' in query_lower or 'مهرباني' in query_lower:
-            return "توهان جو مهرباني! آفت جي انتظام بابت ڪو به سوال هجي ته ضرور پڇو."
+            return "توهان جي مهرباني! آفت جي انتظام بابت ڪو به سوال هجي ته ضرور پڇو."
         elif 'خدا حافظ' in query_lower:
-            return "خدا حافظ! جيڪڏهن آفت جي انتظام بابت وڌيڪ سوال هجن ته پوءِ ملندا سين."
+            return "خدا حافظ! جيڪڏهن آفت جي انتظام بابت وڌيڪ سوال هجن ته وري ملندا سين."
         elif 'توهان ڪير آهيو' in query_lower:
-            return "مان هڪ خاص آفت جي انتظام جو چيٽ بوٽ آهيان. مان آفت جي انتظام، هنگامي حالتن ۽ حفاظتي اپاين بابت معلومات ڏئي سگھان ٿو."
-        elif 'توهان ڇا ڪري سگھو ٿا' in query_lower:
-            return """مان توهان جي مدد ڪري سگھان ٿو:
+            return "مان هڪ خاص آفت جي انتظام جو چيٽ بوٽ آهيان، جيڪو آفت جي انتظام، هنگامي حالتن ۽ حفاظتي اپاين بابت معلومات ڏئي سگهي ٿو."
+        elif 'توهان ڇا ڪري سگهو ٿا' in query_lower:
+            return """مان هنن معاملن ۾ توهان جي مدد ڪري سگهان ٿو:
 - هنگامي حالتن ۾ ڪارروائي
 - آفت جي تياري
 - حفاظتي اپاءَ
 - خطري جو جائزو
 - امدادي ڪارروائيون
-- ۽ ٻيون گھڻيون ڳالهيون
+- ۽ ٻيون گهڻيون ڳالهيون
 
-ڪنهن به موضوع تي سوال پڇي سگھو ٿا!"""
+ڪنهن به موضوع تي سوال پڇي سگهو ٿا!"""
         else:
-            return "مان آفت جي انتظام جو ماهر آهيان. عام موضوعن تي مدد نٿو ڪري سگھان، پر آفت جي انتظام، هنگامي حالتن ۽ حفاظتي اپاين بابت سوالن جا جواب ضرور ڏيندس."
-    else:
+            return "مان آفت جي انتظام جو ماهر آهيان. عام ڳالهين ۾ مدد نٿو ڪري سگهان، پر آفت جي انتظام، هنگامي حالتن ۽ حفاظتي اپاين بابت سوالن جا جواب ضرور ڏيندس."
+    else:  # English mode
         if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
             return "Hello! I'm your disaster management assistant. How can I help you today?"
-        elif any(time in query_lower for greeting in ['good morning', 'good afternoon', 'good evening']):
+        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
             return f"Thank you, {query}! I'm here to help you with disaster management related questions."
         elif 'how are you' in query_lower:
             return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
@@ -226,7 +226,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with multilingual prompt
+        # Create the QA chain with improved multilingual prompt
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -234,28 +234,40 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a multilingual disaster management assistant that can communicate in both English and Sindhi. Detect the language of the user's question and respond in the same language. Follow these guidelines:
+                    template="""You are a multilingual disaster management assistant that strictly communicates in either English or Sindhi based on the user's selected language preference. Current language: {current_language}
 
-1. If the context contains relevant information:
-   - Provide a detailed and comprehensive answer using the information
-   - Include specific details and procedures from the source
-   - Structure the response in a clear, readable format
-   - Use professional and precise language in the user's preferred language
+Follow these strict guidelines:
 
-2. If the context does NOT contain sufficient information:
-   - Provide a general, informative response based on common disaster management principles
+1. Language Rules:
+   - If current_language is "English": ALWAYS respond in English only
+   - If current_language is "سنڌي": ALWAYS respond in pure Sindhi only (avoid mixing with Urdu)
+   
+2. When providing information:
+   - Use formal and professional tone in both languages
+   - Ensure cultural appropriateness in expressions and examples
+   - For Sindhi: Use authentic Sindhi vocabulary and expressions, NOT Urdu equivalents
+   - For English: Use clear, standard English
+
+3. If the context contains relevant information:
+   - Provide a detailed answer using the information
+   - Include specific details and procedures
+   - Structure the response clearly
+   - Maintain consistent language throughout
+
+4. If the context does NOT contain sufficient information:
+   - Provide a general response based on disaster management principles
    - Be honest about not having specific details
-   - Offer to help with related topics that are within your knowledge base
-   - Never make up specific numbers or procedures
-   - Guide the user towards asking more specific questions about disaster management
-   - Maintain the same language as the user's question
+   - Offer to help with related topics
+   - Never make up information
+   - Guide towards more specific questions
+   - Keep the entire response in the specified language
 
 Context: {context}
 
 Question: {question}
 
-Response (in the same language as the question):""",
-                    input_variables=["context", "question"],
+Remember: Respond ONLY in {current_language}, maintaining language purity and consistency throughout the response.""",
+                    input_variables=["context", "question", "current_language"],
                 )
             }
         )
@@ -314,7 +326,7 @@ def main():
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
                         else:
-                            response = qa_chain({"query": prompt})
+                            response = qa_chain({"query": prompt, "current_language": st.session_state.language})
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
