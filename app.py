@@ -52,7 +52,7 @@ def initialize_rag():
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-pro",
             temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
             max_retries=3,
@@ -60,16 +60,15 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-
-# Create the QA chain
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
-    return_source_documents=False,
-    chain_type_kwargs={
-        "prompt": PromptTemplate(
-            template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
+        # Create the QA chain
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            return_source_documents=False,
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template="""You are a detailed and thorough assistant specializing in disaster management. For this question, you must follow these rules:
 
 1. ONLY use information from the provided context to answer questions
 2. If the context does not contain relevant information, respond with:
@@ -87,12 +86,10 @@ Context: {context}
 Question: {question}
 
 Response (strictly based on the context provided above):""",
-            input_variables=["context", "question"],
+                    input_variables=["context", "question"],
+                )
+            }
         )
-    }
-)        
-
-
         return qa_chain
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
