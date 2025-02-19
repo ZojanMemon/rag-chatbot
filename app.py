@@ -200,7 +200,7 @@ def initialize_rag():
 
         # Initialize cross-lingual embeddings
         embeddings = HuggingFaceEmbeddings(
-            model_name='xlm-roberta-base',
+            model_name='sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
             model_kwargs={'device': 'cpu'},
             encode_kwargs={
                 'normalize_embeddings': True,
