@@ -7,7 +7,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
 from datetime import datetime
-from fpdf import FPDF2 as FPDF
+from fpdf import FPDF
 import io
 import textwrap
 from typing import Literal
@@ -28,43 +28,49 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
 
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
-    # Create PDF object
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    
-    # Add first page
-    pdf.add_page()
-    
-    # Set font for English text
-    pdf.add_font("DejaVu", "", "DejaVuSansCondensed.ttf", uni=True)
-    pdf.set_font("DejaVu", size=16)
-    
-    # Add title
-    pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Add chat messages
-    pdf.set_font("DejaVu", size=11)
-    
-    for message in st.session_state.messages:
-        # Add role header
-        role = "Bot" if message["role"] == "assistant" else "User"
-        pdf.set_font("DejaVu", size=12)
-        pdf.cell(0, 10, f"{role}:", ln=True)
+    try:
+        # Create PDF object
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
         
-        # Add message content
+        # Add first page
+        pdf.add_page()
+        
+        # Set font for English text
+        pdf.add_font("DejaVu", "", "DejaVuSansCondensed.ttf", uni=True)
+        pdf.set_font("DejaVu", size=16)
+        
+        # Add title
+        pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+        pdf.ln(10)
+        
+        # Add chat messages
         pdf.set_font("DejaVu", size=11)
-        text = message["content"]
         
-        # Word wrap the text
-        wrapped_text = textwrap.fill(text, width=85)
-        for line in wrapped_text.split('\n'):
-            pdf.multi_cell(0, 7, line)
+        for message in st.session_state.messages:
+            # Add role header
+            role = "Bot" if message["role"] == "assistant" else "User"
+            pdf.set_font("DejaVu", size=12)
+            pdf.cell(0, 10, f"{role}:", ln=True)
+            
+            # Add message content
+            pdf.set_font("DejaVu", size=11)
+            text = message["content"]
+            
+            # Word wrap the text
+            wrapped_text = textwrap.fill(text, width=85)
+            for line in wrapped_text.split('\n'):
+                pdf.multi_cell(0, 7, line)
+            
+            pdf.ln(5)
         
-        pdf.ln(5)
-    
-    # Save to bytes
-    return pdf.output(dest='bytes')
+        # Save to bytes buffer
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        return pdf_bytes
+        
+    except Exception as e:
+        st.error(f"Error generating PDF: {str(e)}")
+        return None
 
 def create_chat_text():
     """Generate a formatted text file of chat history."""
