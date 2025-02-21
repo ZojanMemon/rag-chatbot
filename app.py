@@ -68,8 +68,8 @@ def create_chat_pdf():
             
             pdf.ln(5)
         
-        # Save to bytes buffer
-        return pdf.output(dest='S').encode('latin-1')
+        # Return PDF as bytes
+        return bytes(pdf.output())
         
     except Exception as e:
         st.error(f"Error generating PDF: {str(e)}")
@@ -77,17 +77,24 @@ def create_chat_pdf():
 
 def create_chat_text():
     """Generate a formatted text file of chat history."""
-    output = []
-    output.append("Disaster Management Chatbot - Conversation Log\n")
-    output.append("=" * 50 + "\n\n")
-    
-    for message in st.session_state.messages:
-        role = "Bot" if message["role"] == "assistant" else "User"
-        output.append(f"{role}:\n")
-        output.append(f"{message['content']}\n")
-        output.append("-" * 30 + "\n")
-    
-    return "\n".join(output).encode('utf-8')
+    try:
+        output = []
+        output.append("Disaster Management Chatbot - Conversation Log")
+        output.append("=" * 50)
+        output.append("")  # Empty line
+        
+        for message in st.session_state.messages:
+            role = "Bot" if message["role"] == "assistant" else "User"
+            output.append(f"{role}:")
+            output.append(message['content'])
+            output.append("-" * 30)
+            output.append("")  # Empty line
+        
+        # Join with newlines and encode as UTF-8
+        return "\n".join(output).encode('utf-8')
+    except Exception as e:
+        st.error(f"Error generating text file: {str(e)}")
+        return None
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
@@ -322,32 +329,43 @@ def main():
             - Use clear, simple language
             """)
 
+            st.write("Download Chat History:")
+            col_download_pdf, col_download_text = st.columns(2)
+
+            with col_download_pdf:
+                pdf_data = create_chat_pdf()
+                if pdf_data is not None:
+                    if st.download_button(
+                        "Download as PDF",
+                        data=pdf_data,
+                        file_name="chat_history.pdf",
+                        mime="application/pdf"
+                    ):
+                        st.success("PDF downloaded successfully!")
+                else:
+                    st.error("Could not generate PDF. Try text format instead.")
+
+            with col_download_text:
+                text_data = create_chat_text()
+                if text_data is not None:
+                    if st.download_button(
+                        "Download as Text",
+                        data=text_data,
+                        file_name="chat_history.txt",
+                        mime="text/plain"
+                    ):
+                        st.success("Text file downloaded successfully!")
+                else:
+                    st.error("Could not generate text file.")
+
             # Add buttons for chat management
             st.markdown("### Chat Management")
-            col_clear, col_download_text, col_download_pdf = st.columns(3)
+            col_clear = st.columns(1)
             
-            with col_clear:
+            with col_clear[0]:
                 if st.button("Clear Chat"):
                     st.session_state.messages = []
                     st.rerun()
-            
-            with col_download_text:
-                if st.download_button(
-                    label="Download Text",
-                    data=create_chat_text(),
-                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d')}.txt",
-                    mime="text/plain"
-                ):
-                    st.success("Chat history downloaded as text!")
-            
-            with col_download_pdf:
-                if st.download_button(
-                    label="Download PDF",
-                    data=create_chat_pdf(),
-                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d')}.pdf",
-                    mime="application/pdf"
-                ):
-                    st.success("Chat history downloaded as PDF!")
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
