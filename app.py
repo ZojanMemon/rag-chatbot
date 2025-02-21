@@ -10,95 +10,25 @@ from datetime import datetime
 from fpdf import FPDF
 import io
 import textwrap
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
-import speech_recognition as sr
-import pyttsx3
-import queue
-import threading
-import tempfile
+from gtts import gTTS
+import base64
 import os
+import tempfile
 
-# Initialize session state for chat history and audio
+# Initialize session state for chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "audio_queue" not in st.session_state:
-    st.session_state.audio_queue = queue.Queue()
-
-# Initialize text-to-speech engine
-def init_tts_engine():
-    engine = pyttsx3.init()
-    engine.setProperty('rate', 150)
-    engine.setProperty('volume', 0.9)
-    return engine
 
 def text_to_speech(text):
-    """Convert text to speech and save as temporary file."""
-    engine = init_tts_engine()
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as fp:
-        engine.save_to_file(text, fp.name)
-        engine.runAndWait()
-        return fp.name
-
-def process_audio_input():
-    """Process audio input from microphone."""
-    r = sr.Recognizer()
-    with sr.Microphone() as source:
-        st.write("Listening... Speak your question.")
-        try:
-            audio = r.listen(source, timeout=5)
-            text = r.recognize_google(audio)
-            return text
-        except sr.UnknownValueError:
-            st.error("Could not understand audio. Please try again.")
-            return None
-        except sr.RequestError:
-            st.error("Could not request results. Check your internet connection.")
-            return None
-
-def create_chat_pdf():
-    """Generate a PDF file of chat history with proper formatting."""
-    pdf = FPDF()
-    pdf.add_page()
-    
-    # Set up the PDF
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
-    pdf.ln(10)
-    
-    # Add content
-    pdf.set_font("Arial", size=12)
-    for message in st.session_state.messages:
-        # Role header
-        pdf.set_font("Arial", "B", 12)
-        role = "Bot" if message["role"] == "assistant" else "User"
-        pdf.cell(0, 10, f"{role}:", ln=True)
-        
-        # Message content with proper wrapping
-        pdf.set_font("Arial", size=11)
-        text = message["content"]
-        wrapped_text = textwrap.fill(text, width=85)
-        for line in wrapped_text.split('\n'):
-            pdf.cell(0, 7, line, ln=True)
-        pdf.ln(5)
-    
-    return pdf.output(dest='S').encode('latin1')
-
-def create_chat_text():
-    """Generate a formatted text file of chat history."""
-    output = io.StringIO()
-    output.write("Disaster Management Chatbot - Conversation Log\n")
-    output.write("="*50 + "\n\n")
-    
-    for message in st.session_state.messages:
-        role = "Bot" if message["role"] == "assistant" else "User"
-        output.write(f"{role}:\n")
-        output.write(f"{message['content']}\n")
-        output.write("-"*50 + "\n\n")
-    
-    text_data = output.getvalue()
-    output.close()
-    return text_data
+    """Convert text to speech using gTTS and return audio HTML."""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
+            tts = gTTS(text=text, lang='en', slow=False)
+            tts.save(fp.name)
+            return fp.name
+    except Exception as e:
+        st.error(f"Error generating speech: {str(e)}")
+        return None
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
@@ -231,6 +161,51 @@ Response (remember to be natural and helpful):""",
         st.error(f"Error initializing RAG system: {str(e)}")
         st.stop()
 
+def create_chat_pdf():
+    """Generate a PDF file of chat history with proper formatting."""
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Set up the PDF
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+    pdf.ln(10)
+    
+    # Add content
+    pdf.set_font("Arial", size=12)
+    for message in st.session_state.messages:
+        # Role header
+        pdf.set_font("Arial", "B", 12)
+        role = "Bot" if message["role"] == "assistant" else "User"
+        pdf.cell(0, 10, f"{role}:", ln=True)
+        
+        # Message content with proper wrapping
+        pdf.set_font("Arial", size=11)
+        text = message["content"]
+        wrapped_text = textwrap.fill(text, width=85)
+        for line in wrapped_text.split('\n'):
+            pdf.cell(0, 7, line, ln=True)
+        pdf.ln(5)
+    
+    return pdf.output(dest='S').encode('latin1')
+
+def create_chat_text():
+    """Generate a formatted text file of chat history."""
+    output = io.StringIO()
+    output.write("Disaster Management Chatbot - Conversation Log\n")
+    output.write("="*50 + "\n\n")
+    
+    for message in st.session_state.messages:
+        role = "Bot" if message["role"] == "assistant" else "User"
+        output.write(f"{role}:\n")
+        output.write(f"{message['content']}\n")
+        output.write("-"*50 + "\n\n")
+    
+    text_data = output.getvalue()
+    output.close()
+    return text_data
+
 def main():
     # Page config
     st.set_page_config(
@@ -243,7 +218,6 @@ def main():
     st.title("Disaster Management RAG Chatbot 🤖")
     st.markdown("""
     This chatbot can answer questions about disaster management based on the provided documentation.
-    You can type your questions or use voice input.
     """)
 
     try:
@@ -261,22 +235,12 @@ def main():
                     # Add audio playback for assistant responses
                     if message["role"] == "assistant":
                         audio_file = text_to_speech(message["content"])
-                        st.audio(audio_file)
-                        # Clean up temporary audio file
-                        os.unlink(audio_file)
+                        if audio_file:
+                            st.audio(audio_file)
+                            os.unlink(audio_file)
 
-            # Audio input button
-            if st.button("🎤 Voice Input"):
-                user_input = process_audio_input()
-                if user_input:
-                    prompt = user_input
-                else:
-                    prompt = None
-            else:
-                # Text input
-                prompt = st.chat_input("Type or click the microphone to ask your question")
-
-            if prompt:
+            # Chat input
+            if prompt := st.chat_input("Ask your question here"):
                 # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
@@ -293,9 +257,9 @@ def main():
                         st.markdown(response_text)
                         # Add audio playback for response
                         audio_file = text_to_speech(response_text)
-                        st.audio(audio_file)
-                        # Clean up temporary audio file
-                        os.unlink(audio_file)
+                        if audio_file:
+                            st.audio(audio_file)
+                            os.unlink(audio_file)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
 
         # Sidebar with information
@@ -305,7 +269,7 @@ def main():
             ### Features
             This chatbot uses:
             - 🧠 Gemini Pro for text generation
-            - 🎤 Voice input and output
+            - 🔊 Text-to-speech for responses
             - 🔍 Pinecone for vector storage
             - ⚡ LangChain for the RAG pipeline
             
@@ -318,10 +282,9 @@ def main():
             - 🏥 Relief operations
             
             ### Tips
-            - Speak clearly for voice input
-            - Click the microphone button to start speaking
-            - Use text input for complex queries
-            - Audio responses can be replayed
+            - Ask specific questions
+            - Listen to responses with audio playback
+            - Use clear, simple language
             """)
 
             # Add buttons for chat management
