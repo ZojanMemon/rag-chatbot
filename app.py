@@ -10,10 +10,21 @@ from datetime import datetime
 from fpdf import FPDF
 import io
 import textwrap
+from typing import Literal
 
-# Initialize session state for chat history
+# Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "input_language" not in st.session_state:
+    st.session_state.input_language = "English"
+if "output_language" not in st.session_state:
+    st.session_state.output_language = "English"
+
+def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
+    """Get the language-specific prompt instruction."""
+    if output_lang == "Sindhi":
+        return """سنڌي ۾ جواب ڏيو. مهرباني ڪري صاف ۽ سادي سنڌي استعمال ڪريو، اردو لفظن کان پاسو ڪريو. جواب تفصيلي ۽ سمجهه ۾ اچڻ جوڳو هجڻ گهرجي."""
+    return "Respond in English using clear and professional language."
 
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
@@ -78,38 +89,39 @@ def is_general_chat(query):
 def get_general_response(query):
     """Generate appropriate responses for general chat."""
     query_lower = query.lower()
+    output_lang = st.session_state.output_language
     
-    if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
-        return "Hello! I'm your disaster management assistant. How can I help you today?"
-    
-    elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
-        return f"Thank you, {query}! I'm here to help you with disaster management related questions."
-    
-    elif 'how are you' in query_lower:
-        return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
-    
-    elif 'thank' in query_lower:
-        return "You're welcome! Feel free to ask any questions about disaster management."
-    
-    elif 'bye' in query_lower or 'goodbye' in query_lower:
-        return "Goodbye! If you have more questions about disaster management later, feel free to ask."
-    
-    elif 'who are you' in query_lower:
-        return "I'm a specialized chatbot designed to help with disaster management information and procedures. I can answer questions about emergency protocols, safety measures, and disaster response strategies."
-    
-    elif 'what can you do' in query_lower:
-        return """I can help you with various disaster management topics, including:
-- Emergency response procedures
-- Disaster preparedness
-- Safety protocols
-- Risk assessment
-- Relief operations
-- And more related to disaster management
-
-Feel free to ask specific questions about these topics!"""
-    
+    if output_lang == "Sindhi":
+        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+            return "السلام عليڪم! مان توهان جو آفتن جي انتظام جو مددگار آهيان. مان توهان جي ڪهڙي مدد ڪري سگهان ٿو؟"
+        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+            return "توهان جو مهرباني! مان توهان جي آفتن جي انتظام جي سوالن ۾ مدد ڪرڻ لاءِ حاضر آهيان."
+        elif 'how are you' in query_lower:
+            return "مان ٺيڪ آهيان، توهان جي پڇڻ جو مهرباني! مان آفتن جي انتظام جي معلومات ڏيڻ لاءِ تيار آهيان."
+        elif 'thank' in query_lower:
+            return "توهان جو مهرباني! آفتن جي انتظام بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
+        elif 'bye' in query_lower or 'goodbye' in query_lower:
+            return "خدا حافظ! جيڪڏهن توهان کي آفتن جي انتظام بابت وڌيڪ سوال هجن ته پوءِ ضرور پڇو."
+        elif 'who are you' in query_lower:
+            return "مان هڪ خاص آفتن جي انتظام جو مددگار آهيان. مان آفتن جي انتظام، حفاظتي اپاءَ ۽ آفتن جي جواب جي حڪمت عملي بابت معلومات ڏئي سگهان ٿو."
+        else:
+            return "مان آفتن جي انتظام جي معاملن ۾ ماهر آهيان. عام موضوعن تي مدد نه ڪري سگهندس، پر آفتن جي انتظام، ايمرجنسي طريقن يا حفاظتي اپاءَ بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
     else:
-        return "I'm specialized in disaster management topics. While I can't help with general topics, I'd be happy to answer any questions about disaster management, emergency procedures, or safety protocols."
+        # Original English responses
+        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+            return "Hello! I'm your disaster management assistant. How can I help you today?"
+        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+            return f"Thank you, {query}! I'm here to help you with disaster management related questions."
+        elif 'how are you' in query_lower:
+            return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
+        elif 'thank' in query_lower:
+            return "You're welcome! Feel free to ask any questions about disaster management."
+        elif 'bye' in query_lower or 'goodbye' in query_lower:
+            return "Goodbye! If you have more questions about disaster management later, feel free to ask."
+        elif 'who are you' in query_lower:
+            return "I'm a specialized chatbot designed to help with disaster management information and procedures. I can answer questions about emergency protocols, safety measures, and disaster response strategies."
+        else:
+            return "I'm specialized in disaster management topics. While I can't help with general topics, I'd be happy to answer any questions about disaster management, emergency procedures, or safety protocols."
 
 def initialize_rag():
     try:
@@ -150,7 +162,7 @@ def initialize_rag():
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model="gemini-pro",
             temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
             max_retries=3,
@@ -162,11 +174,13 @@ def initialize_rag():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template="""You are a knowledgeable disaster management assistant. Use the following guidelines to answer questions:
+                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
+
+Use the following guidelines to answer questions:
 
 1. If the context contains relevant information:
    - Provide a detailed and comprehensive answer using the information
@@ -181,9 +195,9 @@ def initialize_rag():
    - Never make up specific numbers or procedures
    - Guide the user towards asking more specific questions about disaster management
 
-Context: {context}
+Context: {{context}}
 
-Question: {question}
+Question: {{question}}
 
 Response (remember to be natural and helpful):""",
                     input_variables=["context", "question"],
@@ -242,6 +256,31 @@ def main():
 
         # Sidebar with information
         with col2:
+            st.title("Settings")
+            
+            # Language selection
+            st.markdown("### Language Settings")
+            input_lang = st.selectbox(
+                "Select Input Language",
+                ["English", "Sindhi"],
+                key="input_language_selector",
+                index=0 if st.session_state.input_language == "English" else 1
+            )
+            output_lang = st.selectbox(
+                "Select Output Language",
+                ["English", "Sindhi"],
+                key="output_language_selector",
+                index=0 if st.session_state.output_language == "English" else 1
+            )
+            
+            # Update session state if language changed
+            if input_lang != st.session_state.input_language:
+                st.session_state.input_language = input_lang
+                st.rerun()
+            if output_lang != st.session_state.output_language:
+                st.session_state.output_language = output_lang
+                st.rerun()
+
             st.title("About")
             st.markdown("""
             ### Features
@@ -249,6 +288,7 @@ def main():
             - 🧠 Gemini Pro for text generation
             - 🔍 Pinecone for vector storage
             - ⚡ LangChain for the RAG pipeline
+            - 🌐 Multilingual support (English & Sindhi)
             
             ### Topics
             You can ask questions about:
@@ -294,5 +334,5 @@ def main():
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
     main()
