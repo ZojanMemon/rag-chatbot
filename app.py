@@ -11,9 +11,9 @@ from fpdf import FPDF
 import io
 import textwrap
 from gtts import gTTS
-import base64
 import os
 import tempfile
+import base64
 
 # Initialize session state for chat history
 if "messages" not in st.session_state:
@@ -22,10 +22,14 @@ if "messages" not in st.session_state:
 def text_to_speech(text):
     """Convert text to speech using gTTS and return audio HTML."""
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as fp:
-            tts = gTTS(text=text, lang='en', slow=False)
-            tts.save(fp.name)
-            return fp.name
+        tts = gTTS(text=text, lang='en', slow=False)
+        fp = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3')
+        tts.save(fp.name)
+        audio_file = open(fp.name, "rb")
+        audio_bytes = audio_file.read()
+        audio_file.close()
+        os.unlink(fp.name)
+        return base64.b64encode(audio_bytes).decode()
     except Exception as e:
         st.error(f"Error generating speech: {str(e)}")
         return None
@@ -236,8 +240,7 @@ def main():
                     if message["role"] == "assistant":
                         audio_file = text_to_speech(message["content"])
                         if audio_file:
-                            st.audio(audio_file)
-                            os.unlink(audio_file)
+                            st.audio(f"data:audio/mpeg;base64,{audio_file}")
 
             # Chat input
             if prompt := st.chat_input("Ask your question here"):
@@ -258,8 +261,7 @@ def main():
                         # Add audio playback for response
                         audio_file = text_to_speech(response_text)
                         if audio_file:
-                            st.audio(audio_file)
-                            os.unlink(audio_file)
+                            st.audio(f"data:audio/mpeg;base64,{audio_file}")
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
 
         # Sidebar with information
