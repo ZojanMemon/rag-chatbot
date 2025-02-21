@@ -1,13 +1,13 @@
 import requests
 import os
 
-def download_noto_sans():
-    """Download Noto Sans Regular font that supports Sindhi."""
-    font_url = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf"
-    font_path = "NotoSans-Regular.ttf"
+def download_dejavu_font():
+    """Download DejaVu Sans Condensed font that supports multiple languages."""
+    font_url = "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSansCondensed.ttf"
+    font_path = "DejaVuSansCondensed.ttf"
     
     if not os.path.exists(font_path):
-        print("Downloading Noto Sans font...")
+        print("Downloading DejaVu Sans Condensed font...")
         response = requests.get(font_url)
         with open(font_path, 'wb') as f:
             f.write(response.content)
@@ -16,4 +16,4 @@ def download_noto_sans():
         print("Font already exists!")
 
 if __name__ == "__main__":
-    download_noto_sans()
+    download_dejavu_font()
