@@ -36,26 +36,30 @@ def create_chat_pdf():
         # Add first page
         pdf.add_page()
         
-        # Set font for English text
-        pdf.add_font("DejaVu", "", "DejaVuSansCondensed.ttf", uni=True)
-        pdf.set_font("DejaVu", size=16)
+        # Use default font for English
+        pdf.set_font("Arial", "B", 16)
         
         # Add title
         pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
         pdf.ln(10)
         
         # Add chat messages
-        pdf.set_font("DejaVu", size=11)
-        
         for message in st.session_state.messages:
             # Add role header
             role = "Bot" if message["role"] == "assistant" else "User"
-            pdf.set_font("DejaVu", size=12)
+            pdf.set_font("Arial", "B", 12)
             pdf.cell(0, 10, f"{role}:", ln=True)
             
             # Add message content
-            pdf.set_font("DejaVu", size=11)
+            pdf.set_font("Arial", "", 11)
             text = message["content"]
+            
+            try:
+                # Try to encode text to check for Unicode characters
+                text.encode('latin-1')
+            except UnicodeEncodeError:
+                # If Unicode characters present, use a simpler representation
+                text = f"[Message in {st.session_state.output_language}]"
             
             # Word wrap the text
             wrapped_text = textwrap.fill(text, width=85)
@@ -65,8 +69,7 @@ def create_chat_pdf():
             pdf.ln(5)
         
         # Save to bytes buffer
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        return pdf_bytes
+        return pdf.output(dest='S').encode('latin-1')
         
     except Exception as e:
         st.error(f"Error generating PDF: {str(e)}")
@@ -74,19 +77,17 @@ def create_chat_pdf():
 
 def create_chat_text():
     """Generate a formatted text file of chat history."""
-    output = io.StringIO()
-    output.write("Disaster Management Chatbot - Conversation Log\n")
-    output.write("="*50 + "\n\n")
+    output = []
+    output.append("Disaster Management Chatbot - Conversation Log\n")
+    output.append("=" * 50 + "\n\n")
     
     for message in st.session_state.messages:
         role = "Bot" if message["role"] == "assistant" else "User"
-        output.write(f"{role}:\n")
-        output.write(f"{message['content']}\n")
-        output.write("-"*50 + "\n\n")
+        output.append(f"{role}:\n")
+        output.append(f"{message['content']}\n")
+        output.append("-" * 30 + "\n")
     
-    text_data = output.getvalue()
-    output.close()
-    return text_data
+    return "\n".join(output).encode('utf-8')
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
