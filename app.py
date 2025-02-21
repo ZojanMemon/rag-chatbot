@@ -29,31 +29,34 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
     pdf = FPDF()
+    # Add a Unicode font that supports Sindhi
+    pdf.add_font('NotoSans', '', 'NotoSans-Regular.ttf', uni=True)
     pdf.add_page()
     
     # Set up the PDF
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font('NotoSans', '', 16)
     pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
     pdf.ln(10)
     
     # Add content
-    pdf.set_font("Arial", size=12)
+    pdf.set_font('NotoSans', '', 12)
     for message in st.session_state.messages:
         # Role header
-        pdf.set_font("Arial", "B", 12)
+        pdf.set_font('NotoSans', '', 12)
         role = "Bot" if message["role"] == "assistant" else "User"
         pdf.cell(0, 10, f"{role}:", ln=True)
         
         # Message content with proper wrapping
-        pdf.set_font("Arial", size=11)
+        pdf.set_font('NotoSans', '', 11)
         text = message["content"]
         wrapped_text = textwrap.fill(text, width=85)
         for line in wrapped_text.split('\n'):
             pdf.cell(0, 7, line, ln=True)
         pdf.ln(5)
     
-    return pdf.output(dest='S').encode('latin1')
+    # Use bytes IO to handle Unicode
+    return pdf.output().encode('latin-1')
 
 def create_chat_text():
     """Generate a formatted text file of chat history."""

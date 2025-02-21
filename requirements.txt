@@ -13,3 +13,4 @@ fpdf>=1.7.2
 streamlit-webrtc>=0.47.1
 speechrecognition>=3.10.0
 pyttsx3>=2.90
+requests>=2.31.0
