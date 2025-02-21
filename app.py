@@ -10,10 +10,50 @@ from datetime import datetime
 from fpdf import FPDF
 import io
 import textwrap
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
+import speech_recognition as sr
+import pyttsx3
+import queue
+import threading
+import tempfile
+import os
 
-# Initialize session state for chat history
+# Initialize session state for chat history and audio
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "audio_queue" not in st.session_state:
+    st.session_state.audio_queue = queue.Queue()
+
+# Initialize text-to-speech engine
+def init_tts_engine():
+    engine = pyttsx3.init()
+    engine.setProperty('rate', 150)
+    engine.setProperty('volume', 0.9)
+    return engine
+
+def text_to_speech(text):
+    """Convert text to speech and save as temporary file."""
+    engine = init_tts_engine()
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as fp:
+        engine.save_to_file(text, fp.name)
+        engine.runAndWait()
+        return fp.name
+
+def process_audio_input():
+    """Process audio input from microphone."""
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.write("Listening... Speak your question.")
+        try:
+            audio = r.listen(source, timeout=5)
+            text = r.recognize_google(audio)
+            return text
+        except sr.UnknownValueError:
+            st.error("Could not understand audio. Please try again.")
+            return None
+        except sr.RequestError:
+            st.error("Could not request results. Check your internet connection.")
+            return None
 
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
@@ -203,6 +243,7 @@ def main():
     st.title("Disaster Management RAG Chatbot 🤖")
     st.markdown("""
     This chatbot can answer questions about disaster management based on the provided documentation.
+    You can type your questions or use voice input.
     """)
 
     try:
@@ -217,9 +258,25 @@ def main():
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
+                    # Add audio playback for assistant responses
+                    if message["role"] == "assistant":
+                        audio_file = text_to_speech(message["content"])
+                        st.audio(audio_file)
+                        # Clean up temporary audio file
+                        os.unlink(audio_file)
 
-            # Chat input
-            if prompt := st.chat_input("Ask your question here"):
+            # Audio input button
+            if st.button("🎤 Voice Input"):
+                user_input = process_audio_input()
+                if user_input:
+                    prompt = user_input
+                else:
+                    prompt = None
+            else:
+                # Text input
+                prompt = st.chat_input("Type or click the microphone to ask your question")
+
+            if prompt:
                 # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
@@ -234,6 +291,11 @@ def main():
                             response = qa_chain({"query": prompt})
                             response_text = response['result']
                         st.markdown(response_text)
+                        # Add audio playback for response
+                        audio_file = text_to_speech(response_text)
+                        st.audio(audio_file)
+                        # Clean up temporary audio file
+                        os.unlink(audio_file)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
 
         # Sidebar with information
@@ -243,6 +305,7 @@ def main():
             ### Features
             This chatbot uses:
             - 🧠 Gemini Pro for text generation
+            - 🎤 Voice input and output
             - 🔍 Pinecone for vector storage
             - ⚡ LangChain for the RAG pipeline
             
@@ -255,9 +318,10 @@ def main():
             - 🏥 Relief operations
             
             ### Tips
-            - Be specific in your questions
-            - Ask about one topic at a time
-            - Use clear, simple language
+            - Speak clearly for voice input
+            - Click the microphone button to start speaking
+            - Use text input for complex queries
+            - Audio responses can be replayed
             """)
 
             # Add buttons for chat management
