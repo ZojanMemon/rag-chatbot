@@ -62,14 +62,18 @@ def create_chat_text():
 
 def is_general_chat(query):
     """Check if the query is a general chat or greeting."""
+    # Make patterns more specific to avoid false positives
     general_phrases = [
-        'hi ', 'hello ', 'hey ', 'good morning', 'good afternoon', 'good evening',
-        'how are you', 'what\'s up', 'nice to meet you', 'thanks', 'thank you',
-        'bye', 'goodbye', 'see you', 'who are you', 'what can you do'
+        '^hi$', '^hello$', '^hey$', 
+        '^good morning$', '^good afternoon$', '^good evening$',
+        '^how are you$', '^what\'s up$', '^nice to meet you$', 
+        '^thanks$', '^thank you$', '^bye$', '^goodbye$', '^see you$',
+        '^who are you$', '^what can you do$'
     ]
-    # Add spaces around the query to ensure we match whole words
-    query = f" {query.lower()} "
-    return any(f" {phrase} " in query for phrase in general_phrases)
+    
+    query_lower = query.lower().strip()
+    # Only match if these are standalone phrases
+    return any(query_lower == phrase.strip('^$') for phrase in general_phrases)
 
 def get_general_response(query):
     """Generate appropriate responses for general chat."""
