@@ -162,7 +162,7 @@ def initialize_rag():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6, "score_threshold": 0.5}),
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
