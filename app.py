@@ -4,15 +4,11 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Pinecone
-import pinecone
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone as PineconeClient
 from datetime import datetime
-from io import BytesIO
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from fpdf import FPDF
+import io
 import textwrap
 from typing import Literal
 
@@ -31,99 +27,52 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
     return "Respond in English using clear and professional language."
 
 def create_chat_pdf():
-    """Generate a PDF file of chat history with proper formatting using reportlab."""
+    """Generate a PDF file of chat history with proper formatting."""
     try:
-        # Create a buffer to store the PDF
-        buffer = BytesIO()
+        # Create PDF object
+        pdf = FPDF()
+        pdf.set_auto_page_break(auto=True, margin=15)
         
-        # Create the PDF document
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=72,
-            leftMargin=72,
-            topMargin=72,
-            bottomMargin=72
-        )
+        # Add first page
+        pdf.add_page()
         
-        # Get styles
-        styles = getSampleStyleSheet()
-        
-        # Create custom styles
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=16,
-            spaceAfter=30,
-            alignment=1  # Center alignment
-        )
-        
-        timestamp_style = ParagraphStyle(
-            'Timestamp',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.gray,
-            alignment=2  # Right alignment
-        )
-        
-        role_style = ParagraphStyle(
-            'Role',
-            parent=styles['Normal'],
-            fontSize=12,
-            fontName='Helvetica-Bold',
-            spaceAfter=5
-        )
-        
-        content_style = ParagraphStyle(
-            'Content',
-            parent=styles['Normal'],
-            fontSize=11,
-            spaceAfter=20,
-            fontName='Helvetica'
-        )
-        
-        # Create story (content) for the PDF
-        story = []
+        # Use default font for English
+        pdf.set_font("Arial", "B", 16)
         
         # Add title
-        story.append(Paragraph("Disaster Management Chatbot - Chat History", title_style))
+        pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+        pdf.ln(10)
         
-        # Add timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        story.append(Paragraph(f"Generated on: {timestamp}", timestamp_style))
-        story.append(Spacer(1, 20))
-        
-        # Add messages
+        # Add chat messages
         for message in st.session_state.messages:
-            # Add role
+            # Add role header
             role = "Bot" if message["role"] == "assistant" else "User"
-            story.append(Paragraph(f"{role}:", role_style))
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(0, 10, f"{role}:", ln=True)
             
-            # Get content
-            content = message.get("content", "")
-            if not content:
-                continue
+            # Add message content
+            pdf.set_font("Arial", "", 11)
+            text = message["content"]
             
-            # Add language indicator for Sindhi bot responses
-            if st.session_state.output_language == "Sindhi" and message["role"] == "assistant":
-                content = f"[Message in Sindhi]\n{content}"
+            try:
+                # Try to encode text to check for Unicode characters
+                text.encode('latin-1')
+            except UnicodeEncodeError:
+                # If Unicode characters present, use a simpler representation
+                text = f"[Message in {st.session_state.output_language}]"
             
-            # Add content with proper wrapping
-            story.append(Paragraph(content, content_style))
+            # Word wrap the text
+            wrapped_text = textwrap.fill(text, width=85)
+            for line in wrapped_text.split('\n'):
+                pdf.multi_cell(0, 7, line)
+            
+            pdf.ln(5)
         
-        # Build PDF
-        doc.build(story)
-        
-        # Get PDF data
-        pdf_data = buffer.getvalue()
-        buffer.close()
-        
-        return pdf_data
+        # Return PDF as bytes
+        return bytes(pdf.output())
         
     except Exception as e:
-        error_msg = f"Error generating PDF: {str(e)}"
-        print(error_msg)
-        st.error(error_msg)
+        st.error(f"Error generating PDF: {str(e)}")
         return None
 
 def create_chat_text():
@@ -212,7 +161,7 @@ def initialize_rag():
         genai.configure(api_key=GOOGLE_API_KEY)
 
         # Initialize Pinecone
-        pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
+        pc = PineconeClient(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
         try:
@@ -230,10 +179,10 @@ def initialize_rag():
 
         # Initialize vector store
         index_name = "pdfinfo"
-        vectorstore = Pinecone(
-            pinecone.Index(index_name),
-            embeddings.embed_query,
-            "text"
+        vectorstore = PineconeVectorStore(
+            index=pc.Index(index_name),
+            embedding=embeddings,
+            text_key="text"
         )
 
         # Create Gemini LLM
@@ -296,10 +245,6 @@ def main():
     # Custom CSS for layout
     st.markdown("""
         <style>
-        /* Hide Streamlit's default elements */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        
         /* Main container styling */
         .main {
             padding: 0;
@@ -312,7 +257,7 @@ def main():
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 120px;  /* Increased space for input box */
+            padding-bottom: 100px;  /* Space for input box */
         }
         
         /* Fixed input container at bottom */
@@ -326,16 +271,6 @@ def main():
             padding: 20px;
             border-top: 1px solid #ddd;
             z-index: 1000;
-            margin-bottom: 0;  /* Remove any bottom margin */
-            display: none;
-        }
-        
-        /* Remove bottom padding from body */
-        body {
-            padding-bottom: 0 !important;
-            margin-bottom: 0 !important;
-            min-height: 100vh;
-            overflow-x: hidden;
         }
         
         /* Sidebar styling */
@@ -346,17 +281,6 @@ def main():
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
-        }
-        
-        /* Remove any extra space at bottom */
-        .stApp {
-            margin-bottom: 0 !important;
-            padding-bottom: 0 !important;
-        }
-        
-        .element-container:last-of-type {
-            margin-bottom: 0 !important;
-            padding-bottom: 0 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -421,10 +345,8 @@ def main():
                 col_download_pdf, col_download_text = st.columns(2)
                 
                 with col_download_pdf:
-                    print("Attempting to generate PDF...")
                     pdf_data = create_chat_pdf()
                     if pdf_data is not None:
-                        print(f"PDF data generated, size: {len(pdf_data)} bytes")
                         if st.download_button(
                             "Download PDF",
                             data=pdf_data,
@@ -432,16 +354,12 @@ def main():
                             mime="application/pdf"
                         ):
                             st.success("PDF downloaded!")
-                            print("PDF download initiated")
                     else:
                         st.error("PDF generation failed")
-                        print("PDF generation returned None")
                 
                 with col_download_text:
-                    print("Attempting to generate text file...")
                     text_data = create_chat_text()
                     if text_data is not None:
-                        print(f"Text data generated, size: {len(text_data)} bytes")
                         if st.download_button(
                             "Download Text",
                             data=text_data,
@@ -449,10 +367,8 @@ def main():
                             mime="text/plain"
                         ):
                             st.success("Text downloaded!")
-                            print("Text download initiated")
                     else:
                         st.error("Text generation failed")
-                        print("Text generation returned None")
             
             # Clear chat button at the bottom of sidebar
             if st.button("🗑️ Clear Chat History"):
