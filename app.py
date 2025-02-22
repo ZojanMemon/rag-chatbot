@@ -7,8 +7,12 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
 from datetime import datetime
-from fpdf import FPDF
-import io
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 import textwrap
 from typing import Literal
 
@@ -27,76 +31,95 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
     return "Respond in English using clear and professional language."
 
 def create_chat_pdf():
-    """Generate a PDF file of chat history with proper formatting."""
+    """Generate a PDF file of chat history with proper formatting using reportlab."""
     try:
-        # Debug: Print number of messages
-        print(f"Generating PDF with {len(st.session_state.messages)} messages")
+        # Create a buffer to store the PDF
+        buffer = BytesIO()
         
-        # Create PDF object
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_auto_page_break(auto=True, margin=15)
+        # Create the PDF document
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72
+        )
         
-        # Set font and margins
-        pdf.set_margins(15, 15, 15)
-        pdf.set_font("Arial", "B", 14)
+        # Get styles
+        styles = getSampleStyleSheet()
+        
+        # Create custom styles
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30,
+            alignment=1  # Center alignment
+        )
+        
+        timestamp_style = ParagraphStyle(
+            'Timestamp',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.gray,
+            alignment=2  # Right alignment
+        )
+        
+        role_style = ParagraphStyle(
+            'Role',
+            parent=styles['Normal'],
+            fontSize=12,
+            fontName='Helvetica-Bold',
+            spaceAfter=5
+        )
+        
+        content_style = ParagraphStyle(
+            'Content',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=20,
+            fontName='Helvetica'
+        )
+        
+        # Create story (content) for the PDF
+        story = []
         
         # Add title
-        pdf.cell(0, 10, "Disaster Management Chatbot - Chat History", ln=True, align='C')
-        pdf.ln(5)
+        story.append(Paragraph("Disaster Management Chatbot - Chat History", title_style))
         
         # Add timestamp
-        pdf.set_font("Arial", "", 10)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        pdf.cell(0, 5, f"Generated on: {timestamp}", ln=True, align='R')
-        pdf.ln(10)
+        story.append(Paragraph(f"Generated on: {timestamp}", timestamp_style))
+        story.append(Spacer(1, 20))
         
-        # Process each message
-        for idx, message in enumerate(st.session_state.messages):
-            try:
-                # Debug: Print message being processed
-                print(f"Processing message {idx + 1}")
-                
-                # Set role font
-                pdf.set_font("Arial", "B", 11)
-                role = "Bot" if message["role"] == "assistant" else "User"
-                pdf.cell(0, 8, f"{role}:", ln=True)
-                
-                # Set content font
-                pdf.set_font("Arial", "", 10)
-                
-                # Get and process content
-                content = message.get("content", "")
-                if not content:
-                    print(f"Message {idx + 1} has no content")
-                    continue
-                
-                # Only add language indicator for Sindhi text
-                if st.session_state.output_language == "Sindhi" and message["role"] == "assistant":
-                    content = f"[Message in Sindhi]\n{content}"
-                
-                # Write content with word wrapping
-                lines = textwrap.wrap(content, width=75)  # Adjust width as needed
-                for line in lines:
-                    pdf.multi_cell(0, 6, line)
-                pdf.ln(5)
-                
-                # Debug: Print success
-                print(f"Successfully processed message {idx + 1}")
-                
-            except Exception as e:
-                print(f"Error processing message {idx + 1}: {str(e)}")
-                continue
-        
-        # Generate PDF
-        try:
-            pdf_bytes = bytes(pdf.output())
-            print("PDF generated successfully")
-            return pdf_bytes
-        except Exception as e:
-            print(f"Error in final PDF generation: {str(e)}")
-            return None
+        # Add messages
+        for message in st.session_state.messages:
+            # Add role
+            role = "Bot" if message["role"] == "assistant" else "User"
+            story.append(Paragraph(f"{role}:", role_style))
             
+            # Get content
+            content = message.get("content", "")
+            if not content:
+                continue
+            
+            # Add language indicator for Sindhi bot responses
+            if st.session_state.output_language == "Sindhi" and message["role"] == "assistant":
+                content = f"[Message in Sindhi]\n{content}"
+            
+            # Add content with proper wrapping
+            story.append(Paragraph(content, content_style))
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Get PDF data
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        return pdf_data
+        
     except Exception as e:
         error_msg = f"Error generating PDF: {str(e)}"
         print(error_msg)
