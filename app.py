@@ -37,41 +37,80 @@ def create_chat_pdf():
         # Add first page
         pdf.add_page()
         
-        # Use default font for English
-        pdf.set_font("Arial", "B", 16)
-        
         # Calculate usable width
         page_width = pdf.w - pdf.l_margin - pdf.r_margin
         
         # Add title
-        pdf.cell(page_width, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+        pdf.set_font("Arial", "B", 14)
+        pdf.cell(page_width, 10, "Disaster Management Chatbot - Chat History", ln=True, align='C')
+        pdf.ln(5)
+        
+        # Add timestamp
+        pdf.set_font("Arial", "", 10)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        pdf.cell(page_width, 10, f"Generated on: {timestamp}", ln=True, align='R')
         pdf.ln(10)
         
+        # Function to safely wrap text
+        def safe_wrap_text(text, width):
+            # Remove any null bytes or problematic characters
+            text = ''.join(char for char in text if ord(char) >= 32)
+            # Split into paragraphs
+            paragraphs = text.split('\n')
+            # Wrap each paragraph
+            wrapped_paragraphs = []
+            for para in paragraphs:
+                # Handle empty paragraphs
+                if not para.strip():
+                    wrapped_paragraphs.append('')
+                    continue
+                # Wrap text
+                wrapped = textwrap.fill(para, width=width)
+                wrapped_paragraphs.extend(wrapped.split('\n'))
+            return wrapped_paragraphs
+
         # Add chat messages
         for message in st.session_state.messages:
-            # Add role header
-            role = "Bot" if message["role"] == "assistant" else "User"
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(page_width, 10, f"{role}:", ln=True)
-            
-            # Add message content
-            pdf.set_font("Arial", "", 11)
-            text = message["content"]
-            
             try:
-                # Try to encode text to check for Unicode characters
-                text.encode('latin-1')
-            except UnicodeEncodeError:
-                # If Unicode characters present, use a simpler representation
-                text = f"[Message in {st.session_state.output_language}]"
-            
-            # Word wrap the text with proper width
-            wrapped_text = textwrap.fill(text, width=70)  # Reduced width for safety
-            for line in wrapped_text.split('\n'):
-                # Use multi_cell with calculated width
-                pdf.multi_cell(page_width, 7, line)
-            
-            pdf.ln(5)
+                # Add role header with background
+                role = "Bot" if message["role"] == "assistant" else "User"
+                pdf.set_font("Arial", "B", 11)
+                pdf.set_fill_color(240, 240, 240)  # Light gray background
+                pdf.cell(page_width, 8, f"{role}:", ln=True, fill=True)
+                
+                # Add message content
+                pdf.set_font("Arial", "", 10)
+                
+                # Get message text
+                text = message["content"]
+                if not text:  # Skip empty messages
+                    continue
+                
+                try:
+                    # Try to encode text to check for Unicode characters
+                    text.encode('latin-1')
+                except UnicodeEncodeError:
+                    # If Unicode characters present, use a simpler representation
+                    text = f"[Message in {st.session_state.output_language}]"
+                
+                # Wrap and write text
+                wrapped_lines = safe_wrap_text(text, width=60)  # Reduced width for safety
+                
+                # Add some padding
+                pdf.ln(2)
+                
+                # Write each line
+                for line in wrapped_lines:
+                    if line.strip():  # Only write non-empty lines
+                        pdf.multi_cell(page_width, 6, line)
+                
+                # Add space between messages
+                pdf.ln(5)
+                
+            except Exception as msg_error:
+                # Log the error but continue with other messages
+                print(f"Error processing message: {str(msg_error)}")
+                continue
         
         # Return PDF as bytes
         return bytes(pdf.output())
