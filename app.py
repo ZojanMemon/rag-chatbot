@@ -246,19 +246,11 @@ def main():
         layout="wide"
     )
 
-    # Custom CSS for modern, minimalistic design
+    # Custom CSS for layout
     st.markdown("""
         <style>
-        /* Global styles */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-        
-        * {
-            font-family: 'Inter', sans-serif;
-        }
-        
-        /* Main container */
+        /* Main container styling */
         .main {
-            background-color: #f8f9fa;
             padding: 0;
             max-width: 1200px;
             margin: 0 auto;
@@ -269,244 +261,164 @@ def main():
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 120px;
+            padding-bottom: 100px;  /* Space for input box */
         }
         
-        /* Message styling */
-        .message {
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin: 1rem 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        /* User message */
-        .user-message {
-            background-color: #e9ecef;
-            margin-left: 2rem;
-        }
-        
-        /* Bot message */
-        .bot-message {
-            background-color: #ffffff;
-            margin-right: 2rem;
-            border: 1px solid #e9ecef;
-        }
-        
-        /* Input container */
+        /* Fixed input container at bottom */
         .input-container {
             position: fixed;
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
             width: 800px;
-            background-color: rgba(255,255,255,0.95);
+            background-color: white;
             padding: 20px;
-            border-top: 1px solid #eee;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
-            backdrop-filter: blur(10px);
+            border-top: 1px solid #ddd;
             z-index: 1000;
+            display: none;
         }
         
         /* Sidebar styling */
         .css-1d391kg {
-            background-color: #ffffff;
-            padding: 1.5rem;
-            border-right: 1px solid #eee;
+            padding: 20px;
         }
         
-        /* Streamlit elements */
+        /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            padding: 0.5rem;
-            background-color: #ffffff;
-            color: #1f2937;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        
-        div.stButton > button:hover {
-            background-color: #f3f4f6;
-            border-color: #c0c0c0;
-        }
-        
-        /* Chat input styling */
-        .stTextInput > div > div > input {
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            padding: 0.75rem;
-        }
-        
-        /* Expander styling */
-        .streamlit-expanderHeader {
-            background-color: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            padding: 0.75rem;
-        }
-        
-        /* Success message styling */
-        .stSuccess {
-            background-color: #d1fae5;
-            color: #065f46;
-            border-radius: 8px;
-            padding: 0.75rem;
-        }
-        
-        /* Title styling */
-        h1 {
-            color: #1f2937;
-            font-weight: 600;
-            font-size: 1.875rem;
-            margin-bottom: 2rem;
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #c0c0c0;
-            border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #a0a0a0;
         }
         </style>
     """, unsafe_allow_html=True)
+    
+    try:
+        # Initialize RAG system
+        qa_chain, llm = initialize_rag()
 
-    # Sidebar with settings and info
-    with st.sidebar:
-        st.title("Settings & Info")
-        
-        # Language Settings in an expander
-        with st.expander("🌐 Language Settings", expanded=False):
-            input_lang = st.selectbox(
-                "Select Input Language",
-                ["English", "Sindhi"],
-                key="input_language_selector",
-                index=0 if st.session_state.input_language == "English" else 1
-            )
-            output_lang = st.selectbox(
-                "Select Output Language",
-                ["English", "Sindhi"],
-                key="output_language_selector",
-                index=0 if st.session_state.output_language == "English" else 1
-            )
+        # Sidebar with settings and info
+        with st.sidebar:
+            st.title("Settings & Info")
             
-            # Update session state if language changed
-            if input_lang != st.session_state.input_language:
-                st.session_state.input_language = input_lang
-            if output_lang != st.session_state.output_language:
-                st.session_state.output_language = output_lang
-        
-        # About section in an expander
-        with st.expander("ℹ️ About", expanded=False):
-            st.markdown("""
-            ### Features
-            This chatbot uses:
-            - 🧠 Gemini Pro for text generation
-            - 🔍 Pinecone for vector storage
-            - ⚡ LangChain for the RAG pipeline
-            - 🌐 Multilingual support (English & Sindhi)
-            
-            ### Topics
-            You can ask questions about:
-            - 📋 Disaster management procedures
-            - 🚨 Emergency protocols
-            - 🛡️ Safety measures
-            - 📊 Risk assessment
-            - 🏥 Relief operations
-            
-            ### Tips
-            - Be specific in your questions
-            - Ask about one topic at a time
-            - Use clear, simple language
-            """)
-        
-        # Download options in an expander
-        with st.expander("💾 Download Chat History", expanded=False):
-            col_download_pdf, col_download_text = st.columns(2)
-            
-            with col_download_pdf:
-                if st.button("Generate PDF"):
-                    st.session_state.pdf_data = create_chat_pdf()
-                    st.success("PDF generated! Click download button below.")
+            # Language Settings in an expander
+            with st.expander("🌐 Language Settings", expanded=False):
+                input_lang = st.selectbox(
+                    "Select Input Language",
+                    ["English", "Sindhi"],
+                    key="input_language_selector",
+                    index=0 if st.session_state.input_language == "English" else 1
+                )
+                output_lang = st.selectbox(
+                    "Select Output Language",
+                    ["English", "Sindhi"],
+                    key="output_language_selector",
+                    index=0 if st.session_state.output_language == "English" else 1
+                )
                 
-                if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
-                    if st.download_button(
-                        "Download PDF",
-                        data=st.session_state.pdf_data,
-                        file_name="chat_history.pdf",
-                        mime="application/pdf"
-                    ):
-                        st.success("PDF downloaded!")
+                # Update session state if language changed
+                if input_lang != st.session_state.input_language:
+                    st.session_state.input_language = input_lang
+                if output_lang != st.session_state.output_language:
+                    st.session_state.output_language = output_lang
             
-            with col_download_text:
-                text_data = create_chat_text()
-                if text_data is not None:
-                    if st.download_button(
-                        "Download Text",
-                        data=text_data,
-                        file_name="chat_history.txt",
-                        mime="text/plain"
-                    ):
-                        st.success("Text downloaded!")
+            # About section in an expander
+            with st.expander("ℹ️ About", expanded=False):
+                st.markdown("""
+                ### Features
+                This chatbot uses:
+                - 🧠 Gemini Pro for text generation
+                - 🔍 Pinecone for vector storage
+                - ⚡ LangChain for the RAG pipeline
+                - 🌐 Multilingual support (English & Sindhi)
+                
+                ### Topics
+                You can ask questions about:
+                - 📋 Disaster management procedures
+                - 🚨 Emergency protocols
+                - 🛡️ Safety measures
+                - 📊 Risk assessment
+                - 🏥 Relief operations
+                
+                ### Tips
+                - Be specific in your questions
+                - Ask about one topic at a time
+                - Use clear, simple language
+                """)
+            
+            # Download options in an expander
+            with st.expander("💾 Download Chat History", expanded=False):
+                col_download_pdf, col_download_text = st.columns(2)
+                
+                with col_download_pdf:
+                    if st.button("Generate PDF"):
+                        st.session_state.pdf_data = create_chat_pdf()
+                        st.success("PDF generated! Click download button below.")
+                    
+                    if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
+                        if st.download_button(
+                            "Download PDF",
+                            data=st.session_state.pdf_data,
+                            file_name="chat_history.pdf",
+                            mime="application/pdf"
+                        ):
+                            st.success("PDF downloaded!")
+                
+                with col_download_text:
+                    text_data = create_chat_text()
+                    if text_data is not None:
+                        if st.download_button(
+                            "Download Text",
+                            data=text_data,
+                            file_name="chat_history.txt",
+                            mime="text/plain"
+                        ):
+                            st.success("Text downloaded!")
+            
+            # Clear chat button at the bottom of sidebar
+            if st.button("🗑️ Clear Chat History"):
+                st.session_state.messages = []
+                if "pdf_data" in st.session_state:
+                    del st.session_state.pdf_data
+                st.rerun()
+
+        # Main chat interface
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         
-        # Clear chat button at the bottom of sidebar
-        if st.button("🗑️ Clear Chat History"):
-            st.session_state.messages = []
+        # Display chat title
+        st.title("Disaster Management Assistant 🤖")
+        
+        # Display chat messages
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Fixed input box at bottom
+        st.markdown('<div class="input-container">', unsafe_allow_html=True)
+        if prompt := st.chat_input("Ask your question here"):
+            # Display user message
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            # Display assistant response
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    if is_general_chat(prompt):
+                        response_text = get_general_response(prompt)
+                    else:
+                        response = qa_chain({"query": prompt})
+                        response_text = response['result']
+                    st.markdown(response_text)
+            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            
+            # Update PDF data after new message
             if "pdf_data" in st.session_state:
-                del st.session_state.pdf_data
-            st.rerun()
-
-    # Main chat interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    
-    # Display chat title
-    st.title("Disaster Management Assistant 🤖")
-    
-    # Display chat messages
-    for message in st.session_state.messages:
-        if message["role"] == "assistant":
-            st.markdown(f'<div class="message bot-message">{message["content"]}</div>', unsafe_allow_html=True)
-        else:
-            st.markdown(f'<div class="message user-message">{message["content"]}</div>', unsafe_allow_html=True)
-
-    # Fixed input box at bottom
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
-    if prompt := st.chat_input("Ask your question here"):
-        # Display user message
-        st.markdown(f'<div class="message user-message">{prompt}</div>', unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        # Display assistant response
-        with st.spinner("Thinking..."):
-            if is_general_chat(prompt):
-                response_text = get_general_response(prompt)
-            else:
-                response = qa_chain({"query": prompt})
-                response_text = response['result']
-            st.markdown(f'<div class="message bot-message">{response_text}</div>', unsafe_allow_html=True)
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
-            
-        # Update PDF data after new message
-        if "pdf_data" in st.session_state:
-            st.session_state.pdf_data = create_chat_pdf()
+                st.session_state.pdf_data = create_chat_pdf()
                 
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
         
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
