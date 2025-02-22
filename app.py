@@ -4,7 +4,7 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_pinecone import PineconeVectorStore
+from langchain_community.vectorstores import Pinecone
 import pinecone
 from datetime import datetime
 from io import BytesIO
@@ -212,7 +212,7 @@ def initialize_rag():
         genai.configure(api_key=GOOGLE_API_KEY)
 
         # Initialize Pinecone
-        pc = pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
+        pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
 
         # Initialize embeddings
         try:
@@ -230,10 +230,10 @@ def initialize_rag():
 
         # Initialize vector store
         index_name = "pdfinfo"
-        vectorstore = PineconeVectorStore(
-            index=pc.Index(index_name),
-            embedding=embeddings,
-            text_key="text"
+        vectorstore = Pinecone(
+            pinecone.Index(index_name),
+            embeddings.embed_query,
+            "text"
         )
 
         # Create Gemini LLM
