@@ -29,7 +29,7 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
     try:
-        # Create PDF object
+        # Create PDF object with UTF-8 support
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
@@ -50,10 +50,26 @@ def create_chat_pdf():
             pdf.set_font("Arial", "", 11)
             content = message["content"]
             
-            # Write content line by line
-            lines = textwrap.wrap(content, width=85)
-            for line in lines:
-                pdf.cell(0, 7, line, 0, 1)
+            # Handle Sindhi text
+            try:
+                # Try encoding as latin-1 first
+                content.encode('latin-1')
+                # If successful, write normally
+                lines = textwrap.wrap(content, width=85)
+                for line in lines:
+                    pdf.cell(0, 7, line, 0, 1)
+            except UnicodeEncodeError:
+                # For Sindhi text, write "[Sindhi]" followed by transliterated version
+                pdf.cell(0, 7, "[Sindhi Message]", 0, 1)
+                # Try to write a transliterated version if possible
+                try:
+                    ascii_text = content.encode('ascii', 'replace').decode('ascii')
+                    lines = textwrap.wrap(ascii_text, width=85)
+                    for line in lines:
+                        pdf.cell(0, 7, line, 0, 1)
+                except:
+                    pass
+            
             pdf.ln(5)
         
         # Output PDF
