@@ -70,15 +70,15 @@ def create_chat_pdf():
                 if not content:
                     print(f"Message {idx + 1} has no content")
                     continue
-                    
-                # Handle non-ASCII text
-                try:
-                    content.encode('ascii', 'strict')
-                except UnicodeEncodeError:
-                    content = f"[Message in {st.session_state.output_language}]"
                 
-                # Write content
-                pdf.multi_cell(0, 6, content)
+                # Only add language indicator for Sindhi text
+                if st.session_state.output_language == "Sindhi" and message["role"] == "assistant":
+                    content = f"[Message in Sindhi]\n{content}"
+                
+                # Write content with word wrapping
+                lines = textwrap.wrap(content, width=75)  # Adjust width as needed
+                for line in lines:
+                    pdf.multi_cell(0, 6, line)
                 pdf.ln(5)
                 
                 # Debug: Print success
