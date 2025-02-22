@@ -53,15 +53,32 @@ def create_chat_pdf():
             # Add message content
             pdf.set_font("Arial", "", 11)
             
-            # Handle text content
+            # Handle text content based on role and language
             content = message["content"]
-            if st.session_state.output_language == "Sindhi":
+            
+            # For user messages, check input language
+            if role == "User" and st.session_state.input_language == "Sindhi":
                 content = "[Message in Sindhi]"
+            # For bot messages, check output language
+            elif role == "Bot" and st.session_state.output_language == "Sindhi":
+                content = "[Message in Sindhi]"
+            
+            # Handle non-Sindhi content
+            if content != "[Message in Sindhi]":
+                try:
+                    # Try to encode the content to check for special characters
+                    content.encode('latin-1')
+                except UnicodeEncodeError:
+                    # If encoding fails, use a placeholder
+                    content = "[Message contains special characters]"
             
             # Word wrap and write content
             lines = textwrap.wrap(content, width=85)
             for line in lines:
-                pdf.cell(0, 7, line, 0, 1)
+                try:
+                    pdf.cell(0, 7, line, 0, 1)
+                except:
+                    pdf.cell(0, 7, "[Text contains unsupported characters]", 0, 1)
             
             pdf.ln(5)
         
