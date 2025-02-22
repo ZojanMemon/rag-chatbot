@@ -299,10 +299,8 @@ def main():
                 # Update session state if language changed
                 if input_lang != st.session_state.input_language:
                     st.session_state.input_language = input_lang
-                    st.rerun()
                 if output_lang != st.session_state.output_language:
                     st.session_state.output_language = output_lang
-                    st.rerun()
             
             # About section in an expander
             with st.expander("ℹ️ About", expanded=False):
@@ -333,17 +331,18 @@ def main():
                 col_download_pdf, col_download_text = st.columns(2)
                 
                 with col_download_pdf:
-                    pdf_data = create_chat_pdf()
-                    if pdf_data is not None:
+                    if st.button("Generate PDF"):
+                        st.session_state.pdf_data = create_chat_pdf()
+                        st.success("PDF generated! Click download button below.")
+                    
+                    if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
                         if st.download_button(
                             "Download PDF",
-                            data=pdf_data,
+                            data=st.session_state.pdf_data,
                             file_name="chat_history.pdf",
                             mime="application/pdf"
                         ):
                             st.success("PDF downloaded!")
-                    else:
-                        st.error("PDF generation failed")
                 
                 with col_download_text:
                     text_data = create_chat_text()
@@ -355,12 +354,12 @@ def main():
                             mime="text/plain"
                         ):
                             st.success("Text downloaded!")
-                    else:
-                        st.error("Text generation failed")
             
             # Clear chat button at the bottom of sidebar
             if st.button("🗑️ Clear Chat History"):
                 st.session_state.messages = []
+                if "pdf_data" in st.session_state:
+                    del st.session_state.pdf_data
                 st.rerun()
 
         # Main chat interface
@@ -392,6 +391,11 @@ def main():
                         response_text = response['result']
                     st.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
+            
+            # Update PDF data after new message
+            if "pdf_data" in st.session_state:
+                st.session_state.pdf_data = create_chat_pdf()
+                
         st.markdown('</div>', unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
