@@ -242,34 +242,112 @@ def main():
         layout="wide"
     )
     
-    # Header
-    st.title("Disaster Management RAG Chatbot 🤖")
+    # Custom CSS
     st.markdown("""
-    This chatbot can answer questions about disaster management based on the provided documentation.
-    """)
+    <style>
+    /* Dark theme colors */
+    :root {
+        --background-color: #1a1a1a;
+        --text-color: #ffffff;
+        --bot-message-bg: #2d2d2d;
+        --user-message-bg: #383838;
+    }
+    
+    /* Main container */
+    .main {
+        background-color: var(--background-color);
+        color: var(--text-color);
+    }
+    
+    /* Chat messages */
+    .stChatMessage {
+        background-color: transparent !important;
+        padding: 1rem 0 !important;
+    }
+    
+    /* Bot message */
+    .stChatMessage[data-test="bot"] {
+        background-color: var(--bot-message-bg) !important;
+        border-radius: 10px;
+        padding: 15px !important;
+        margin: 10px 0;
+    }
+    
+    /* User message */
+    .stChatMessage[data-test="user"] {
+        background-color: var(--user-message-bg) !important;
+        border-radius: 10px;
+        padding: 15px !important;
+        margin: 10px 0;
+    }
+    
+    /* Chat input */
+    .stChatInput {
+        border-radius: 20px !important;
+        border: 1px solid #4a4a4a !important;
+        padding: 10px 20px !important;
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background-color: var(--background-color);
+    }
+    
+    /* Headers */
+    h1, h2, h3 {
+        color: var(--text-color) !important;
+    }
+    
+    /* Action buttons */
+    .stButton>button {
+        border-radius: 20px;
+        background-color: #383838;
+        color: white;
+        border: 1px solid #4a4a4a;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton>button:hover {
+        background-color: #4a4a4a;
+        border-color: #5a5a5a;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Header
+    st.markdown("""
+    <div style='display: flex; align-items: center; margin-bottom: 20px;'>
+        <h1 style='margin: 0;'>Gemini</h1>
+        <span style='margin-left: 10px; color: #888;'>2.0 Flash</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     try:
         # Initialize RAG system
         qa_chain, llm = initialize_rag()
 
-        # Create two columns
-        col1, col2 = st.columns([2, 1])
+        # Create two columns with adjusted ratios
+        col1, col2 = st.columns([4, 1])
 
         with col1:
-            # Display chat history
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
+            # Chat container
+            chat_container = st.container()
+            with chat_container:
+                # Display chat history
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"], avatar="🤖" if message["role"] == "assistant" else None):
+                        st.markdown(message["content"])
 
             # Chat input
-            if prompt := st.chat_input("Ask your question here"):
+            if prompt := st.chat_input("Ask Gemini..."):
                 # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
                 st.session_state.messages.append({"role": "user", "content": prompt})
 
                 # Display assistant response
-                with st.chat_message("assistant"):
+                with st.chat_message("assistant", avatar="🤖"):
                     with st.spinner("Thinking..."):
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
@@ -281,18 +359,18 @@ def main():
 
         # Sidebar with information
         with col2:
-            st.title("Settings")
+            st.markdown("### Settings")
             
             # Language selection
-            st.markdown("### Language Settings")
+            st.markdown("#### Language")
             input_lang = st.selectbox(
-                "Select Input Language",
+                "Input Language",
                 ["English", "Sindhi"],
                 key="input_language_selector",
                 index=0 if st.session_state.input_language == "English" else 1
             )
             output_lang = st.selectbox(
-                "Select Output Language",
+                "Output Language",
                 ["English", "Sindhi"],
                 key="output_language_selector",
                 index=0 if st.session_state.output_language == "English" else 1
@@ -306,66 +384,48 @@ def main():
                 st.session_state.output_language = output_lang
                 st.rerun()
 
-            st.title("About")
+            st.markdown("#### Actions")
+            if st.button("🗑️ Clear Chat"):
+                st.session_state.messages = []
+                st.rerun()
+
+            st.markdown("#### Export Chat")
+            # Download buttons
+            pdf_data = create_chat_pdf()
+            if pdf_data is not None:
+                if st.download_button(
+                    "📄 Download PDF",
+                    data=pdf_data,
+                    file_name="chat_history.pdf",
+                    mime="application/pdf"
+                ):
+                    st.success("PDF downloaded!")
+
+            text_data = create_chat_text()
+            if text_data is not None:
+                if st.download_button(
+                    "📝 Download Text",
+                    data=text_data,
+                    file_name="chat_history.txt",
+                    mime="text/plain"
+                ):
+                    st.success("Text file downloaded!")
+
             st.markdown("""
-            ### Features
+            #### About
             This chatbot uses:
             - 🧠 Gemini Pro for text generation
             - 🔍 Pinecone for vector storage
             - ⚡ LangChain for the RAG pipeline
-            - 🌐 Multilingual support (English & Sindhi)
+            - 🌐 Multilingual support
             
-            ### Topics
-            You can ask questions about:
-            - 📋 Disaster management procedures
+            Ask questions about:
+            - 📋 Disaster management
             - 🚨 Emergency protocols
             - 🛡️ Safety measures
             - 📊 Risk assessment
             - 🏥 Relief operations
-            
-            ### Tips
-            - Be specific in your questions
-            - Ask about one topic at a time
-            - Use clear, simple language
             """)
-
-            st.write("Download Chat History:")
-            col_download_pdf, col_download_text = st.columns(2)
-
-            with col_download_pdf:
-                pdf_data = create_chat_pdf()
-                if pdf_data is not None:
-                    if st.download_button(
-                        "Download as PDF",
-                        data=pdf_data,
-                        file_name="chat_history.pdf",
-                        mime="application/pdf"
-                    ):
-                        st.success("PDF downloaded successfully!")
-                else:
-                    st.error("Could not generate PDF. Try text format instead.")
-
-            with col_download_text:
-                text_data = create_chat_text()
-                if text_data is not None:
-                    if st.download_button(
-                        "Download as Text",
-                        data=text_data,
-                        file_name="chat_history.txt",
-                        mime="text/plain"
-                    ):
-                        st.success("Text file downloaded successfully!")
-                else:
-                    st.error("Could not generate text file.")
-
-            # Add buttons for chat management
-            st.markdown("### Chat Management")
-            col_clear = st.columns(1)
-            
-            with col_clear[0]:
-                if st.button("Clear Chat"):
-                    st.session_state.messages = []
-                    st.rerun()
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
