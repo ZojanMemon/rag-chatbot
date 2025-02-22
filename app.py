@@ -307,64 +307,124 @@ def main():
             layout="wide"
         )
 
-        # Add custom CSS for layout
+        # Add custom CSS for dark theme and layout
         st.markdown("""
         <style>
+        /* Dark theme */
+        .stApp {
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        
         /* Hide Streamlit branding */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
+        header {visibility: hidden;}
         
-        /* Custom styles for chat container */
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        /* Sidebar styling */
+        .css-1d391kg {
+            background-color: #202123;
         }
         
-        /* Style for input container */
+        /* Chat input container */
         .input-container {
             position: fixed;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            background-color: white;
+            left: 0;
+            right: 0;
+            background-color: #2d2d2d;
             padding: 20px;
-            border-top: 1px solid #e5e5e5;
+            border-top: 1px solid #404040;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
-        /* Add padding to main content to prevent overlap with fixed input */
+        /* Chat input styling */
+        .stTextInput input {
+            background-color: #404040;
+            border: 1px solid #565869;
+            border-radius: 12px;
+            color: white;
+            padding: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        /* Main content area */
         .main-content {
+            max-width: 800px;
+            margin: 0 auto;
             padding-bottom: 100px;
         }
         
-        /* Style for sidebar buttons */
+        /* Message styling */
+        .stChatMessage {
+            background-color: transparent;
+        }
+        
+        /* Custom sidebar button style */
         .stButton > button {
             width: 100%;
-            margin-bottom: 10px;
+            background-color: #343541;
+            color: white;
+            border: 1px solid #565869;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+        
+        .stButton > button:hover {
+            background-color: #404040;
+            border-color: #6e7081;
+        }
+        
+        /* Sidebar sections */
+        .sidebar-section {
+            background-color: #202123;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            background-color: #343541 !important;
+            color: white !important;
+        }
+        
+        /* Selectbox styling */
+        .stSelectbox > div > div {
+            background-color: #343541;
+            color: white;
         }
         </style>
         """, unsafe_allow_html=True)
 
         # Create main columns for layout
-        col_chat, col_sidebar = st.columns([2.5, 1])
+        col_chat, col_sidebar = st.columns([5, 1])
 
         with col_chat:
             # Main chat interface
-            st.title(f"{get_ui_text('title')} 🤖")
+            st.markdown('<div class="main-content">', unsafe_allow_html=True)
             
-            # Container for chat messages
-            chat_container = st.container()
-            with chat_container:
-                st.markdown('<div class="main-content">', unsafe_allow_html=True)
-                for message in st.session_state.messages:
-                    with st.chat_message(message["role"]):
-                        st.markdown(message["content"])
-                st.markdown('</div>', unsafe_allow_html=True)
-
+            # Display chat messages
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+            
             # Fixed input container at bottom
-            st.markdown('<div class="input-container">', unsafe_allow_html=True)
-            if prompt := st.chat_input(get_ui_text("chat_placeholder")):
+            st.markdown(
+                """
+                <div class="input-container">
+                    <div style="width: 800px;">
+                """,
+                unsafe_allow_html=True,
+            )
+            
+            # Chat input
+            if prompt := st.chat_input(""):
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 with st.chat_message("user"):
                     st.markdown(prompt)
@@ -379,91 +439,102 @@ def main():
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
+            
+            st.markdown('</div></div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # Sidebar with settings and information
-        with col_sidebar:
-            with st.sidebar:
-                st.title(f"{get_ui_text('sidebar_title')} ⚙️")
+        # Sidebar
+        with st.sidebar:
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            st.title("Settings ⚙️")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                # About section with icons
-                st.markdown("### About 📖")
-                st.markdown("""
-                This chatbot uses:
-                - 🧠 Gemini Pro for text generation
-                - 🔍 Pinecone for vector storage
-                - ⚡ LangChain for the RAG pipeline
-                - 🌐 Multilingual support (English & Sindhi)
-                """)
+            # About section
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            st.markdown("### About")
+            st.markdown("""
+            This chatbot uses:
+            - 🧠 Gemini Pro for text generation
+            - 🔍 Pinecone for vector storage
+            - ⚡ LangChain for the RAG pipeline
+            - 🌐 Multilingual support (English & Sindhi)
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                # Topics section
-                st.markdown("### Topics 📚")
-                st.markdown("""
-                You can ask questions about:
-                - 📋 Disaster management procedures
-                - 🚨 Emergency protocols
-                - 🛡️ Safety measures
-                - 📊 Risk assessment
-                - 🏥 Relief operations
-                """)
+            # Topics section
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            st.markdown("### Topics")
+            st.markdown("""
+            You can ask questions about:
+            - 📋 Disaster management procedures
+            - 🚨 Emergency protocols
+            - 🛡️ Safety measures
+            - 📊 Risk assessment
+            - 🏥 Relief operations
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                # Tips section
-                st.markdown("### Tips 💡")
-                st.markdown("""
-                For best results:
-                - ✨ Be specific in your questions
-                - 🎯 Ask about one topic at a time
-                - 📝 Use clear, simple language
-                - 🔄 Try rephrasing if needed
-                """)
+            # Tips section
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            st.markdown("### Tips")
+            st.markdown("""
+            For best results:
+            - ✨ Be specific in your questions
+            - 🎯 Ask about one topic at a time
+            - 📝 Use clear, simple language
+            - 🔄 Try rephrasing if needed
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-                # Add spacer
-                st.markdown("<br>" * 3, unsafe_allow_html=True)
+            # Spacer
+            st.markdown("<br>" * 2, unsafe_allow_html=True)
 
-                # Language settings at the bottom
-                with st.expander("🌐 Language Settings", expanded=False):
-                    st.session_state.ui_language = st.selectbox(
-                        get_ui_text("ui_lang_label"),
-                        ["English", "Sindhi"],
-                        key="ui_lang_selector"
-                    )
+            # Bottom actions section
+            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
+            # Language settings
+            with st.expander("🌐 Language Settings", expanded=False):
+                st.session_state.ui_language = st.selectbox(
+                    get_ui_text("ui_lang_label"),
+                    ["English", "Sindhi"],
+                    key="ui_lang_selector"
+                )
 
-                    st.session_state.input_language = st.selectbox(
-                        get_ui_text("input_lang_label"),
-                        ["English", "Sindhi"]
-                    )
+                st.session_state.input_language = st.selectbox(
+                    get_ui_text("input_lang_label"),
+                    ["English", "Sindhi"]
+                )
 
-                    st.session_state.output_language = st.selectbox(
-                        get_ui_text("output_lang_label"),
-                        ["English", "Sindhi"]
-                    )
+                st.session_state.output_language = st.selectbox(
+                    get_ui_text("output_lang_label"),
+                    ["English", "Sindhi"]
+                )
 
-                # Action buttons at the bottom
-                st.markdown("### Actions")
-                if st.button(get_ui_text("clear_button"), use_container_width=True):
-                    st.session_state.messages = []
-                    st.rerun()
+            # Action buttons
+            if st.button("Clear Chat", use_container_width=True):
+                st.session_state.messages = []
+                st.rerun()
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.download_button(
-                        get_ui_text("download_pdf"),
-                        data=create_chat_pdf(),
-                        file_name="chat_history.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    ):
-                        st.success(get_ui_text("success_pdf"))
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.download_button(
+                    "PDF",
+                    data=create_chat_pdf(),
+                    file_name="chat_history.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                ):
+                    st.success("PDF downloaded!")
 
-                with col2:
-                    if st.download_button(
-                        get_ui_text("download_text"),
-                        data=create_chat_text(),
-                        file_name="chat_history.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    ):
-                        st.success(get_ui_text("success_text"))
+            with col2:
+                if st.download_button(
+                    "Text",
+                    data=create_chat_text(),
+                    file_name="chat_history.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                ):
+                    st.success("Text downloaded!")
+            st.markdown('</div>', unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
