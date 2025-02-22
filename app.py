@@ -12,70 +12,6 @@ import io
 import textwrap
 from typing import Literal
 
-# UI Translations
-UI_TRANSLATIONS = {
-    "English": {
-        "title": "Disaster Management Chatbot",
-        "sidebar_title": "Settings",
-        "input_lang_label": "Input Language",
-        "output_lang_label": "Output Language",
-        "ui_lang_label": "Display Language",
-        "chat_placeholder": "Type your message here...",
-        "send_button": "Send",
-        "clear_button": "Clear Chat",
-        "download_title": "Download Chat History",
-        "download_pdf": "Download as PDF",
-        "download_text": "Download as Text",
-        "success_pdf": "PDF downloaded successfully!",
-        "success_text": "Text file downloaded successfully!",
-        "error_pdf": "Could not generate PDF. Try text format instead.",
-        "error_text": "Could not generate text file.",
-        "chat_management": "Chat Management",
-        "instructions": """### Instructions:
-            - Ask questions about disaster management
-            - Choose your preferred language for input and output
-            - Get responses in your selected language
-            - Use clear, simple language""",
-    },
-    "Sindhi": {
-        "title": "آفت جي انتظام جو چيٽ بوٽ",
-        "sidebar_title": "سيٽنگون",
-        "input_lang_label": "ان پٽ ٻولي",
-        "output_lang_label": "آؤٽ پٽ ٻولي",
-        "ui_lang_label": "ڏيکاريندڙ ٻولي",
-        "chat_placeholder": "پنهنجو سوال هتي لکو...",
-        "send_button": "موڪلو",
-        "clear_button": "چيٽ صاف ڪريو",
-        "download_title": "چيٽ جي تاريخ ڊائونلوڊ ڪريو",
-        "download_pdf": "PDF طور ڊائونلوڊ ڪريو",
-        "download_text": "ٽيڪسٽ طور ڊائونلوڊ ڪريو",
-        "success_pdf": "PDF ڊائونلوڊ ٿي وئي!",
-        "success_text": "ٽيڪسٽ فائل ڊائونلوڊ ٿي وئي!",
-        "error_pdf": "PDF نٿي ٺهي سگهي. ٽيڪسٽ فارميٽ استعمال ڪريو.",
-        "error_text": "ٽيڪسٽ فائل نٿي ٺهي سگهي.",
-        "chat_management": "چيٽ جو انتظام",
-        "instructions": """### هدايتون:
-            - آفتن جي انتظام بابت سوال پڇو
-            - ان پٽ ۽ آؤٽ پٽ لاءِ پنهنجي پسند جي ٻولي چونڊيو
-            - پنهنجي چونڊيل ٻولي ۾ جواب وٺو
-            - صاف ۽ سادي ٻولي استعمال ڪريو""",
-    }
-}
-
-# Initialize session state
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "input_language" not in st.session_state:
-    st.session_state.input_language = "English"
-if "output_language" not in st.session_state:
-    st.session_state.output_language = "English"
-if "ui_language" not in st.session_state:
-    st.session_state.ui_language = "English"
-
-def get_ui_text(key: str) -> str:
-    """Get UI text in the selected language."""
-    return UI_TRANSLATIONS[st.session_state.ui_language][key]
-
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -299,242 +235,137 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
+    # Page config
+    st.set_page_config(
+        page_title="Disaster Management RAG Chatbot",
+        page_icon="🤖",
+        layout="wide"
+    )
+    
+    # Header
+    st.title("Disaster Management RAG Chatbot 🤖")
+    st.markdown("""
+    This chatbot can answer questions about disaster management based on the provided documentation.
+    """)
+
     try:
-        # Set page config
-        st.set_page_config(
-            page_title=get_ui_text("title"),
-            page_icon="🤖",
-            layout="wide"
-        )
+        # Initialize RAG system
+        qa_chain, llm = initialize_rag()
 
-        # Add custom CSS for dark theme and layout
-        st.markdown("""
-        <style>
-        /* Dark theme */
-        .stApp {
-            background-color: #1a1a1a;
-            color: #ffffff;
-        }
-        
-        /* Hide Streamlit branding */
-        #MainMenu {visibility: hidden;}
-        footer {visibility: hidden;}
-        header {visibility: hidden;}
-        
-        /* Sidebar styling */
-        .css-1d391kg {
-            background-color: #202123;
-        }
-        
-        /* Chat input container */
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: #2d2d2d;
-            padding: 20px;
-            border-top: 1px solid #404040;
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        /* Chat input styling */
-        .stTextInput input {
-            background-color: #404040;
-            border: 1px solid #565869;
-            border-radius: 12px;
-            color: white;
-            padding: 15px;
-            width: 100%;
-            max-width: 800px;
-        }
-        
-        /* Main content area */
-        .main-content {
-            max-width: 800px;
-            margin: 0 auto;
-            padding-bottom: 100px;
-        }
-        
-        /* Message styling */
-        .stChatMessage {
-            background-color: transparent;
-        }
-        
-        /* Custom sidebar button style */
-        .stButton > button {
-            width: 100%;
-            background-color: #343541;
-            color: white;
-            border: 1px solid #565869;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-        }
-        
-        .stButton > button:hover {
-            background-color: #404040;
-            border-color: #6e7081;
-        }
-        
-        /* Sidebar sections */
-        .sidebar-section {
-            background-color: #202123;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-        
-        /* Expander styling */
-        .streamlit-expanderHeader {
-            background-color: #343541 !important;
-            color: white !important;
-        }
-        
-        /* Selectbox styling */
-        .stSelectbox > div > div {
-            background-color: #343541;
-            color: white;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+        # Create two columns
+        col1, col2 = st.columns([2, 1])
 
-        # Create main columns for layout
-        col_chat, col_sidebar = st.columns([5, 1])
-
-        with col_chat:
-            # Main chat interface
-            st.markdown('<div class="main-content">', unsafe_allow_html=True)
-            
-            # Display chat messages
+        with col1:
+            # Display chat history
             for message in st.session_state.messages:
                 with st.chat_message(message["role"]):
                     st.markdown(message["content"])
-            
-            # Fixed input container at bottom
-            st.markdown(
-                """
-                <div class="input-container">
-                    <div style="width: 800px;">
-                """,
-                unsafe_allow_html=True,
-            )
-            
+
             # Chat input
-            if prompt := st.chat_input(""):
-                st.session_state.messages.append({"role": "user", "content": prompt})
+            if prompt := st.chat_input("Ask your question here"):
+                # Display user message
                 with st.chat_message("user"):
                     st.markdown(prompt)
+                st.session_state.messages.append({"role": "user", "content": prompt})
 
+                # Display assistant response
                 with st.chat_message("assistant"):
                     with st.spinner("Thinking..."):
                         if is_general_chat(prompt):
                             response_text = get_general_response(prompt)
                         else:
-                            qa_chain, llm = initialize_rag()
                             response = qa_chain({"query": prompt})
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+        # Sidebar with information
+        with col2:
+            st.title("Settings")
             
-            st.markdown('</div></div>', unsafe_allow_html=True)
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Language selection
+            st.markdown("### Language Settings")
+            input_lang = st.selectbox(
+                "Select Input Language",
+                ["English", "Sindhi"],
+                key="input_language_selector",
+                index=0 if st.session_state.input_language == "English" else 1
+            )
+            output_lang = st.selectbox(
+                "Select Output Language",
+                ["English", "Sindhi"],
+                key="output_language_selector",
+                index=0 if st.session_state.output_language == "English" else 1
+            )
+            
+            # Update session state if language changed
+            if input_lang != st.session_state.input_language:
+                st.session_state.input_language = input_lang
+                st.rerun()
+            if output_lang != st.session_state.output_language:
+                st.session_state.output_language = output_lang
+                st.rerun()
 
-        # Sidebar
-        with st.sidebar:
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            st.title("Settings ⚙️")
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # About section
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            st.markdown("### About")
+            st.title("About")
             st.markdown("""
+            ### Features
             This chatbot uses:
             - 🧠 Gemini Pro for text generation
             - 🔍 Pinecone for vector storage
             - ⚡ LangChain for the RAG pipeline
             - 🌐 Multilingual support (English & Sindhi)
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # Topics section
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            st.markdown("### Topics")
-            st.markdown("""
+            
+            ### Topics
             You can ask questions about:
             - 📋 Disaster management procedures
             - 🚨 Emergency protocols
             - 🛡️ Safety measures
             - 📊 Risk assessment
             - 🏥 Relief operations
+            
+            ### Tips
+            - Be specific in your questions
+            - Ask about one topic at a time
+            - Use clear, simple language
             """)
-            st.markdown('</div>', unsafe_allow_html=True)
 
-            # Tips section
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            st.markdown("### Tips")
-            st.markdown("""
-            For best results:
-            - ✨ Be specific in your questions
-            - 🎯 Ask about one topic at a time
-            - 📝 Use clear, simple language
-            - 🔄 Try rephrasing if needed
-            """)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.write("Download Chat History:")
+            col_download_pdf, col_download_text = st.columns(2)
 
-            # Spacer
-            st.markdown("<br>" * 2, unsafe_allow_html=True)
+            with col_download_pdf:
+                pdf_data = create_chat_pdf()
+                if pdf_data is not None:
+                    if st.download_button(
+                        "Download as PDF",
+                        data=pdf_data,
+                        file_name="chat_history.pdf",
+                        mime="application/pdf"
+                    ):
+                        st.success("PDF downloaded successfully!")
+                else:
+                    st.error("Could not generate PDF. Try text format instead.")
 
-            # Bottom actions section
-            st.markdown('<div class="sidebar-section">', unsafe_allow_html=True)
-            # Language settings
-            with st.expander("🌐 Language Settings", expanded=False):
-                st.session_state.ui_language = st.selectbox(
-                    get_ui_text("ui_lang_label"),
-                    ["English", "Sindhi"],
-                    key="ui_lang_selector"
-                )
+            with col_download_text:
+                text_data = create_chat_text()
+                if text_data is not None:
+                    if st.download_button(
+                        "Download as Text",
+                        data=text_data,
+                        file_name="chat_history.txt",
+                        mime="text/plain"
+                    ):
+                        st.success("Text file downloaded successfully!")
+                else:
+                    st.error("Could not generate text file.")
 
-                st.session_state.input_language = st.selectbox(
-                    get_ui_text("input_lang_label"),
-                    ["English", "Sindhi"]
-                )
-
-                st.session_state.output_language = st.selectbox(
-                    get_ui_text("output_lang_label"),
-                    ["English", "Sindhi"]
-                )
-
-            # Action buttons
-            if st.button("Clear Chat", use_container_width=True):
-                st.session_state.messages = []
-                st.rerun()
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.download_button(
-                    "PDF",
-                    data=create_chat_pdf(),
-                    file_name="chat_history.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                ):
-                    st.success("PDF downloaded!")
-
-            with col2:
-                if st.download_button(
-                    "Text",
-                    data=create_chat_text(),
-                    file_name="chat_history.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                ):
-                    st.success("Text downloaded!")
-            st.markdown('</div>', unsafe_allow_html=True)
+            # Add buttons for chat management
+            st.markdown("### Chat Management")
+            col_clear = st.columns(1)
+            
+            with col_clear[0]:
+                if st.button("Clear Chat"):
+                    st.session_state.messages = []
+                    st.rerun()
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
