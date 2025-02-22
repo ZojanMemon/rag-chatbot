@@ -36,11 +36,11 @@ def create_chat_pdf():
         # Add first page
         pdf.add_page()
         
-        # Use default font for English
+        # Set font
         pdf.set_font("Arial", "B", 16)
         
         # Add title
-        pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+        pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", 0, 1, 'C')
         pdf.ln(10)
         
         # Add chat messages
@@ -48,28 +48,30 @@ def create_chat_pdf():
             # Add role header
             role = "Bot" if message["role"] == "assistant" else "User"
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, f"{role}:", ln=True)
+            pdf.cell(0, 10, role + ":", 0, 1)
             
             # Add message content
             pdf.set_font("Arial", "", 11)
-            text = message["content"]
             
-            try:
-                # Try to encode text to check for Unicode characters
-                text.encode('latin-1')
-            except UnicodeEncodeError:
-                # If Unicode characters present, use a simpler representation
-                text = f"[Message in {st.session_state.output_language}]"
+            # Handle text content
+            content = message["content"]
+            if st.session_state.output_language == "Sindhi":
+                content = "[Message in Sindhi]"
             
-            # Word wrap the text
-            wrapped_text = textwrap.fill(text, width=85)
-            for line in wrapped_text.split('\n'):
-                pdf.multi_cell(0, 7, line)
+            # Word wrap and write content
+            lines = textwrap.wrap(content, width=85)
+            for line in lines:
+                pdf.cell(0, 7, line, 0, 1)
             
             pdf.ln(5)
         
-        # Return PDF as bytes
-        return bytes(pdf.output())
+        # Save to memory
+        try:
+            pdf_data = pdf.output(dest='S').encode('latin-1')
+            return pdf_data
+        except Exception as e:
+            st.error(f"Error in PDF output: {str(e)}")
+            return None
         
     except Exception as e:
         st.error(f"Error generating PDF: {str(e)}")
