@@ -307,22 +307,63 @@ def main():
             layout="wide"
         )
 
+        # Add custom CSS for layout
+        st.markdown("""
+        <style>
+        /* Hide Streamlit branding */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        
+        /* Custom styles for chat container */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Style for input container */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid #e5e5e5;
+        }
+        
+        /* Add padding to main content to prevent overlap with fixed input */
+        .main-content {
+            padding-bottom: 100px;
+        }
+        
+        /* Style for sidebar buttons */
+        .stButton > button {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         # Create main columns for layout
-        col_chat, col_sidebar = st.columns([2, 1])
+        col_chat, col_sidebar = st.columns([2.5, 1])
 
         with col_chat:
             # Main chat interface
             st.title(f"{get_ui_text('title')} 🤖")
-            st.markdown("""
-            This chatbot can answer questions about disaster management based on the provided documentation.
-            """)
+            
+            # Container for chat messages
+            chat_container = st.container()
+            with chat_container:
+                st.markdown('<div class="main-content">', unsafe_allow_html=True)
+                for message in st.session_state.messages:
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+                st.markdown('</div>', unsafe_allow_html=True)
 
-            # Display chat messages
-            for message in st.session_state.messages:
-                with st.chat_message(message["role"]):
-                    st.markdown(message["content"])
-
-            # Chat input
+            # Fixed input container at bottom
+            st.markdown('<div class="input-container">', unsafe_allow_html=True)
             if prompt := st.chat_input(get_ui_text("chat_placeholder")):
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 with st.chat_message("user"):
@@ -338,58 +379,12 @@ def main():
                             response_text = response['result']
                         st.markdown(response_text)
                 st.session_state.messages.append({"role": "assistant", "content": response_text})
-
-            # Chat management section at the bottom
-            st.markdown("---")
-            management_col1, management_col2, management_col3 = st.columns([1, 1, 1])
-            
-            with management_col1:
-                if st.button(get_ui_text("clear_button"), use_container_width=True):
-                    st.session_state.messages = []
-                    st.rerun()
-
-            with management_col2:
-                if st.download_button(
-                    get_ui_text("download_pdf"),
-                    data=create_chat_pdf(),
-                    file_name="chat_history.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                ):
-                    st.success(get_ui_text("success_pdf"))
-
-            with management_col3:
-                if st.download_button(
-                    get_ui_text("download_text"),
-                    data=create_chat_text(),
-                    file_name="chat_history.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                ):
-                    st.success(get_ui_text("success_text"))
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # Sidebar with settings and information
         with col_sidebar:
             with st.sidebar:
                 st.title(f"{get_ui_text('sidebar_title')} ⚙️")
-
-                # Language settings in an expander
-                with st.expander("🌐 Language Settings", expanded=True):
-                    st.session_state.ui_language = st.selectbox(
-                        get_ui_text("ui_lang_label"),
-                        ["English", "Sindhi"],
-                        key="ui_lang_selector"
-                    )
-
-                    st.session_state.input_language = st.selectbox(
-                        get_ui_text("input_lang_label"),
-                        ["English", "Sindhi"]
-                    )
-
-                    st.session_state.output_language = st.selectbox(
-                        get_ui_text("output_lang_label"),
-                        ["English", "Sindhi"]
-                    )
 
                 # About section with icons
                 st.markdown("### About 📖")
@@ -421,6 +416,54 @@ def main():
                 - 📝 Use clear, simple language
                 - 🔄 Try rephrasing if needed
                 """)
+
+                # Add spacer
+                st.markdown("<br>" * 3, unsafe_allow_html=True)
+
+                # Language settings at the bottom
+                with st.expander("🌐 Language Settings", expanded=False):
+                    st.session_state.ui_language = st.selectbox(
+                        get_ui_text("ui_lang_label"),
+                        ["English", "Sindhi"],
+                        key="ui_lang_selector"
+                    )
+
+                    st.session_state.input_language = st.selectbox(
+                        get_ui_text("input_lang_label"),
+                        ["English", "Sindhi"]
+                    )
+
+                    st.session_state.output_language = st.selectbox(
+                        get_ui_text("output_lang_label"),
+                        ["English", "Sindhi"]
+                    )
+
+                # Action buttons at the bottom
+                st.markdown("### Actions")
+                if st.button(get_ui_text("clear_button"), use_container_width=True):
+                    st.session_state.messages = []
+                    st.rerun()
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.download_button(
+                        get_ui_text("download_pdf"),
+                        data=create_chat_pdf(),
+                        file_name="chat_history.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    ):
+                        st.success(get_ui_text("success_pdf"))
+
+                with col2:
+                    if st.download_button(
+                        get_ui_text("download_text"),
+                        data=create_chat_text(),
+                        file_name="chat_history.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    ):
+                        st.success(get_ui_text("success_text"))
 
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
