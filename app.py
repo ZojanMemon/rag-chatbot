@@ -301,96 +301,127 @@ Response (remember to be natural and helpful):""",
 def main():
     try:
         # Set page config
-        st.set_page_config(page_title=get_ui_text("title"), layout="wide")
-        
-        # Sidebar
-        with st.sidebar:
-            st.title(get_ui_text("sidebar_title"))
+        st.set_page_config(
+            page_title=get_ui_text("title"),
+            page_icon="🤖",
+            layout="wide"
+        )
+
+        # Create main columns for layout
+        col_chat, col_sidebar = st.columns([2, 1])
+
+        with col_chat:
+            # Main chat interface
+            st.title(f"{get_ui_text('title')} 🤖")
+            st.markdown("""
+            This chatbot can answer questions about disaster management based on the provided documentation.
+            """)
+
+            # Display chat messages
+            for message in st.session_state.messages:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
+
+            # Chat input
+            if prompt := st.chat_input(get_ui_text("chat_placeholder")):
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                with st.chat_message("user"):
+                    st.markdown(prompt)
+
+                with st.chat_message("assistant"):
+                    with st.spinner("Thinking..."):
+                        if is_general_chat(prompt):
+                            response_text = get_general_response(prompt)
+                        else:
+                            qa_chain, llm = initialize_rag()
+                            response = qa_chain({"query": prompt})
+                            response_text = response['result']
+                        st.markdown(response_text)
+                st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+            # Chat management section at the bottom
+            st.markdown("---")
+            management_col1, management_col2, management_col3 = st.columns([1, 1, 1])
             
-            # Language settings
-            st.session_state.input_language = st.selectbox(
-                get_ui_text("input_lang_label"),
-                ["English", "Sindhi"]
-            )
-            
-            st.session_state.output_language = st.selectbox(
-                get_ui_text("output_lang_label"),
-                ["English", "Sindhi"]
-            )
-            
-            st.session_state.ui_language = st.selectbox(
-                get_ui_text("ui_lang_label"),
-                ["English", "Sindhi"],
-                key="ui_lang_selector"
-            )
-        
-        # Main chat interface
-        st.title(get_ui_text("title"))
-        
-        # Display chat messages
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        # Chat input
-        if prompt := st.chat_input(get_ui_text("chat_placeholder")):
-            st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            
-            with st.chat_message("assistant"):
-                if is_general_chat(prompt):
-                    response_text = get_general_response(prompt)
-                else:
-                    qa_chain, llm = initialize_rag()
-                    response = qa_chain({"query": prompt})
-                    response_text = response['result']
-                st.markdown(response_text)
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
-        
-        # Instructions
-        with st.sidebar:
-            st.markdown(get_ui_text("instructions"))
-        
-        # Download options
-        st.write(get_ui_text("download_title"))
-        col_download_pdf, col_download_text = st.columns(2)
-        
-        with col_download_pdf:
-            pdf_data = create_chat_pdf()
-            if pdf_data is not None:
+            with management_col1:
+                if st.button(get_ui_text("clear_button"), use_container_width=True):
+                    st.session_state.messages = []
+                    st.rerun()
+
+            with management_col2:
                 if st.download_button(
                     get_ui_text("download_pdf"),
-                    data=pdf_data,
+                    data=create_chat_pdf(),
                     file_name="chat_history.pdf",
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    use_container_width=True
                 ):
                     st.success(get_ui_text("success_pdf"))
-            else:
-                st.error(get_ui_text("error_pdf"))
-        
-        with col_download_text:
-            text_data = create_chat_text()
-            if text_data is not None:
+
+            with management_col3:
                 if st.download_button(
                     get_ui_text("download_text"),
-                    data=text_data,
+                    data=create_chat_text(),
                     file_name="chat_history.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
                 ):
                     st.success(get_ui_text("success_text"))
-            else:
-                st.error(get_ui_text("error_text"))
-        
-        # Chat management
-        st.markdown(f"### {get_ui_text('chat_management')}")
-        col_clear = st.columns(1)
-        
-        with col_clear[0]:
-            if st.button(get_ui_text("clear_button")):
-                st.session_state.messages = []
-                st.rerun()
-    
+
+        # Sidebar with settings and information
+        with col_sidebar:
+            with st.sidebar:
+                st.title(f"{get_ui_text('sidebar_title')} ⚙️")
+
+                # Language settings in an expander
+                with st.expander("🌐 Language Settings", expanded=True):
+                    st.session_state.ui_language = st.selectbox(
+                        get_ui_text("ui_lang_label"),
+                        ["English", "Sindhi"],
+                        key="ui_lang_selector"
+                    )
+
+                    st.session_state.input_language = st.selectbox(
+                        get_ui_text("input_lang_label"),
+                        ["English", "Sindhi"]
+                    )
+
+                    st.session_state.output_language = st.selectbox(
+                        get_ui_text("output_lang_label"),
+                        ["English", "Sindhi"]
+                    )
+
+                # About section with icons
+                st.markdown("### About 📖")
+                st.markdown("""
+                This chatbot uses:
+                - 🧠 Gemini Pro for text generation
+                - 🔍 Pinecone for vector storage
+                - ⚡ LangChain for the RAG pipeline
+                - 🌐 Multilingual support (English & Sindhi)
+                """)
+
+                # Topics section
+                st.markdown("### Topics 📚")
+                st.markdown("""
+                You can ask questions about:
+                - 📋 Disaster management procedures
+                - 🚨 Emergency protocols
+                - 🛡️ Safety measures
+                - 📊 Risk assessment
+                - 🏥 Relief operations
+                """)
+
+                # Tips section
+                st.markdown("### Tips 💡")
+                st.markdown("""
+                For best results:
+                - ✨ Be specific in your questions
+                - 🎯 Ask about one topic at a time
+                - 📝 Use clear, simple language
+                - 🔄 Try rephrasing if needed
+                """)
+
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
 
