@@ -32,63 +32,32 @@ def create_chat_pdf():
         # Create PDF object
         pdf = FPDF()
         pdf.set_auto_page_break(auto=True, margin=15)
-        
-        # Add first page
         pdf.add_page()
         
-        # Set font
+        # Title
         pdf.set_font("Arial", "B", 16)
-        
-        # Add title
         pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", 0, 1, 'C')
         pdf.ln(10)
         
-        # Add chat messages
+        # Chat messages
         for message in st.session_state.messages:
-            # Add role header
+            # Role header
             role = "Bot" if message["role"] == "assistant" else "User"
             pdf.set_font("Arial", "B", 12)
             pdf.cell(0, 10, role + ":", 0, 1)
             
-            # Add message content
+            # Message content
             pdf.set_font("Arial", "", 11)
-            
-            # Handle text content based on role and language
             content = message["content"]
             
-            # For user messages, check input language
-            if role == "User" and st.session_state.input_language == "Sindhi":
-                content = "[Message in Sindhi]"
-            # For bot messages, check output language
-            elif role == "Bot" and st.session_state.output_language == "Sindhi":
-                content = "[Message in Sindhi]"
-            
-            # Handle non-Sindhi content
-            if content != "[Message in Sindhi]":
-                try:
-                    # Try to encode the content to check for special characters
-                    content.encode('latin-1')
-                except UnicodeEncodeError:
-                    # If encoding fails, use a placeholder
-                    content = "[Message contains special characters]"
-            
-            # Word wrap and write content
+            # Write content line by line
             lines = textwrap.wrap(content, width=85)
             for line in lines:
-                try:
-                    pdf.cell(0, 7, line, 0, 1)
-                except:
-                    pdf.cell(0, 7, "[Text contains unsupported characters]", 0, 1)
-            
+                pdf.cell(0, 7, line, 0, 1)
             pdf.ln(5)
         
-        # Save to memory
-        try:
-            pdf_data = pdf.output(dest='S').encode('latin-1')
-            return pdf_data
-        except Exception as e:
-            st.error(f"Error in PDF output: {str(e)}")
-            return None
+        # Output PDF
+        return pdf.output(dest='S').encode('latin-1', errors='replace')
         
     except Exception as e:
         st.error(f"Error generating PDF: {str(e)}")
