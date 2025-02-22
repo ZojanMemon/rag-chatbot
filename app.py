@@ -29,9 +29,10 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
     try:
-        # Create PDF object
+        # Create PDF object with wider margins
         pdf = FPDF()
-        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.set_margins(20, 20, 20)  # left, top, right margins in mm
+        pdf.set_auto_page_break(auto=True, margin=20)
         
         # Add first page
         pdf.add_page()
@@ -39,8 +40,11 @@ def create_chat_pdf():
         # Use default font for English
         pdf.set_font("Arial", "B", 16)
         
+        # Calculate usable width
+        page_width = pdf.w - pdf.l_margin - pdf.r_margin
+        
         # Add title
-        pdf.cell(0, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
+        pdf.cell(page_width, 10, "Disaster Management Chatbot - Conversation Log", ln=True, align='C')
         pdf.ln(10)
         
         # Add chat messages
@@ -48,7 +52,7 @@ def create_chat_pdf():
             # Add role header
             role = "Bot" if message["role"] == "assistant" else "User"
             pdf.set_font("Arial", "B", 12)
-            pdf.cell(0, 10, f"{role}:", ln=True)
+            pdf.cell(page_width, 10, f"{role}:", ln=True)
             
             # Add message content
             pdf.set_font("Arial", "", 11)
@@ -61,10 +65,11 @@ def create_chat_pdf():
                 # If Unicode characters present, use a simpler representation
                 text = f"[Message in {st.session_state.output_language}]"
             
-            # Word wrap the text
-            wrapped_text = textwrap.fill(text, width=85)
+            # Word wrap the text with proper width
+            wrapped_text = textwrap.fill(text, width=70)  # Reduced width for safety
             for line in wrapped_text.split('\n'):
-                pdf.multi_cell(0, 7, line)
+                # Use multi_cell with calculated width
+                pdf.multi_cell(page_width, 7, line)
             
             pdf.ln(5)
         
@@ -245,6 +250,10 @@ def main():
     # Custom CSS for layout
     st.markdown("""
         <style>
+        /* Hide Streamlit's default elements */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        
         /* Main container styling */
         .main {
             padding: 0;
@@ -257,7 +266,7 @@ def main():
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 100px;  /* Space for input box */
+            padding-bottom: 120px;  /* Increased space for input box */
         }
         
         /* Fixed input container at bottom */
@@ -271,6 +280,15 @@ def main():
             padding: 20px;
             border-top: 1px solid #ddd;
             z-index: 1000;
+            margin-bottom: 0;  /* Remove any bottom margin */
+        }
+        
+        /* Remove bottom padding from body */
+        body {
+            padding-bottom: 0 !important;
+            margin-bottom: 0 !important;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
         
         /* Sidebar styling */
@@ -281,6 +299,17 @@ def main():
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
+        }
+        
+        /* Remove any extra space at bottom */
+        .stApp {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        
+        .element-container:last-of-type {
+            margin-bottom: 0 !important;
+            padding-bottom: 0 !important;
         }
         </style>
     """, unsafe_allow_html=True)
