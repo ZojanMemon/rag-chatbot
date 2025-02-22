@@ -29,94 +29,78 @@ def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
 def create_chat_pdf():
     """Generate a PDF file of chat history with proper formatting."""
     try:
-        # Create PDF object with wider margins
+        # Debug: Print number of messages
+        print(f"Generating PDF with {len(st.session_state.messages)} messages")
+        
+        # Create PDF object
         pdf = FPDF()
-        pdf.set_margins(20, 20, 20)  # left, top, right margins in mm
-        pdf.set_auto_page_break(auto=True, margin=20)
-        
-        # Add first page
         pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=15)
         
-        # Calculate usable width
-        page_width = pdf.w - pdf.l_margin - pdf.r_margin
+        # Set font and margins
+        pdf.set_margins(15, 15, 15)
+        pdf.set_font("Arial", "B", 14)
         
         # Add title
-        pdf.set_font("Arial", "B", 14)
-        pdf.cell(page_width, 10, "Disaster Management Chatbot - Chat History", ln=True, align='C')
+        pdf.cell(0, 10, "Disaster Management Chatbot - Chat History", ln=True, align='C')
         pdf.ln(5)
         
         # Add timestamp
         pdf.set_font("Arial", "", 10)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        pdf.cell(page_width, 10, f"Generated on: {timestamp}", ln=True, align='R')
+        pdf.cell(0, 5, f"Generated on: {timestamp}", ln=True, align='R')
         pdf.ln(10)
         
-        # Function to safely wrap text
-        def safe_wrap_text(text, width):
-            # Remove any null bytes or problematic characters
-            text = ''.join(char for char in text if ord(char) >= 32)
-            # Split into paragraphs
-            paragraphs = text.split('\n')
-            # Wrap each paragraph
-            wrapped_paragraphs = []
-            for para in paragraphs:
-                # Handle empty paragraphs
-                if not para.strip():
-                    wrapped_paragraphs.append('')
-                    continue
-                # Wrap text
-                wrapped = textwrap.fill(para, width=width)
-                wrapped_paragraphs.extend(wrapped.split('\n'))
-            return wrapped_paragraphs
-
-        # Add chat messages
-        for message in st.session_state.messages:
+        # Process each message
+        for idx, message in enumerate(st.session_state.messages):
             try:
-                # Add role header with background
-                role = "Bot" if message["role"] == "assistant" else "User"
-                pdf.set_font("Arial", "B", 11)
-                pdf.set_fill_color(240, 240, 240)  # Light gray background
-                pdf.cell(page_width, 8, f"{role}:", ln=True, fill=True)
+                # Debug: Print message being processed
+                print(f"Processing message {idx + 1}")
                 
-                # Add message content
+                # Set role font
+                pdf.set_font("Arial", "B", 11)
+                role = "Bot" if message["role"] == "assistant" else "User"
+                pdf.cell(0, 8, f"{role}:", ln=True)
+                
+                # Set content font
                 pdf.set_font("Arial", "", 10)
                 
-                # Get message text
-                text = message["content"]
-                if not text:  # Skip empty messages
+                # Get and process content
+                content = message.get("content", "")
+                if not content:
+                    print(f"Message {idx + 1} has no content")
                     continue
-                
+                    
+                # Handle non-ASCII text
                 try:
-                    # Try to encode text to check for Unicode characters
-                    text.encode('latin-1')
+                    content.encode('ascii', 'strict')
                 except UnicodeEncodeError:
-                    # If Unicode characters present, use a simpler representation
-                    text = f"[Message in {st.session_state.output_language}]"
+                    content = f"[Message in {st.session_state.output_language}]"
                 
-                # Wrap and write text
-                wrapped_lines = safe_wrap_text(text, width=60)  # Reduced width for safety
-                
-                # Add some padding
-                pdf.ln(2)
-                
-                # Write each line
-                for line in wrapped_lines:
-                    if line.strip():  # Only write non-empty lines
-                        pdf.multi_cell(page_width, 6, line)
-                
-                # Add space between messages
+                # Write content
+                pdf.multi_cell(0, 6, content)
                 pdf.ln(5)
                 
-            except Exception as msg_error:
-                # Log the error but continue with other messages
-                print(f"Error processing message: {str(msg_error)}")
+                # Debug: Print success
+                print(f"Successfully processed message {idx + 1}")
+                
+            except Exception as e:
+                print(f"Error processing message {idx + 1}: {str(e)}")
                 continue
         
-        # Return PDF as bytes
-        return bytes(pdf.output())
-        
+        # Generate PDF
+        try:
+            pdf_bytes = bytes(pdf.output())
+            print("PDF generated successfully")
+            return pdf_bytes
+        except Exception as e:
+            print(f"Error in final PDF generation: {str(e)}")
+            return None
+            
     except Exception as e:
-        st.error(f"Error generating PDF: {str(e)}")
+        error_msg = f"Error generating PDF: {str(e)}"
+        print(error_msg)
+        st.error(error_msg)
         return None
 
 def create_chat_text():
@@ -414,8 +398,10 @@ def main():
                 col_download_pdf, col_download_text = st.columns(2)
                 
                 with col_download_pdf:
+                    print("Attempting to generate PDF...")
                     pdf_data = create_chat_pdf()
                     if pdf_data is not None:
+                        print(f"PDF data generated, size: {len(pdf_data)} bytes")
                         if st.download_button(
                             "Download PDF",
                             data=pdf_data,
@@ -423,12 +409,16 @@ def main():
                             mime="application/pdf"
                         ):
                             st.success("PDF downloaded!")
+                            print("PDF download initiated")
                     else:
                         st.error("PDF generation failed")
+                        print("PDF generation returned None")
                 
                 with col_download_text:
+                    print("Attempting to generate text file...")
                     text_data = create_chat_text()
                     if text_data is not None:
+                        print(f"Text data generated, size: {len(text_data)} bytes")
                         if st.download_button(
                             "Download Text",
                             data=text_data,
@@ -436,8 +426,10 @@ def main():
                             mime="text/plain"
                         ):
                             st.success("Text downloaded!")
+                            print("Text download initiated")
                     else:
                         st.error("Text generation failed")
+                        print("Text generation returned None")
             
             # Clear chat button at the bottom of sidebar
             if st.button("🗑️ Clear Chat History"):
