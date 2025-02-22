@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone as PineconeClient
+import pinecone
 from datetime import datetime
 from io import BytesIO
 from reportlab.lib import colors
@@ -212,7 +212,7 @@ def initialize_rag():
         genai.configure(api_key=GOOGLE_API_KEY)
 
         # Initialize Pinecone
-        pc = PineconeClient(api_key=PINECONE_API_KEY)
+        pc = pinecone.init(api_key=PINECONE_API_KEY, environment='us-west1-gcp')
 
         # Initialize embeddings
         try:
