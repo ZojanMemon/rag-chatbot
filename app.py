@@ -246,10 +246,6 @@ def main():
         layout="wide"
     )
 
-    # Initialize session state for messages if not exists
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
     # Custom CSS for modern, minimalistic design
     st.markdown("""
         <style>
@@ -257,11 +253,15 @@ def main():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
         
         * {
-            font-family: 'Inter', sans-serif !important;
+            font-family: 'Inter', sans-serif;
         }
         
-        .stApp {
-            background-color: #f8f9fa !important;
+        /* Main container */
+        .main {
+            background-color: #f8f9fa;
+            padding: 0;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
         /* Chat container */
@@ -273,139 +273,240 @@ def main():
         }
         
         /* Message styling */
-        .chat-message {
-            display: flex;
+        .message {
+            padding: 1.5rem;
+            border-radius: 12px;
             margin: 1rem 0;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            min-height: 50px;
-            line-height: 1.5;
-        }
-        
-        .user-message {
-            background-color: #e3f2fd;
-            margin-left: 20%;
-            margin-right: 1rem;
-            border: 1px solid #bbdefb;
-        }
-        
-        .bot-message {
-            background-color: white;
-            margin-right: 20%;
-            margin-left: 1rem;
-            border: 1px solid #e0e0e0;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
-        /* Sidebar styling */
-        section[data-testid="stSidebar"] {
-            background-color: white;
-            border-right: 1px solid #eee;
-            padding: 2rem 1rem;
-        }
-        
-        section[data-testid="stSidebar"] .block-container {
-            padding-top: 0;
-        }
-        
-        /* Buttons styling */
-        .stButton button {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            color: #212529;
-            font-weight: 500;
-            padding: 0.5rem 1rem;
-            transition: all 0.2s;
-        }
-        
-        .stButton button:hover {
+        /* User message */
+        .user-message {
             background-color: #e9ecef;
-            border-color: #dee2e6;
+            margin-left: 2rem;
         }
         
-        /* Input styling */
-        .stTextInput input {
-            border-radius: 0.5rem !important;
-            border: 1px solid #dee2e6 !important;
-            padding: 0.75rem !important;
+        /* Bot message */
+        .bot-message {
+            background-color: #ffffff;
+            margin-right: 2rem;
+            border: 1px solid #e9ecef;
         }
         
-        .stTextInput input:focus {
-            border-color: #bbdefb !important;
-            box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.25) !important;
+        /* Input container */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            background-color: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-top: 1px solid #eee;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
         }
         
-        /* Title styling */
-        .main-title {
-            color: #1a73e8;
-            font-weight: 600;
-            font-size: 2rem;
-            margin-bottom: 2rem;
-            text-align: center;
+        /* Sidebar styling */
+        .css-1d391kg {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-right: 1px solid #eee;
         }
         
-        /* Chat messages container */
-        .stChatMessageContent {
-            background-color: transparent !important;
-            border: none !important;
-            padding: 0 !important;
+        /* Streamlit elements */
+        div.stButton > button {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            background-color: #ffffff;
+            color: #1f2937;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
         
-        .stMarkdown {
-            min-height: 40px;
+        div.stButton > button:hover {
+            background-color: #f3f4f6;
+            border-color: #c0c0c0;
+        }
+        
+        /* Chat input styling */
+        .stTextInput > div > div > input {
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+        }
+        
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            background-color: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            padding: 0.75rem;
         }
         
         /* Success message styling */
         .stSuccess {
-            background-color: #d1fae5 !important;
-            color: #065f46 !important;
-            padding: 0.75rem !important;
-            border-radius: 0.5rem !important;
+            background-color: #d1fae5;
+            color: #065f46;
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+        
+        /* Title styling */
+        h1 {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 1.875rem;
+            margin-bottom: 2rem;
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
         }
         </style>
     """, unsafe_allow_html=True)
-    
-    try:
-        # Initialize RAG system
-        qa_chain, llm = initialize_rag()
-        
-        # Main chat interface
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-        
-        # Display chat title
-        st.markdown('<h1 class="main-title">Disaster Management Assistant 🤖</h1>', unsafe_allow_html=True)
-        
-        # Display chat messages
-        for message in st.session_state.messages:
-            message_class = "bot-message" if message["role"] == "assistant" else "user-message"
-            st.markdown(f'<div class="chat-message {message_class}">{message["content"]}</div>', unsafe_allow_html=True)
 
-        # Chat input
-        if prompt := st.chat_input("Ask your question here..."):
-            # Add user message
-            st.markdown(f'<div class="chat-message user-message">{prompt}</div>', unsafe_allow_html=True)
-            st.session_state.messages.append({"role": "user", "content": prompt})
+    # Sidebar with settings and info
+    with st.sidebar:
+        st.title("Settings & Info")
+        
+        # Language Settings in an expander
+        with st.expander("🌐 Language Settings", expanded=False):
+            input_lang = st.selectbox(
+                "Select Input Language",
+                ["English", "Sindhi"],
+                key="input_language_selector",
+                index=0 if st.session_state.input_language == "English" else 1
+            )
+            output_lang = st.selectbox(
+                "Select Output Language",
+                ["English", "Sindhi"],
+                key="output_language_selector",
+                index=0 if st.session_state.output_language == "English" else 1
+            )
             
-            # Generate and add assistant response
-            with st.spinner("Thinking..."):
-                if is_general_chat(prompt):
-                    response_text = get_general_response(prompt)
-                else:
-                    response = qa_chain({"query": prompt})
-                    response_text = response['result']
+            # Update session state if language changed
+            if input_lang != st.session_state.input_language:
+                st.session_state.input_language = input_lang
+            if output_lang != st.session_state.output_language:
+                st.session_state.output_language = output_lang
+        
+        # About section in an expander
+        with st.expander("ℹ️ About", expanded=False):
+            st.markdown("""
+            ### Features
+            This chatbot uses:
+            - 🧠 Gemini Pro for text generation
+            - 🔍 Pinecone for vector storage
+            - ⚡ LangChain for the RAG pipeline
+            - 🌐 Multilingual support (English & Sindhi)
+            
+            ### Topics
+            You can ask questions about:
+            - 📋 Disaster management procedures
+            - 🚨 Emergency protocols
+            - 🛡️ Safety measures
+            - 📊 Risk assessment
+            - 🏥 Relief operations
+            
+            ### Tips
+            - Be specific in your questions
+            - Ask about one topic at a time
+            - Use clear, simple language
+            """)
+        
+        # Download options in an expander
+        with st.expander("💾 Download Chat History", expanded=False):
+            col_download_pdf, col_download_text = st.columns(2)
+            
+            with col_download_pdf:
+                if st.button("Generate PDF"):
+                    st.session_state.pdf_data = create_chat_pdf()
+                    st.success("PDF generated! Click download button below.")
                 
-                st.markdown(f'<div class="chat-message bot-message">{response_text}</div>', unsafe_allow_html=True)
-                st.session_state.messages.append({"role": "assistant", "content": response_text})
+                if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
+                    if st.download_button(
+                        "Download PDF",
+                        data=st.session_state.pdf_data,
+                        file_name="chat_history.pdf",
+                        mime="application/pdf"
+                    ):
+                        st.success("PDF downloaded!")
             
-            # Update PDF data if exists
-            if "pdf_data" in st.session_state:
-                st.session_state.pdf_data = create_chat_pdf()
+            with col_download_text:
+                text_data = create_chat_text()
+                if text_data is not None:
+                    if st.download_button(
+                        "Download Text",
+                        data=text_data,
+                        file_name="chat_history.txt",
+                        mime="text/plain"
+                    ):
+                        st.success("Text downloaded!")
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Clear chat button at the bottom of sidebar
+        if st.button("🗑️ Clear Chat History"):
+            st.session_state.messages = []
+            if "pdf_data" in st.session_state:
+                del st.session_state.pdf_data
+            st.rerun()
 
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+    # Main chat interface
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    
+    # Display chat title
+    st.title("Disaster Management Assistant 🤖")
+    
+    # Display chat messages
+    for message in st.session_state.messages:
+        if message["role"] == "assistant":
+            st.markdown(f'<div class="message bot-message">{message["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="message user-message">{message["content"]}</div>', unsafe_allow_html=True)
+
+    # Fixed input box at bottom
+    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+    if prompt := st.chat_input("Ask your question here"):
+        # Display user message
+        st.markdown(f'<div class="message user-message">{prompt}</div>', unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        # Display assistant response
+        with st.spinner("Thinking..."):
+            if is_general_chat(prompt):
+                response_text = get_general_response(prompt)
+            else:
+                response = qa_chain({"query": prompt})
+                response_text = response['result']
+            st.markdown(f'<div class="message bot-message">{response_text}</div>', unsafe_allow_html=True)
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
+            
+        # Update PDF data after new message
+        if "pdf_data" in st.session_state:
+            st.session_state.pdf_data = create_chat_pdf()
+                
+    st.markdown('</div>', unsafe_allow_html=True)
+        
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
