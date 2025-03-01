@@ -1,16 +1,15 @@
 import streamlit as st
+from langchain_google_genai import ChatGoogleGenerativeAI
 import google.generativeai as genai
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
+from langchain_pinecone import PineconeVectorStore
+from pinecone import Pinecone as PineconeClient
 from datetime import datetime
 from fpdf import FPDF
-import textwrap
 import io
-import os
-import pickle
+import textwrap
 from typing import Literal
 
 # Initialize session state for chat history and language preferences
@@ -155,88 +154,89 @@ def get_general_response(query):
 
 def initialize_rag():
     try:
+        # API Keys from secrets
+        PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
         
-        # Configure Google API
+        if not GOOGLE_API_KEY or not PINECONE_API_KEY:
+            st.error("Please set up API keys in Streamlit Cloud secrets")
+            st.stop()
+            
         genai.configure(api_key=GOOGLE_API_KEY)
+
+        # Initialize Pinecone
+        pc = PineconeClient(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
         try:
-            embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/embedding-001",
-                google_api_key=GOOGLE_API_KEY
+            embeddings = HuggingFaceEmbeddings(
+                model_name='all-MiniLM-L6-v2',
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={
+                    'normalize_embeddings': True,
+                    'batch_size': 32
+                }
             )
-        except:
-            # Fallback to HuggingFace embeddings if Google embeddings fail
-            embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        
-        # Create or load vector store
-        index_file_path = "faiss_index"
-        
-        if os.path.exists(index_file_path):
-            # Load existing index
-            vectorstore = FAISS.load_local(index_file_path, embeddings)
-        else:
-            # Create a simple index with a few documents for testing
-            texts = [
-                "Disaster management involves preparing for, responding to, and recovering from disasters.",
-                "Emergency protocols are standardized procedures to follow during emergencies.",
-                "Safety measures are actions taken to prevent accidents and reduce risk.",
-                "Risk assessment is the process of identifying potential hazards and evaluating their likelihood and impact.",
-                "Relief operations involve providing aid to affected populations after a disaster."
-            ]
-            vectorstore = FAISS.from_texts(texts, embeddings)
-            # Save the index
-            vectorstore.save_local(index_file_path)
-        
-        # Create retriever
-        retriever = vectorstore.as_retriever(
-            search_type="similarity",
-            search_kwargs={"k": 5}
+        except Exception as e:
+            st.error(f"Error initializing embeddings: {str(e)}")
+            st.stop()
+
+        # Initialize vector store
+        index_name = "pdfinfo"
+        vectorstore = PineconeVectorStore(
+            index=pc.Index(index_name),
+            embedding=embeddings,
+            text_key="text"
         )
-        
-        # Create prompt template
-        template = """
-        You are a helpful disaster management assistant that provides information about disaster management, 
-        emergency protocols, safety measures, and relief operations.
-        
-        Use the following context to answer the question. If you don't know the answer, just say that you don't know.
-        Don't try to make up an answer. Keep the answer concise and to the point.
-        
-        Context: {context}
-        
-        Question: {query}
-        
-        Answer:
-        """
-        
-        # Create prompt
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["context", "query"]
-        )
-        
-        # Create language model
+
+        # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
-            model="gemini-pro",
+            model="gemini-2.0-flash-exp",
+            temperature=0.1,
             google_api_key=GOOGLE_API_KEY,
-            temperature=0.3
+            max_retries=3,
+            timeout=30,
+            max_output_tokens=2048
         )
-        
-        # Create QA chain
+
+        # Create the QA chain with improved prompt
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=retriever,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
             return_source_documents=False,
-            chain_type_kwargs={"prompt": prompt}
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
+
+Use the following guidelines to answer questions:
+
+1. If the context contains relevant information:
+   - Provide a detailed and comprehensive answer using the information
+   - Include specific details and procedures from the source
+   - Structure the response in a clear, readable format
+   - Use professional and precise language
+
+2. If the context does NOT contain sufficient information:
+   - Provide a general, informative response based on common disaster management principles
+   - Be honest about not having specific details
+   - Offer to help with related topics that are within your knowledge base
+   - Never make up specific numbers or procedures
+   - Guide the user towards asking more specific questions about disaster management
+
+Context: {{context}}
+
+Question: {{question}}
+
+Response (remember to be natural and helpful):""",
+                    input_variables=["context", "question"],
+                )
+            }
         )
-        
         return qa_chain, llm
-        
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
-        return None, None
+        st.stop()
 
 def main():
     # Page config
@@ -325,7 +325,7 @@ def main():
                 ### Features
                 This chatbot uses:
                 - 🧠 Gemini Pro for text generation
-                - 🔍 FAISS for vector storage
+                - 🔍 Pinecone for vector storage
                 - ⚡ LangChain for the RAG pipeline
                 - 🌐 Multilingual support (English & Sindhi)
                 
