@@ -4,6 +4,13 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
+from datetime import datetime
+from fpdf import FPDF
+import io
+import textwrap
+from typing import Literal
+import os
 import subprocess
 import sys
 
@@ -13,15 +20,6 @@ try:
                    check=False, capture_output=True)
 except:
     pass
-
-# Now import Pinecone
-from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone as PineconeClient
-from datetime import datetime
-from fpdf import FPDF
-import io
-import textwrap
-from typing import Literal
 
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
@@ -166,17 +164,13 @@ def get_general_response(query):
 def initialize_rag():
     try:
         # API Keys from secrets
-        PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
         
-        if not GOOGLE_API_KEY or not PINECONE_API_KEY:
+        if not GOOGLE_API_KEY:
             st.error("Please set up API keys in Streamlit Cloud secrets")
             st.stop()
             
         genai.configure(api_key=GOOGLE_API_KEY)
-
-        # Initialize Pinecone
-        pc = PineconeClient(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
         try:
@@ -192,13 +186,21 @@ def initialize_rag():
             st.error(f"Error initializing embeddings: {str(e)}")
             st.stop()
 
+        # Create a sample document to initialize FAISS if needed
+        # In a real implementation, you would load your documents here
+        texts = ["Disaster management is the process of dealing with disasters before, during, and after they occur."]
+        
         # Initialize vector store
-        index_name = "pdfinfo"
-        vectorstore = PineconeVectorStore(
-            index=pc.Index(index_name),
-            embedding=embeddings,
-            text_key="text"
-        )
+        try:
+            # Try to load existing index
+            vectorstore = FAISS.load_local("faiss_index", embeddings)
+            st.success("Loaded existing vector store")
+        except Exception:
+            # Create a new index if one doesn't exist
+            vectorstore = FAISS.from_texts(texts, embeddings)
+            # Save the index for future use
+            vectorstore.save_local("faiss_index")
+            st.info("Created new vector store")
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
@@ -336,7 +338,7 @@ def main():
                 ### Features
                 This chatbot uses:
                 - 🧠 Gemini Pro for text generation
-                - 🔍 Pinecone for vector storage
+                - 🔍 FAISS for vector storage
                 - ⚡ LangChain for the RAG pipeline
                 - 🌐 Multilingual support (English & Sindhi)
                 
