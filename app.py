@@ -4,6 +4,17 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
+import subprocess
+import sys
+
+# Try to uninstall deprecated plugins if they exist
+try:
+    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "pinecone-plugin-inference", "pinecone-plugin-interface"], 
+                   check=False, capture_output=True)
+except:
+    pass
+
+# Now import Pinecone
 from langchain_pinecone import PineconeVectorStore
 from pinecone import Pinecone as PineconeClient
 from datetime import datetime
