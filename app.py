@@ -4,7 +4,8 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_pinecone import PineconeVectorStore, FAISS
+from langchain_pinecone import PineconeVectorStore
+from langchain_community.vectorstores import FAISS
 from datetime import datetime
 from fpdf import FPDF
 import io
