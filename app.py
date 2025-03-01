@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone as PineconeClient
+from pinecone import Pinecone as Pinecone
 from datetime import datetime
 from fpdf import FPDF
 import io
