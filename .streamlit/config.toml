@@ -1,0 +1,16 @@
+[server]
+enableXsrfProtection = false
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
+primaryColor = "#4169E1"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+
+[runner]
+# Use pip as the package manager to avoid issues with deprecated plugins
+packageManager = "pip"

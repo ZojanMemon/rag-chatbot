@@ -13,3 +13,7 @@ fpdf>=1.7.2
 python-dotenv>=1.0.0
 requests>=2.31.0
 textwrap3>=0.9.2
+
+# Explicitly exclude deprecated plugins
+pinecone-plugin-inference<0.0.0
+pinecone-plugin-interface<0.0.0
