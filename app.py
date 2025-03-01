@@ -4,12 +4,13 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGener
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone
+from langchain_community.vectorstores import FAISS
 from datetime import datetime
 from fpdf import FPDF
-import io
 import textwrap
+import io
+import os
+import pickle
 from typing import Literal
 
 # Initialize session state for chat history and language preferences
@@ -154,14 +155,10 @@ def get_general_response(query):
 
 def initialize_rag():
     try:
-        PINECONE_API_KEY = st.secrets["PINECONE_API_KEY"]
         GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
         
         # Configure Google API
         genai.configure(api_key=GOOGLE_API_KEY)
-
-        # Initialize Pinecone
-        pc = Pinecone(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
         try:
@@ -173,15 +170,24 @@ def initialize_rag():
             # Fallback to HuggingFace embeddings if Google embeddings fail
             embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
         
-        # Get the index
-        index = pc.Index("disaster-management")
+        # Create or load vector store
+        index_file_path = "faiss_index"
         
-        # Create vector store
-        vectorstore = PineconeVectorStore(
-            index=index,
-            embedding=embeddings,
-            text_key="text"
-        )
+        if os.path.exists(index_file_path):
+            # Load existing index
+            vectorstore = FAISS.load_local(index_file_path, embeddings)
+        else:
+            # Create a simple index with a few documents for testing
+            texts = [
+                "Disaster management involves preparing for, responding to, and recovering from disasters.",
+                "Emergency protocols are standardized procedures to follow during emergencies.",
+                "Safety measures are actions taken to prevent accidents and reduce risk.",
+                "Risk assessment is the process of identifying potential hazards and evaluating their likelihood and impact.",
+                "Relief operations involve providing aid to affected populations after a disaster."
+            ]
+            vectorstore = FAISS.from_texts(texts, embeddings)
+            # Save the index
+            vectorstore.save_local(index_file_path)
         
         # Create retriever
         retriever = vectorstore.as_retriever(
@@ -319,7 +325,7 @@ def main():
                 ### Features
                 This chatbot uses:
                 - 🧠 Gemini Pro for text generation
-                - 🔍 Pinecone for vector storage
+                - 🔍 FAISS for vector storage
                 - ⚡ LangChain for the RAG pipeline
                 - 🌐 Multilingual support (English & Sindhi)
                 
