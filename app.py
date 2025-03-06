@@ -422,14 +422,7 @@ def main():
                     if is_general_chat(prompt):
                         response_text = get_general_response(prompt)
                     else:
-                        # Get language prompt based on output language
-                        lang_prompt = get_language_prompt(st.session_state.output_language)
-                        # Create the query with all required parameters
-                        query = {
-                            "query": prompt,
-                            "language_prompt": lang_prompt
-                        }
-                        response = qa_chain(query)
+                        response = qa_chain({"query": prompt, "language_prompt": get_language_prompt(st.session_state.output_language)})
                         response_text = response['result']
                     st.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
