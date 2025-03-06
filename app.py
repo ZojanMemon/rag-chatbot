@@ -20,10 +20,12 @@ if "input_language" not in st.session_state:
 if "output_language" not in st.session_state:
     st.session_state.output_language = "English"
 
-def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
+def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
     if output_lang == "Sindhi":
         return """سنڌي ۾ جواب ڏيو. مهرباني ڪري صاف ۽ سادي سنڌي استعمال ڪريو، اردو لفظن کان پاسو ڪريو. جواب تفصيلي ۽ سمجهه ۾ اچڻ جوڳو هجڻ گهرجي."""
+    elif output_lang == "Urdu":
+        return """اردو میں جواب دیں۔ براہ کرم واضح اور سادہ اردو استعمال کریں۔ جواب تفصیلی اور سمجھنے کے قابل ہونا چاہیے۔"""
     return "Respond in English using clear and professional language."
 
 def create_chat_pdf():
@@ -50,7 +52,7 @@ def create_chat_pdf():
             pdf.set_font("Arial", "", 11)
             content = message["content"]
             
-            # Handle Sindhi text
+            # Handle Sindhi and Urdu text
             try:
                 # Try encoding as latin-1 first
                 content.encode('latin-1')
@@ -59,16 +61,17 @@ def create_chat_pdf():
                 for line in lines:
                     pdf.cell(0, 7, line, 0, 1)
             except UnicodeEncodeError:
-                # For Sindhi text, write "[Sindhi]" followed by transliterated version
-                pdf.cell(0, 7, "[Sindhi Message]", 0, 1)
-                # Try to write a transliterated version if possible
-                try:
-                    ascii_text = content.encode('ascii', 'replace').decode('ascii')
-                    lines = textwrap.wrap(ascii_text, width=85)
-                    for line in lines:
-                        pdf.cell(0, 7, line, 0, 1)
-                except:
-                    pass
+                # For Sindhi/Urdu text, write language indicator and transliterated version
+                if any('\u0600' <= c <= '\u06FF' for c in content):  # Arabic script range
+                    pdf.cell(0, 7, "[Urdu/Sindhi Message]", 0, 1)
+                    # Try to write a transliterated version if possible
+                    try:
+                        ascii_text = content.encode('ascii', 'replace').decode('ascii')
+                        lines = textwrap.wrap(ascii_text, width=85)
+                        for line in lines:
+                            pdf.cell(0, 7, line, 0, 1)
+                    except:
+                        pass
             
             pdf.ln(5)
         
@@ -135,11 +138,26 @@ def get_general_response(query):
             return "مان هڪ خاص آفتن جي انتظام جو مددگار آهيان. مان آفتن جي انتظام، حفاظتي اپاءَ ۽ آفتن جي جواب جي حڪمت عملي بابت معلومات ڏئي سگهان ٿو."
         else:
             return "مان آفتن جي انتظام جي معاملن ۾ ماهر آهيان. عام موضوعن تي مدد نه ڪري سگهندس، پر آفتن جي انتظام، ايمرجنسي طريقن يا حفاظتي اپاءَ بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
+    elif output_lang == "Urdu":
+        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+            return "السلام علیکم! میں آپ کی آفات کے انتظام کا مددگار ہوں۔ میں آپ کی کس طرح کی مدد کر سکتا ہوں؟"
+        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+            return "آپ کا شکریہ! میں آپ کی آفات کے انتظام کے سوالات کا جواب دینے کے لئے تیار ہوں۔"
+        elif 'how are you' in query_lower:
+            return "میں ٹھیک ہوں، آپ کا شکریہ! میں آفات کے انتظام کی معلومات دینے کے لئے تیار ہوں۔"
+        elif 'thank' in query_lower:
+            return "آپ کا شکریہ! آفات کے انتظام کے بارے میں کوئی بھی سوال پوچھنے کے لئے آزاد محسوس کریں۔"
+        elif 'bye' in query_lower or 'goodbye' in query_lower:
+            return "الوداع! اگر آپ کے پاس آفات کے انتظام کے بارے میں مزید سوالات ہیں تو پھر ضرور پوچھیں۔"
+        elif 'who are you' in query_lower:
+            return "میں ایک خاص آفات کے انتظام کا مددگار ہوں۔ میں آفات کے انتظام، حفاظتی اقدامات اور آفات کے جواب کی حکمت عملی کے بارے میں معلومات دینے کے لئے تیار ہوں۔"
+        else:
+            return "میں آفات کے انتظام کے معاملات میں ماہر ہوں۔ عام موضوعات پر مدد نہیں کر سکتا، لیکن آفات کے انتظام، ایمرجنسی طریقوں یا حفاظتی اقدامات کے بارے میں کوئی بھی سوال پوچھنے کے لئے آزاد محسوس کریں۔"
     else:
         # Original English responses
         if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
             return "Hello! I'm your disaster management assistant. How can I help you today?"
-        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+        elif any(time in query_lower for greeting in ['good morning', 'good afternoon', 'good evening']):
             return f"Thank you, {query}! I'm here to help you with disaster management related questions."
         elif 'how are you' in query_lower:
             return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
@@ -190,7 +208,7 @@ def initialize_rag():
             text_key="text"
         )
 
-        # Create Gemini LLM
+        # Create Gemini LLM with multilingual support
         llm = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash-exp",
             temperature=0.1,
@@ -200,44 +218,43 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with improved prompt
+        # Create prompt template with language support
+        template = """You are a helpful disaster management assistant that provides accurate information about disasters, emergency procedures, and safety protocols.
+        
+        Use the following pieces of context to answer the question at the end. 
+        If you don't know the answer, just say that you don't know, don't try to make up an answer.
+        
+        {context}
+        
+        {language_prompt}
+        
+        Question: {question}
+        Helpful Answer:"""
+
+        PROMPT = PromptTemplate(
+            template=template,
+            input_variables=["context", "question", "language_prompt"]
+        )
+
+        chain_type_kwargs = {"prompt": PROMPT}
+        
+        # Create the RAG chain
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
-
-Use the following guidelines to answer questions:
-
-1. If the context contains relevant information:
-   - Provide a detailed and comprehensive answer using the information
-   - Include specific details and procedures from the source
-   - Structure the response in a clear, readable format
-   - Use professional and precise language
-
-2. If the context does NOT contain sufficient information:
-   - Provide a general, informative response based on common disaster management principles
-   - Be honest about not having specific details
-   - Offer to help with related topics that are within your knowledge base
-   - Never make up specific numbers or procedures
-   - Guide the user towards asking more specific questions about disaster management
-
-Context: {{context}}
-
-Question: {{question}}
-
-Response (remember to be natural and helpful):""",
-                    input_variables=["context", "question"],
-                )
-            }
+            retriever=vectorstore.as_retriever(
+                search_type="similarity",
+                search_kwargs={"k": 3}
+            ),
+            chain_type_kwargs=chain_type_kwargs,
+            return_source_documents=True
         )
-        return qa_chain, llm
+
+        return qa_chain
+
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
-        st.stop()
+        return None
 
 def main():
     # Page config
@@ -293,7 +310,7 @@ def main():
     
     try:
         # Initialize RAG system
-        qa_chain, llm = initialize_rag()
+        qa_chain = initialize_rag()
 
         # Sidebar with settings and info
         with st.sidebar:
@@ -303,15 +320,15 @@ def main():
             with st.expander("🌐 Language Settings", expanded=False):
                 input_lang = st.selectbox(
                     "Select Input Language",
-                    ["English", "Sindhi"],
+                    ["English", "Sindhi", "Urdu"],
                     key="input_language_selector",
-                    index=0 if st.session_state.input_language == "English" else 1
+                    index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Sindhi" else 2
                 )
                 output_lang = st.selectbox(
                     "Select Output Language",
-                    ["English", "Sindhi"],
+                    ["English", "Sindhi", "Urdu"],
                     key="output_language_selector",
-                    index=0 if st.session_state.output_language == "English" else 1
+                    index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Sindhi" else 2
                 )
                 
                 # Update session state if language changed
@@ -328,7 +345,7 @@ def main():
                 - 🧠 Gemini Pro for text generation
                 - 🔍 Pinecone for vector storage
                 - ⚡ LangChain for the RAG pipeline
-                - 🌐 Multilingual support (English & Sindhi)
+                - 🌐 Multilingual support (English & Sindhi & Urdu)
                 
                 ### Topics
                 You can ask questions about:
@@ -405,7 +422,7 @@ def main():
                     if is_general_chat(prompt):
                         response_text = get_general_response(prompt)
                     else:
-                        response = qa_chain({"query": prompt})
+                        response = qa_chain({"query": prompt, "language_prompt": get_language_prompt(st.session_state.output_language)})
                         response_text = response['result']
                     st.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
