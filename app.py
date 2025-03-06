@@ -218,36 +218,39 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create prompt template with language support
-        template = """You are a helpful disaster management assistant that provides accurate information about disasters, emergency procedures, and safety protocols.
-        
-        Use the following pieces of context to answer the question at the end. 
-        If you don't know the answer, just say that you don't know, don't try to make up an answer.
-        
-        {context}
-        
-        {language_prompt}
-        
-        Question: {question}
-        Helpful Answer:"""
-
-        PROMPT = PromptTemplate(
-            template=template,
-            input_variables=["context", "question", "language_prompt"]
-        )
-
-        chain_type_kwargs = {"prompt": PROMPT}
-        
-        # Create the RAG chain
+        # Create the QA chain with improved prompt
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(
-                search_type="similarity",
-                search_kwargs={"k": 3}
-            ),
-            chain_type_kwargs=chain_type_kwargs,
-            return_source_documents=True
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+            return_source_documents=False,
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template="""You are a knowledgeable disaster management assistant.
+
+Use the following guidelines to answer questions:
+
+1. If the context contains relevant information:
+   - Provide a detailed and comprehensive answer using the information
+   - Include specific details and procedures from the source
+   - Structure the response in a clear, readable format
+   - Use professional and precise language
+
+2. If the context does NOT contain sufficient information:
+   - Provide a general, informative response based on common disaster management principles
+   - Be honest about not having specific details
+   - Offer to help with related topics that are within your knowledge base
+   - Never make up specific numbers or procedures
+   - Guide the user towards asking more specific questions about disaster management
+
+Context: {context}
+
+Question: {question}
+
+Response (remember to {language_prompt}):""",
+                    input_variables=["context", "question", "language_prompt"],
+                )
+            }
         )
 
         return qa_chain
@@ -410,19 +413,21 @@ def main():
 
         # Fixed input box at bottom
         st.markdown('<div class="input-container">', unsafe_allow_html=True)
-        if prompt := st.chat_input("Ask your question here"):
-            # Display user message
+        if prompt := st.chat_input("Ask me anything about disaster management..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
-            st.session_state.messages.append({"role": "user", "content": prompt})
 
-            # Display assistant response
             with st.chat_message("assistant"):
                 with st.spinner("Thinking..."):
                     if is_general_chat(prompt):
                         response_text = get_general_response(prompt)
                     else:
-                        response = qa_chain({"query": prompt, "language_prompt": get_language_prompt(st.session_state.output_language)})
+                        response = qa_chain({
+                            "query": prompt,
+                            "question": prompt,  
+                            "language_prompt": get_language_prompt(st.session_state.output_language)
+                        })
                         response_text = response['result']
                     st.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
