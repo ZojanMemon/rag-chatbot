@@ -5,35 +5,53 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Minimalistic Sindhi-inspired theme
-base = "light"
-primaryColor = "#B84B1C"  # Warm terracotta (inspired by Ajrak)
-backgroundColor = "#FFF9F5"  # Soft cream (like handmade paper)
-secondaryBackgroundColor = "#F5EDE6"  # Warm beige (like clay pottery)
-textColor = "#2C1810"  # Deep brown (like walnut wood)
+# Rich Sindhi-inspired theme with deep colors
+base = "dark"
+primaryColor = "#E85D04"  # Vibrant orange (from Ajrak)
+backgroundColor = "#1F1A17"  # Deep charcoal (like aged wood)
+secondaryBackgroundColor = "#2C2420"  # Rich brown (like dark clay)
+textColor = "#F5E6D3"  # Warm cream text
 
-# Typography
+# Typography with cultural touch
 font = "sans serif"
 
-# Accent colors (from traditional Sindhi textiles)
-primaryColorLight = "#C66D47"  # Lighter terracotta
-primaryColorDark = "#8C3816"   # Deep maroon
+# Accent colors from Sindhi textiles
+primaryColorLight = "#FF7F29"  # Bright orange
+primaryColorDark = "#BF4904"   # Deep rust
 
 [theme.components]
-# Minimal, elegant styling
-buttonBorderRadius = "2px"  # Subtle rounded corners
-buttonShadow = "none"  # Flat design
+# Enhanced styling for all elements
+buttonBorderRadius = "4px"
+buttonShadow = "0 2px 4px rgba(0, 0, 0, 0.2)"
 buttonTextColor = "#FFFFFF"
+buttonBackgroundColor = "#E85D04"
+buttonHoverBackgroundColor = "#FF7F29"
 
-# Input fields with subtle borders
-inputBorderRadius = "2px"
-inputBorderColor = "#D4C0B3"  # Soft brown border
-inputBackground = "#FFFFFF"
+# Input fields with distinct styling
+inputBorderRadius = "4px"
+inputBorderColor = "#4D3F36"  # Dark brown border
+inputBackground = "#2C2420"  # Matches secondary background
+inputTextColor = "#F5E6D3"  # Warm cream text
 
-# Sidebar with cultural touch
-sidebarBackgroundColor = "#F5EDE6"  # Warm beige
-sidebarTextColor = "#2C1810"  # Deep brown text
-sidebarBorderColor = "#E6D5C9"  # Soft border
+# Chat input specific styling
+textInputBackground = "#362E28"  # Slightly lighter than main background
+textInputBorderColor = "#5C4D43"  # Medium brown border
+textInputTextColor = "#F5E6D3"  # Warm cream text
+
+# Sidebar with rich styling
+sidebarBackgroundColor = "#171311"  # Darker than main background
+sidebarTextColor = "#F5E6D3"  # Warm cream text
+sidebarBorderColor = "#362E28"  # Medium brown border
+
+# Additional UI elements
+selectBackground = "#2C2420"  # For dropdowns
+selectTextColor = "#F5E6D3"
+selectBorderColor = "#4D3F36"
+
+# Widget styling
+widgetBackgroundColor = "#2C2420"
+widgetBorderColor = "#4D3F36"
+widgetTextColor = "#F5E6D3"
 
 [runner]
 packageManager = "pip"
