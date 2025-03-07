@@ -5,35 +5,35 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Modern dark theme with rich colors
-base = "dark"
-primaryColor = "#4A90E2"  # Vibrant blue for primary actions
-backgroundColor = "#1A1B25"  # Rich dark background
-secondaryBackgroundColor = "#252632"  # Slightly lighter for contrast
-textColor = "#FFFFFF"  # Crisp white text
+# Minimalistic Sindhi-inspired theme
+base = "light"
+primaryColor = "#B84B1C"  # Warm terracotta (inspired by Ajrak)
+backgroundColor = "#FFF9F5"  # Soft cream (like handmade paper)
+secondaryBackgroundColor = "#F5EDE6"  # Warm beige (like clay pottery)
+textColor = "#2C1810"  # Deep brown (like walnut wood)
 
-# Custom theme elements
+# Typography
 font = "sans serif"
 
-# UI Element Colors
-primaryColorLight = "#67A7E8"  # Bright blue for hover states
-primaryColorDark = "#2E5C99"   # Deep blue for active states
+# Accent colors (from traditional Sindhi textiles)
+primaryColorLight = "#C66D47"  # Lighter terracotta
+primaryColorDark = "#8C3816"   # Deep maroon
 
 [theme.components]
-# Button styling
-buttonBorderRadius = "4px"
-buttonShadow = "0px 4px 8px rgba(0, 0, 0, 0.2)"
+# Minimal, elegant styling
+buttonBorderRadius = "2px"  # Subtle rounded corners
+buttonShadow = "none"  # Flat design
 buttonTextColor = "#FFFFFF"
 
-# Input field styling
-inputBorderRadius = "4px"
-inputBorderColor = "#3A3B47"
-inputBackground = "#2A2B35"
+# Input fields with subtle borders
+inputBorderRadius = "2px"
+inputBorderColor = "#D4C0B3"  # Soft brown border
+inputBackground = "#FFFFFF"
 
-# Sidebar styling
-sidebarBackgroundColor = "#151620"
-sidebarTextColor = "#E0E0E0"
-sidebarBorderColor = "#2A2B35"
+# Sidebar with cultural touch
+sidebarBackgroundColor = "#F5EDE6"  # Warm beige
+sidebarTextColor = "#2C1810"  # Deep brown text
+sidebarBorderColor = "#E6D5C9"  # Soft border
 
 [runner]
 packageManager = "pip"
