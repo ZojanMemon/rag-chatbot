@@ -20,10 +20,12 @@ if "input_language" not in st.session_state:
 if "output_language" not in st.session_state:
     st.session_state.output_language = "English"
 
-def get_language_prompt(output_lang: Literal["English", "Sindhi"]) -> str:
+def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
     if output_lang == "Sindhi":
         return """سنڌي ۾ جواب ڏيو. مهرباني ڪري صاف ۽ سادي سنڌي استعمال ڪريو، اردو لفظن کان پاسو ڪريو. جواب تفصيلي ۽ سمجهه ۾ اچڻ جوڳو هجڻ گهرجي."""
+    elif output_lang == "Urdu":
+        return """اردو میں جواب دیں۔ براہ کرم واضح اور سادہ اردو استعمال کریں۔ جواب تفصیلی اور سمجھنے کے قابل ہونا چاہیے۔"""
     return "Respond in English using clear and professional language."
 
 def create_chat_pdf():
@@ -135,6 +137,21 @@ def get_general_response(query):
             return "مان هڪ خاص آفتن جي انتظام جو مددگار آهيان. مان آفتن جي انتظام، حفاظتي اپاءَ ۽ آفتن جي جواب جي حڪمت عملي بابت معلومات ڏئي سگهان ٿو."
         else:
             return "مان آفتن جي انتظام جي معاملن ۾ ماهر آهيان. عام موضوعن تي مدد نه ڪري سگهندس، پر آفتن جي انتظام، ايمرجنسي طريقن يا حفاظتي اپاءَ بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
+    elif output_lang == "Urdu":
+        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+            return "السلام علیکم! میں آپ کا آفات کے انتظام کا مددگار ہوں۔ میں آپ کی کیا مدد کر سکتا ہوں؟"
+        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+            return "آپ کا شکریہ! میں آپ کی آفات کے انتظام کے سوالات میں مدد کرنے کے لیے حاضر ہوں۔"
+        elif 'how are you' in query_lower:
+            return "میں ٹھیک ہوں، آپ کی پوچھنے کا شکریہ! میں آفات کے انتظام کی معلومات دینے کے لیے تیار ہوں۔"
+        elif 'thank' in query_lower:
+            return "آپ کا شکریہ! آفات کے انتظام کے بارے میں کوئی بھی سوال پوچھنے کے لیے آزاد محسوس کریں۔"
+        elif 'bye' in query_lower or 'goodbye' in query_lower:
+            return "خدا حافظ! اگر آپ کو آفات کے انتظام کے بارے میں مزید سوالات ہوں تو ضرور پوچھیں۔"
+        elif 'who are you' in query_lower:
+            return "میں ایک خصوصی آفات کے انتظام کا مددگار ہوں۔ میں آفات کے انتظام، حفاظتی اقدامات اور آفات کے جواب کی حکمت عملی کے بارے میں معلومات دے سکتا ہوں۔"
+        else:
+            return "میں آفات کے انتظام کے معاملات میں ماہر ہوں۔ عام موضوعات پر مدد نہیں کر سکتا، لیکن آفات کے انتظام، ایمرجنسی طریقوں یا حفاظتی اقدامات کے بارے میں کوئی بھی سوال پوچھنے کے لیے آزاد محسوس کریں۔"
     else:
         # Original English responses
         if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
@@ -303,15 +320,15 @@ def main():
             with st.expander("🌐 Language Settings", expanded=False):
                 input_lang = st.selectbox(
                     "Select Input Language",
-                    ["English", "Sindhi"],
+                    ["English", "Urdu", "Sindhi"],
                     key="input_language_selector",
-                    index=0 if st.session_state.input_language == "English" else 1
+                    index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Urdu" else 2
                 )
                 output_lang = st.selectbox(
                     "Select Output Language",
-                    ["English", "Sindhi"],
+                    ["English", "Urdu", "Sindhi"],
                     key="output_language_selector",
-                    index=0 if st.session_state.output_language == "English" else 1
+                    index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Urdu" else 2
                 )
                 
                 # Update session state if language changed
@@ -328,7 +345,7 @@ def main():
                 - 🧠 Gemini Pro for text generation
                 - 🔍 Pinecone for vector storage
                 - ⚡ LangChain for the RAG pipeline
-                - 🌐 Multilingual support (English & Sindhi)
+                - 🌐 Multilingual support (English, Urdu & Sindhi)
                 
                 ### Topics
                 You can ask questions about:
