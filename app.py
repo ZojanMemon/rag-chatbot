@@ -20,6 +20,114 @@ if "input_language" not in st.session_state:
 if "output_language" not in st.session_state:
     st.session_state.output_language = "English"
 
+# Sindh-inspired color palette
+COLORS = {
+    'ajrak_red': '#8D1B1B',
+    'deep_indigo': '#1E2952',
+    'sand_beige': '#C2A878',
+    'sindh_green': '#15616D',
+    'warm_mustard': '#D89216',
+    'charcoal_black': '#2B2B2B'
+}
+
+# Custom CSS with Sindh-inspired colors
+st.markdown(f"""
+    <style>
+    /* Main container styling */
+    .main .block-container {{
+        background-color: {COLORS['sand_beige']}20;
+        padding: 2rem;
+        border-radius: 10px;
+    }}
+    
+    /* Header styling */
+    .stTitle {{
+        color: {COLORS['ajrak_red']} !important;
+        font-family: 'Arial', sans-serif;
+    }}
+    
+    /* Sidebar styling */
+    .css-1d391kg {{
+        background-color: {COLORS['deep_indigo']};
+    }}
+    
+    /* Chat message containers */
+    .user-message {{
+        background-color: {COLORS['sindh_green']}15 !important;
+        border-left: 5px solid {COLORS['sindh_green']} !important;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-radius: 0 10px 10px 0;
+    }}
+    
+    .assistant-message {{
+        background-color: {COLORS['warm_mustard']}15 !important;
+        border-left: 5px solid {COLORS['warm_mustard']} !important;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-radius: 0 10px 10px 0;
+    }}
+    
+    /* Button styling */
+    .stButton button {{
+        background-color: {COLORS['sindh_green']} !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 5px !important;
+        transition: all 0.3s ease !important;
+    }}
+    
+    .stButton button:hover {{
+        background-color: {COLORS['deep_indigo']} !important;
+        transform: translateY(-2px);
+    }}
+    
+    /* Input box styling */
+    .stTextInput input {{
+        border: 2px solid {COLORS['deep_indigo']}40 !important;
+        border-radius: 5px !important;
+    }}
+    
+    .stTextInput input:focus {{
+        border-color: {COLORS['sindh_green']} !important;
+        box-shadow: 0 0 5px {COLORS['sindh_green']}40 !important;
+    }}
+    
+    /* Selectbox styling */
+    .stSelectbox select {{
+        border-color: {COLORS['deep_indigo']} !important;
+    }}
+    
+    /* Expander styling */
+    .streamlit-expanderHeader {{
+        background-color: {COLORS['deep_indigo']} !important;
+        color: white !important;
+        border-radius: 5px !important;
+    }}
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {{
+        width: 10px;
+    }}
+    
+    ::-webkit-scrollbar-track {{
+        background: {COLORS['sand_beige']}30;
+    }}
+    
+    ::-webkit-scrollbar-thumb {{
+        background: {COLORS['deep_indigo']};
+        border-radius: 5px;
+    }}
+    
+    /* Footer styling */
+    footer {{
+        border-top: 2px solid {COLORS['deep_indigo']}20;
+        padding-top: 1rem;
+        margin-top: 2rem;
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
 def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
     if output_lang == "Sindhi":
@@ -257,86 +365,45 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
-    # Page config
     st.set_page_config(
-        page_title="Disaster Management RAG Chatbot",
-        page_icon="🤖",
+        page_title="Sindh Disaster Management Assistant",
+        page_icon="🆘",
         layout="wide"
     )
 
-    # Custom CSS for layout
-    st.markdown("""
-        <style>
-        /* Main container styling */
-        .main {
-            padding: 0;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        /* Chat container */
-        .chat-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            padding-bottom: 100px;  /* Space for input box */
-        }
-        
-        /* Fixed input container at bottom */
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            background-color: white;
-            padding: 20px;
-            border-top: 1px solid #ddd;
-            z-index: 1000;
-            display: none;
-        }
-        
-        /* Sidebar styling */
-        .css-1d391kg {
-            padding: 20px;
-        }
-        
-        /* Streamlit elements styling */
-        div.stButton > button {
-            width: 100%;
-        }
-        </style>
+    # Custom title with Sindhi cultural context
+    st.markdown(f"""
+        <h1 style='color: {COLORS["ajrak_red"]}; text-align: center; margin-bottom: 2rem;'>
+            Sindh Disaster Management Assistant 🆘
+        </h1>
+        <p style='text-align: center; color: {COLORS["deep_indigo"]}; font-size: 1.2em;'>
+            Serving the people of Sindh with emergency guidance and support
+        </p>
     """, unsafe_allow_html=True)
     
     try:
         # Initialize RAG system
         qa_chain, llm = initialize_rag()
 
-        # Sidebar with settings and info
+        # Sidebar with cultural styling
         with st.sidebar:
-            st.title("Settings & Info")
+            st.markdown(f"""
+                <h2 style='color: {COLORS["warm_mustard"]}; margin-bottom: 1rem;'>Settings</h2>
+            """, unsafe_allow_html=True)
             
             # Language Settings in an expander
             with st.expander("🌐 Language Settings", expanded=False):
-                input_lang = st.selectbox(
+                st.session_state.input_language = st.selectbox(
                     "Select Input Language",
                     ["English", "Urdu", "Sindhi"],
-                    key="input_language_selector",
-                    index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Urdu" else 2
+                    key="input_lang_select"
                 )
-                output_lang = st.selectbox(
+                st.session_state.output_language = st.selectbox(
                     "Select Output Language",
                     ["English", "Urdu", "Sindhi"],
-                    key="output_language_selector",
-                    index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Urdu" else 2
+                    key="output_lang_select"
                 )
-                
-                # Update session state if language changed
-                if input_lang != st.session_state.input_language:
-                    st.session_state.input_language = input_lang
-                if output_lang != st.session_state.output_language:
-                    st.session_state.output_language = output_lang
-            
+
             # About section in an expander
             with st.expander("ℹ️ About", expanded=False):
                 st.markdown("""
