@@ -6,17 +6,17 @@ gatherUsageStats = false
 
 [theme]
 base = "light"
-primaryColor = "#2E54FF"  # Modern blue - professional and trustworthy
-backgroundColor = "#FFFFFF"  # Clean white background
-secondaryBackgroundColor = "#F6F8FF"  # Soft blue tint for depth
-textColor = "#1E1E1E"  # Near-black for better readability
+primaryColor = "#0066CC"  # Strong professional blue
+backgroundColor = "#F8FAFF"  # Very light blue tint
+secondaryBackgroundColor = "#E8F0FF"  # Slightly darker blue tint
+textColor = "#091133"  # Deep navy text
 
-# Custom theme options
+# Fonts and typography
 font = "sans serif"
 
-# These will create subtle gradients and shadows
-primaryColorLight = "#4C6FFF"  # Lighter shade of primary blue
-primaryColorDark = "#1C3EEB"   # Darker shade of primary blue
+# UI Elements
+primaryColorLight = "#3385D6"  # Lighter accent
+primaryColorDark = "#004C99"   # Darker accent
 
 [runner]
 packageManager = "pip"
