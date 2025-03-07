@@ -5,53 +5,35 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Rich Sindhi-inspired theme with deep colors
+# Modern dark theme with rich colors
 base = "dark"
-primaryColor = "#E85D04"  # Vibrant orange (from Ajrak)
-backgroundColor = "#1F1A17"  # Deep charcoal (like aged wood)
-secondaryBackgroundColor = "#2C2420"  # Rich brown (like dark clay)
-textColor = "#F5E6D3"  # Warm cream text
+primaryColor = "#4A90E2"  # Vibrant blue for primary actions
+backgroundColor = "#1A1B25"  # Rich dark background
+secondaryBackgroundColor = "#252632"  # Slightly lighter for contrast
+textColor = "#FFFFFF"  # Crisp white text
 
-# Typography with cultural touch
+# Custom theme elements
 font = "sans serif"
 
-# Accent colors from Sindhi textiles
-primaryColorLight = "#FF7F29"  # Bright orange
-primaryColorDark = "#BF4904"   # Deep rust
+# UI Element Colors
+primaryColorLight = "#67A7E8"  # Bright blue for hover states
+primaryColorDark = "#2E5C99"   # Deep blue for active states
 
 [theme.components]
-# Enhanced styling for all elements
+# Button styling
 buttonBorderRadius = "4px"
-buttonShadow = "0 2px 4px rgba(0, 0, 0, 0.2)"
+buttonShadow = "0px 4px 8px rgba(0, 0, 0, 0.2)"
 buttonTextColor = "#FFFFFF"
-buttonBackgroundColor = "#E85D04"
-buttonHoverBackgroundColor = "#FF7F29"
 
-# Input fields with distinct styling
+# Input field styling
 inputBorderRadius = "4px"
-inputBorderColor = "#4D3F36"  # Dark brown border
-inputBackground = "#2C2420"  # Matches secondary background
-inputTextColor = "#F5E6D3"  # Warm cream text
+inputBorderColor = "#3A3B47"
+inputBackground = "#2A2B35"
 
-# Chat input specific styling
-textInputBackground = "#362E28"  # Slightly lighter than main background
-textInputBorderColor = "#5C4D43"  # Medium brown border
-textInputTextColor = "#F5E6D3"  # Warm cream text
-
-# Sidebar with rich styling
-sidebarBackgroundColor = "#171311"  # Darker than main background
-sidebarTextColor = "#F5E6D3"  # Warm cream text
-sidebarBorderColor = "#362E28"  # Medium brown border
-
-# Additional UI elements
-selectBackground = "#2C2420"  # For dropdowns
-selectTextColor = "#F5E6D3"
-selectBorderColor = "#4D3F36"
-
-# Widget styling
-widgetBackgroundColor = "#2C2420"
-widgetBorderColor = "#4D3F36"
-widgetTextColor = "#F5E6D3"
+# Sidebar styling
+sidebarBackgroundColor = "#151620"
+sidebarTextColor = "#E0E0E0"
+sidebarBorderColor = "#2A2B35"
 
 [runner]
 packageManager = "pip"
