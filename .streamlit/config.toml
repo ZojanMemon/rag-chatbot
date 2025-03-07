@@ -5,40 +5,12 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Modern dark theme inspired by OKYAI
 base = "dark"
-primaryColor = "#FF4B4B"  # Vibrant purple
-backgroundColor = "#0E1117"  # Deep charcoal
-secondaryBackgroundColor = "#262730"  # Slightly lighter charcoal
-textColor = "#FAFAFA"  # Crisp white
-
-# Custom theme elements
-font = "sans serif"
-
-# UI Element Colors
-primaryColorLight = "#B27CFF"  # Lighter purple
-primaryColorDark = "#8442E5"  # Deeper purple
-
-[theme.components]
-# Chat elements
-# Adjust message styling
-messageTextColor = "#FFFFFF"
-messageBorderColor = "#3D3E4D"
-messageBackgroundColor = "#2D2E3D"
-
-# Input field
-inputBorderColor = "#3D3E4D"
-inputBackgroundColor = "#2D2E3D"
-inputTextColor = "#FFFFFF"
-
-# Sidebar styling
-sidebarBackgroundColor = "#18191F"
-sidebarTextColor = "#FFFFFF"
-sidebarBorderColor = "#3D3E4D"
-
-# Button styling
-buttonBackgroundColor = "#9C5FFF"
-buttonTextColor = "#FFFFFF"
+primaryColor = "#4169E1"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#262730"
+textColor = "#FAFAFA"
 
 [runner]
+# Use pip as the package manager to avoid issues with deprecated plugins
 packageManager = "pip"
