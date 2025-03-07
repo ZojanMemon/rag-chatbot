@@ -8,7 +8,7 @@ gatherUsageStats = false
 # Modern dark theme inspired by OKYAI
 base = "dark"
 primaryColor = "#9C5FFF"  # Vibrant purple
-backgroundColor = "#1E1F2A"  # Deep charcoal
+backgroundColor = "#0e1117"  # Deep charcoal
 secondaryBackgroundColor = "#2D2E3D"  # Slightly lighter charcoal
 textColor = "#FFFFFF"  # Crisp white
 
