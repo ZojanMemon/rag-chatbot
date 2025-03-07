@@ -5,39 +5,39 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Modern trendy dark theme with gradient feel
-base = "dark"
-primaryColor = "#6C5CE7"  # Vibrant purple
-backgroundColor = "#1E1E2E"  # Deep space blue-black
-secondaryBackgroundColor = "#2D2D44"  # Slightly lighter space blue
-textColor = "#F8F9FA"  # Crisp white
+# Soft, eye-friendly modern theme
+base = "light"
+primaryColor = "#7C83FD"  # Soft lavender-blue
+backgroundColor = "#F0F2F6"  # Very soft gray-blue
+secondaryBackgroundColor = "#E2E6F0"  # Slightly deeper soft blue-gray
+textColor = "#424B5A"  # Soft navy text
 
 # Custom theme elements
 font = "sans serif"
 
 # UI Element Colors
-primaryColorLight = "#8075E5"  # Lighter purple
-primaryColorDark = "#5546C5"  # Deeper purple
+primaryColorLight = "#96A1FD"  # Lighter lavender
+primaryColorDark = "#6369CB"  # Deeper lavender
 
 [theme.components]
 # Chat elements
 # Adjust message styling
-messageTextColor = "#F8F9FA"
-messageBorderColor = "#3D3D5C"
-messageBackgroundColor = "#2D2D44"
+messageTextColor = "#424B5A"
+messageBorderColor = "#D8DEE9"
+messageBackgroundColor = "#FFFFFF"
 
 # Input field
-inputBorderColor = "#3D3D5C"
-inputBackgroundColor = "#2D2D44"
-inputTextColor = "#F8F9FA"
+inputBorderColor = "#D8DEE9"
+inputBackgroundColor = "#FFFFFF"
+inputTextColor = "#424B5A"
 
 # Sidebar styling
-sidebarBackgroundColor = "#191927"
-sidebarTextColor = "#F8F9FA"
-sidebarBorderColor = "#3D3D5C"
+sidebarBackgroundColor = "#E8ECF4"
+sidebarTextColor = "#424B5A"
+sidebarBorderColor = "#D8DEE9"
 
 # Button styling
-buttonBackgroundColor = "#6C5CE7"
+buttonBackgroundColor = "#7C83FD"
 buttonTextColor = "#FFFFFF"
 
 [runner]
