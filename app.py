@@ -257,198 +257,186 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
-    # Custom CSS for modern look with gradients and animations
-    custom_css = """
-    <style>
-        /* Gradient background for header */
-        .stApp header {
-            background: linear-gradient(90deg, #1E3A8A 0%, #1E40AF 100%);
-            animation: headerGlow 5s infinite alternate;
-        }
-        
-        /* Gradient for sidebar */
-        .stSidebar {
-            background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%);
-        }
-        
-        /* Animated glow for header */
-        @keyframes headerGlow {
-            0% { box-shadow: 0 0 10px rgba(30, 58, 138, 0.5); }
-            100% { box-shadow: 0 0 20px rgba(30, 64, 175, 0.8); }
-        }
-        
-        /* Animated button hover */
-        .stButton>button {
-            transition: all 0.3s ease;
-        }
-        
-        .stButton>button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
-        /* Animated chat messages */
-        .stChatMessage {
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Gradient for chat input */
-        .stTextInput>div>div {
-            border-radius: 10px;
-            border: 1px solid #4169E1;
-            background: linear-gradient(90deg, rgba(65, 105, 225, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%);
-        }
-        
-        /* Pulsing emergency icon animation */
-        .emergency-icon {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
-    </style>
-    """
-
     # Page config
     st.set_page_config(
-        page_title="Disaster Management Assistant",
-        page_icon="🆘",
+        page_title="Disaster Management RAG Chatbot",
+        page_icon="🤖",
         layout="wide"
     )
-    
-    # Apply custom CSS
-    st.markdown(custom_css, unsafe_allow_html=True)
-    
-    # Add emergency icon with animation class
-    st.markdown('<h1 class="emergency-icon">Disaster Management Assistant 🆘</h1>', unsafe_allow_html=True)
-    
-    # Sidebar with settings and info
-    with st.sidebar:
-        st.title("Settings & Info")
+
+    # Custom CSS for layout
+    st.markdown("""
+        <style>
+        /* Main container styling */
+        .main {
+            padding: 0;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
         
-        # Language Settings in an expander
-        with st.expander("🌐 Language Settings", expanded=False):
-            input_lang = st.selectbox(
-                "Select Input Language",
-                ["English", "Urdu", "Sindhi"],
-                key="input_language_selector",
-                index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Urdu" else 2
-            )
-            output_lang = st.selectbox(
-                "Select Output Language",
-                ["English", "Urdu", "Sindhi"],
-                key="output_language_selector",
-                index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Urdu" else 2
-            )
-            
-            # Update session state if language changed
-            if input_lang != st.session_state.input_language:
-                st.session_state.input_language = input_lang
-            if output_lang != st.session_state.output_language:
-                st.session_state.output_language = output_lang
+        /* Chat container */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;  /* Space for input box */
+        }
         
-        # About section in an expander
-        with st.expander("ℹ️ About", expanded=False):
-            st.markdown("""
-            ### Features
-            This chatbot uses:
-            - 🧠 Gemini Pro for text generation
-            - 🔍 Pinecone for vector storage
-            - ⚡ LangChain for the RAG pipeline
-            - 🌐 Multilingual support (English, Urdu & Sindhi)
-            
-            ### Topics
-            You can ask questions about:
-            - 📋 Disaster management procedures
-            - 🚨 Emergency protocols
-            - 🛡️ Safety measures
-            - 📊 Risk assessment
-            - 🏥 Relief operations
-            
-            ### Tips
-            - Be specific in your questions
-            - Ask about one topic at a time
-            - Use clear, simple language
-            """)
+        /* Fixed input container at bottom */
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            background-color: white;
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            z-index: 1000;
+            display: none;
+        }
         
-        # Download options in an expander
-        with st.expander("💾 Download Chat History", expanded=False):
-            col_download_pdf, col_download_text = st.columns(2)
+        /* Sidebar styling */
+        .css-1d391kg {
+            padding: 20px;
+        }
+        
+        /* Streamlit elements styling */
+        div.stButton > button {
+            width: 100%;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    try:
+        # Initialize RAG system
+        qa_chain, llm = initialize_rag()
+
+        # Sidebar with settings and info
+        with st.sidebar:
+            st.title("Settings & Info")
             
-            with col_download_pdf:
-                if st.button("Generate PDF"):
-                    st.session_state.pdf_data = create_chat_pdf()
-                    st.success("PDF generated! Click download button below.")
+            # Language Settings in an expander
+            with st.expander("🌐 Language Settings", expanded=False):
+                input_lang = st.selectbox(
+                    "Select Input Language",
+                    ["English", "Urdu", "Sindhi"],
+                    key="input_language_selector",
+                    index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Urdu" else 2
+                )
+                output_lang = st.selectbox(
+                    "Select Output Language",
+                    ["English", "Urdu", "Sindhi"],
+                    key="output_language_selector",
+                    index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Urdu" else 2
+                )
                 
-                if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
-                    if st.download_button(
-                        "Download PDF",
-                        data=st.session_state.pdf_data,
-                        file_name="chat_history.pdf",
-                        mime="application/pdf"
-                    ):
-                        st.success("PDF downloaded!")
+                # Update session state if language changed
+                if input_lang != st.session_state.input_language:
+                    st.session_state.input_language = input_lang
+                if output_lang != st.session_state.output_language:
+                    st.session_state.output_language = output_lang
             
-            with col_download_text:
-                text_data = create_chat_text()
-                if text_data is not None:
-                    if st.download_button(
-                        "Download Text",
-                        data=text_data,
-                        file_name="chat_history.txt",
-                        mime="text/plain"
-                    ):
-                        st.success("Text downloaded!")
+            # About section in an expander
+            with st.expander("ℹ️ About", expanded=False):
+                st.markdown("""
+                ### Features
+                This chatbot uses:
+                - 🧠 Gemini Pro for text generation
+                - 🔍 Pinecone for vector storage
+                - ⚡ LangChain for the RAG pipeline
+                - 🌐 Multilingual support (English, Urdu & Sindhi)
+                
+                ### Topics
+                You can ask questions about:
+                - 📋 Disaster management procedures
+                - 🚨 Emergency protocols
+                - 🛡️ Safety measures
+                - 📊 Risk assessment
+                - 🏥 Relief operations
+                
+                ### Tips
+                - Be specific in your questions
+                - Ask about one topic at a time
+                - Use clear, simple language
+                """)
+            
+            # Download options in an expander
+            with st.expander("💾 Download Chat History", expanded=False):
+                col_download_pdf, col_download_text = st.columns(2)
+                
+                with col_download_pdf:
+                    if st.button("Generate PDF"):
+                        st.session_state.pdf_data = create_chat_pdf()
+                        st.success("PDF generated! Click download button below.")
+                    
+                    if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
+                        if st.download_button(
+                            "Download PDF",
+                            data=st.session_state.pdf_data,
+                            file_name="chat_history.pdf",
+                            mime="application/pdf"
+                        ):
+                            st.success("PDF downloaded!")
+                
+                with col_download_text:
+                    text_data = create_chat_text()
+                    if text_data is not None:
+                        if st.download_button(
+                            "Download Text",
+                            data=text_data,
+                            file_name="chat_history.txt",
+                            mime="text/plain"
+                        ):
+                            st.success("Text downloaded!")
+            
+            # Clear chat button at the bottom of sidebar
+            if st.button("🗑️ Clear Chat History"):
+                st.session_state.messages = []
+                if "pdf_data" in st.session_state:
+                    del st.session_state.pdf_data
+                st.rerun()
+
+        # Main chat interface
+        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
         
-        # Clear chat button at the bottom of sidebar
-        if st.button("🗑️ Clear Chat History"):
-            st.session_state.messages = []
+        # Display chat title
+        st.title("Disaster Management Assistant 🤖")
+        
+        # Display chat messages
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        # Fixed input box at bottom
+        st.markdown('<div class="input-container">', unsafe_allow_html=True)
+        if prompt := st.chat_input("Ask your question here"):
+            # Display user message
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            st.session_state.messages.append({"role": "user", "content": prompt})
+
+            # Display assistant response
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    if is_general_chat(prompt):
+                        response_text = get_general_response(prompt)
+                    else:
+                        response = qa_chain({"query": prompt})
+                        response_text = response['result']
+                    st.markdown(response_text)
+            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            
+            # Update PDF data after new message
             if "pdf_data" in st.session_state:
-                del st.session_state.pdf_data
-            st.rerun()
-
-    # Main chat interface
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-    
-    # Display chat messages
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Fixed input box at bottom
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
-    if prompt := st.chat_input("Ask your question here"):
-        # Display user message
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        # Display assistant response
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                if is_general_chat(prompt):
-                    response_text = get_general_response(prompt)
-                else:
-                    response = initialize_rag()[0]({"query": prompt})
-                    response_text = response['result']
-                st.markdown(response_text)
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
+                st.session_state.pdf_data = create_chat_pdf()
+                
+        st.markdown('</div>', unsafe_allow_html=True)
         
-        # Update PDF data after new message
-        if "pdf_data" in st.session_state:
-            st.session_state.pdf_data = create_chat_pdf()
-            
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
