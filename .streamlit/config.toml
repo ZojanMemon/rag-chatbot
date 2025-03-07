@@ -5,47 +5,47 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Glassmorphism theme with gradient effects
-base = "light"
-primaryColor = "#7C3AED"  # Vibrant purple
-backgroundColor = "#F0F4FF"  # Soft blue-white
-secondaryBackgroundColor = "rgba(255, 255, 255, 0.95)"  # Translucent white
-textColor = "#1E293B"  # Slate blue text
+# Modern glass effect with gradient background
+base = "dark"
+primaryColor = "#9D4EDD"  # Rich purple
+backgroundColor = "#0A1128"  # Deep navy background
+secondaryBackgroundColor = "rgba(41, 50, 100, 0.3)"  # Translucent navy
+textColor = "#E2E8F0"  # Soft white text
 
 # Typography
 font = "sans serif"
 
 # UI Elements with glass effect
-primaryColorLight = "#9F67FF"  # Light purple for gradients
-primaryColorDark = "#6D28D9"   # Deep purple for emphasis
+primaryColorLight = "#C77DFF"  # Light purple for hover
+primaryColorDark = "#7B2CBF"   # Deep purple for active states
 
 [theme.components]
-# Modern button styling
+# Glassy button styling
 buttonBorderRadius = "12px"
-buttonShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+buttonShadow = "0 8px 32px 0 rgba(157, 78, 221, 0.4)"
 buttonTextColor = "#FFFFFF"
-buttonBackgroundColor = "rgba(124, 58, 237, 0.9)"  # Semi-transparent purple
+buttonBackgroundColor = "rgba(157, 78, 221, 0.2)"  # Translucent purple
 
-# Sleek input styling
+# Modern input styling
 inputBorderRadius = "12px"
-inputBorderColor = "rgba(124, 58, 237, 0.3)"
-inputBackground = "rgba(255, 255, 255, 0.8)"
+inputBorderColor = "rgba(157, 78, 221, 0.3)"
+inputBackground = "rgba(41, 50, 100, 0.2)"
 
 # Glass effect sidebar
-sidebarBackgroundColor = "rgba(255, 255, 255, 0.85)"
-sidebarTextColor = "#1E293B"
-sidebarBorderColor = "rgba(124, 58, 237, 0.2)"
-sidebarShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+sidebarBackgroundColor = "rgba(10, 17, 40, 0.7)"
+sidebarTextColor = "#E2E8F0"
+sidebarBorderColor = "rgba(157, 78, 221, 0.2)"
+sidebarShadow = "0 8px 32px 0 rgba(157, 78, 221, 0.2)"
 
 # Card and container styling
 containerBorderRadius = "16px"
-containerShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.15)"
-containerBackgroundColor = "rgba(255, 255, 255, 0.9)"
+containerShadow = "0 8px 32px 0 rgba(157, 78, 221, 0.15)"
+containerBackgroundColor = "rgba(41, 50, 100, 0.3)"
 
-# Accent colors for visual hierarchy
-accentColorLight = "#F0EEFF"  # Very light purple
-accentColorMedium = "#DDD6FE"  # Medium purple tint
-accentColorDark = "#7C3AED"  # Deep purple
+# Accent colors for depth
+accentColorLight = "rgba(157, 78, 221, 0.1)"  # Very light purple
+accentColorMedium = "rgba(157, 78, 221, 0.3)"  # Medium purple
+accentColorDark = "rgba(157, 78, 221, 0.5)"  # Deep purple
 
 [runner]
 packageManager = "pip"
