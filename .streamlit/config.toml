@@ -5,35 +5,47 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-# Modern dark theme with rich colors
-base = "dark"
-primaryColor = "#4A90E2"  # Vibrant blue for primary actions
-backgroundColor = "#1A1B25"  # Rich dark background
-secondaryBackgroundColor = "#252632"  # Slightly lighter for contrast
-textColor = "#FFFFFF"  # Crisp white text
+# Glassmorphism theme with gradient effects
+base = "light"
+primaryColor = "#7C3AED"  # Vibrant purple
+backgroundColor = "#F0F4FF"  # Soft blue-white
+secondaryBackgroundColor = "rgba(255, 255, 255, 0.95)"  # Translucent white
+textColor = "#1E293B"  # Slate blue text
 
-# Custom theme elements
+# Typography
 font = "sans serif"
 
-# UI Element Colors
-primaryColorLight = "#67A7E8"  # Bright blue for hover states
-primaryColorDark = "#2E5C99"   # Deep blue for active states
+# UI Elements with glass effect
+primaryColorLight = "#9F67FF"  # Light purple for gradients
+primaryColorDark = "#6D28D9"   # Deep purple for emphasis
 
 [theme.components]
-# Button styling
-buttonBorderRadius = "4px"
-buttonShadow = "0px 4px 8px rgba(0, 0, 0, 0.2)"
+# Modern button styling
+buttonBorderRadius = "12px"
+buttonShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
 buttonTextColor = "#FFFFFF"
+buttonBackgroundColor = "rgba(124, 58, 237, 0.9)"  # Semi-transparent purple
 
-# Input field styling
-inputBorderRadius = "4px"
-inputBorderColor = "#3A3B47"
-inputBackground = "#2A2B35"
+# Sleek input styling
+inputBorderRadius = "12px"
+inputBorderColor = "rgba(124, 58, 237, 0.3)"
+inputBackground = "rgba(255, 255, 255, 0.8)"
 
-# Sidebar styling
-sidebarBackgroundColor = "#151620"
-sidebarTextColor = "#E0E0E0"
-sidebarBorderColor = "#2A2B35"
+# Glass effect sidebar
+sidebarBackgroundColor = "rgba(255, 255, 255, 0.85)"
+sidebarTextColor = "#1E293B"
+sidebarBorderColor = "rgba(124, 58, 237, 0.2)"
+sidebarShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.37)"
+
+# Card and container styling
+containerBorderRadius = "16px"
+containerShadow = "0 8px 32px 0 rgba(31, 38, 135, 0.15)"
+containerBackgroundColor = "rgba(255, 255, 255, 0.9)"
+
+# Accent colors for visual hierarchy
+accentColorLight = "#F0EEFF"  # Very light purple
+accentColorMedium = "#DDD6FE"  # Medium purple tint
+accentColorDark = "#7C3AED"  # Deep purple
 
 [runner]
 packageManager = "pip"
