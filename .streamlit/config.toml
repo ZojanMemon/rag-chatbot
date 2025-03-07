@@ -7,10 +7,10 @@ gatherUsageStats = false
 [theme]
 # Modern dark theme inspired by OKYAI
 base = "dark"
-primaryColor = "#9C5FFF"  # Vibrant purple
-backgroundColor = "#0e1117"  # Deep charcoal
-secondaryBackgroundColor = "#2D2E3D"  # Slightly lighter charcoal
-textColor = "#FFFFFF"  # Crisp white
+primaryColor = "#FF4B4B"  # Vibrant purple
+backgroundColor = "#0E1117"  # Deep charcoal
+secondaryBackgroundColor = "#262730"  # Slightly lighter charcoal
+textColor = "#FAFAFA"  # Crisp white
 
 # Custom theme elements
 font = "sans serif"
