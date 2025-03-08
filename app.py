@@ -311,19 +311,19 @@ def main():
         /* Sidebar styling */
         .css-1d391kg {
             padding: 1.5rem;
-            background-color: #f8f9fa;
+            background-color: #1a1a1a;
         }
         
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
-            background-color: white !important;
-            border: 1px solid #dee2e6 !important;
-            color: #1a1a1a !important;
-            border-radius: 6px !important;
-            padding: 0.75rem !important;
-            margin: 0.5rem 0 !important;
-            font-size: 0.95rem !important;
+            background-color: #2d2d2d !important;
+            border: none !important;
+            color: #e6e6e6 !important;
+            border-radius: 4px !important;
+            padding: 0.5rem !important;
+            margin: 0.25rem 0 !important;
+            font-size: 0.9rem !important;
             transition: all 0.2s ease !important;
             display: flex !important;
             align-items: center !important;
@@ -331,8 +331,7 @@ def main():
         }
 
         div.stButton > button:hover {
-            background-color: #f1f3f5 !important;
-            border-color: #ced4da !important;
+            background-color: #3d3d3d !important;
             transform: translateY(-1px);
         }
 
@@ -340,7 +339,6 @@ def main():
         div.stButton > button[kind="primary"] {
             background-color: #0066cc !important;
             color: white !important;
-            border: none !important;
         }
 
         div.stButton > button[kind="primary"]:hover {
@@ -349,82 +347,101 @@ def main():
 
         /* Section headers */
         .section-header {
-            color: #1a1a1a !important;
-            font-size: 1.1rem !important;
-            font-weight: 600 !important;
-            margin: 1.5rem 0 1rem 0 !important;
+            color: #e6e6e6 !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            margin: 1rem 0 0.5rem 0 !important;
             padding: 0 !important;
             display: flex !important;
             align-items: center !important;
             gap: 0.5rem !important;
+            opacity: 0.8 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
         }
 
         /* Chat history items */
         .chat-item {
-            background-color: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
+            background-color: #2d2d2d;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .chat-item:hover {
-            background-color: #f1f3f5;
-            border-color: #ced4da;
+            background-color: #3d3d3d;
             transform: translateY(-1px);
         }
 
         /* Expander styling */
         .streamlit-expanderHeader {
-            background-color: white !important;
-            border: 1px solid #dee2e6 !important;
-            border-radius: 6px !important;
-            padding: 0.75rem !important;
-            margin: 0.5rem 0 !important;
-            color: #1a1a1a !important;
-            font-weight: 500 !important;
+            background-color: #2d2d2d !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 0.5rem !important;
+            margin: 0.25rem 0 !important;
+            color: #e6e6e6 !important;
+            font-weight: normal !important;
+            font-size: 0.9rem !important;
         }
 
         .streamlit-expanderHeader:hover {
-            background-color: #f1f3f5 !important;
+            background-color: #3d3d3d !important;
         }
 
         .streamlit-expanderContent {
-            border: 1px solid #dee2e6 !important;
-            border-top: none !important;
-            border-radius: 0 0 6px 6px !important;
-            padding: 1rem !important;
-            background-color: white !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 0.75rem !important;
+            background-color: #2d2d2d !important;
+            color: #e6e6e6 !important;
+            margin-top: 0.25rem !important;
         }
 
         /* Profile button */
         .profile-button {
-            background-color: white !important;
-            border: 1px solid #dee2e6 !important;
-            border-radius: 6px !important;
-            padding: 0.75rem !important;
-            color: #1a1a1a !important;
+            background-color: #2d2d2d !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 0.5rem !important;
+            color: #e6e6e6 !important;
             display: flex !important;
             align-items: center !important;
-            gap: 0.75rem !important;
+            gap: 0.5rem !important;
             transition: all 0.2s ease !important;
+            font-size: 0.9rem !important;
         }
 
         .profile-button:hover {
-            background-color: #f1f3f5 !important;
+            background-color: #3d3d3d !important;
             transform: translateY(-1px);
-        }
-
-        .profile-icon {
-            font-size: 1.5rem !important;
         }
 
         /* Dividers */
         hr {
-            margin: 1.5rem 0 !important;
-            border-color: #dee2e6 !important;
+            margin: 1.25rem 0 !important;
+            border-color: #3d3d3d !important;
+            opacity: 0.5 !important;
+        }
+
+        /* Selectbox styling */
+        .stSelectbox > div > div {
+            background-color: #2d2d2d !important;
+            border: none !important;
+            color: #e6e6e6 !important;
+        }
+
+        .stSelectbox > div > div:hover {
+            border: none !important;
+        }
+
+        /* Selectbox options */
+        .stSelectbox > div > div > div {
+            background-color: #2d2d2d !important;
+            color: #e6e6e6 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -457,21 +474,13 @@ def main():
                 st.rerun()
             user_sidebar(user)
         else:
-            # 1. New Chat Button
-            st.markdown('<div class="section-header">✨ Start New Chat</div>', unsafe_allow_html=True)
-            if st.button("+ New Conversation", type="primary", use_container_width=True):
-                st.session_state.messages = []
-                st.rerun()
-            
-            st.divider()
-            
-            # 2. Chat History
-            st.markdown('<div class="section-header">💬 Chat History</div>', unsafe_allow_html=True)
+            # Chat History
+            st.markdown('<div class="section-header">💬 Recent Conversations</div>', unsafe_allow_html=True)
             chat_history_sidebar(user_id)
             
             st.divider()
             
-            # 3. Language Settings
+            # Language Settings
             with st.expander("🌐 Language Settings"):
                 input_language = st.selectbox(
                     "Input Language",
@@ -492,8 +501,8 @@ def main():
                     st.session_state.output_language = output_language
                     save_user_preferences(user_id)
             
-            # 4. About Section
-            with st.expander("ℹ️ About this Chatbot"):
+            # About Section
+            with st.expander("ℹ️ About"):
                 st.markdown("""
                 **🤖 Disaster Management Assistant**
                 
@@ -521,15 +530,15 @@ def main():
             
             st.divider()
             
-            # 5. Profile Button
-            if st.button("👤 View Profile", use_container_width=True):
+            # Profile Button
+            if st.button("👤 Profile Settings", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
             
             st.divider()
             
-            # 6. Download Options
-            st.markdown('<div class="section-header">💾 Export Chat</div>', unsafe_allow_html=True)
+            # Download Options
+            st.markdown('<div class="section-header">💾 Export Options</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📄 PDF"):
