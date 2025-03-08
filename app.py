@@ -567,28 +567,31 @@ def main():
             # About Section
             with st.expander("ℹ️ About"):
                 st.markdown("""
-                **🤖 Disaster Management Assistant**
+                # This chatbot uses:
                 
-                This intelligent chatbot helps you with disaster-related information:
+                - 🧠 Gemini Pro for text generation
+                - 🔍 Pinecone for vector storage
+                - ⚡ LangChain for the RAG pipeline
+                - 🌐 Multilingual support (English , Sindhi and Urdu)
                 
-                🔍 **RAG Technology**
-                - Accurate and contextual responses
-                - Real-time information retrieval
+                # Topics 📑
                 
-                🌍 **Multi-language Support**
-                - English, Urdu, and Sindhi
-                - Natural conversations
+                You can ask questions about:
                 
-                🔒 **Secure Infrastructure**
-                - Firebase authentication
-                - Encrypted data storage
+                - 📋 Disaster management procedures
+                - 🚨 Emergency protocols
+                - 🛡️ Safety measures
+                - 📊 Risk assessment
+                - 👥 Relief operations
                 
-                ⚡ **Advanced Features**
-                - LangChain processing
-                - Chat history management
-                - PDF/Text exports
+                # Tips 💡
                 
-                Built with ❤️ to help communities during emergencies.
+                For best results:
+                
+                - ✨ Be specific in your questions
+                - 🎯 Ask about one topic at a time
+                - 📝 Use clear, simple language
+                - 🔄 Try rephrasing if needed
                 """)
             
             st.divider()
