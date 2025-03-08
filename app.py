@@ -341,18 +341,40 @@ def main():
         }
 
         /* User profile button */
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px;
-            border-radius: 8px;
+        .user-profile-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
             cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
             transition: background-color 0.3s;
         }
 
-        .user-profile:hover {
+        .user-profile-btn:hover {
             background-color: #f0f2f6;
+        }
+
+        /* Clean sidebar styling */
+        .clean-sidebar {
+            padding: 1rem;
+            background: #ffffff;
+        }
+
+        .clean-sidebar .stButton button {
+            border: none;
+            background: none;
+            color: #0066cc;
+            padding: 0.5rem;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        .clean-sidebar .stButton button:hover {
+            background: #f0f2f6;
+            border-radius: 4px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -374,65 +396,57 @@ def main():
     user_id = user['uid']
     preferences = load_user_preferences(user)
 
-    # Sidebar with improved layout
-    with st.sidebar:
-        st.image("https://img.icons8.com/color/96/000000/emergency-exit.png", width=50)
+    # Main chat interface
+    st.title("🚨 Disaster Management Assistant")
+
+    # Language selection in main panel
+    col1, col2, col3 = st.columns([2,2,1])
+    with col1:
+        input_language = st.selectbox(
+            "Input Language",
+            ["English", "Urdu", "Sindhi"],
+            index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
+        )
+    with col2:
+        output_language = st.selectbox(
+            "Output Language",
+            ["English", "Urdu", "Sindhi"],
+            index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
+        )
+    
+    if input_language != st.session_state.input_language:
+        st.session_state.input_language = input_language
+        save_user_preferences(user_id)
         
-        # User profile section
+    if output_language != st.session_state.output_language:
+        st.session_state.output_language = output_language
+        save_user_preferences(user_id)
+
+    # Sidebar with clean layout
+    with st.sidebar:
+        # User profile button
         if st.session_state.get('show_settings', False):
             st.title("User Settings")
-            # Back button
-            if st.button("← Back to Chat"):
+            if st.button("← Back"):
                 st.session_state.show_settings = False
                 st.rerun()
             
-            # User profile settings
-            st.subheader("Profile")
             user_sidebar(user)
-            
-            # Language Settings
-            st.subheader("🌐 Language Settings")
-            input_language = st.selectbox(
-                "Input Language:",
-                ["English", "Urdu", "Sindhi"],
-                index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
-            )
-            
-            output_language = st.selectbox(
-                "Output Language:",
-                ["English", "Urdu", "Sindhi"],
-                index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
-            )
-            
-            if input_language != st.session_state.input_language:
-                st.session_state.input_language = input_language
-                save_user_preferences(user_id)
-                
-            if output_language != st.session_state.output_language:
-                st.session_state.output_language = output_language
-                save_user_preferences(user_id)
         else:
-            # Show minimal sidebar with user profile button
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                st.markdown("👤")
+            # Clean profile button
+            col1, col2 = st.columns([6,1])
             with col2:
-                if st.button(f"Profile Settings"):
+                if st.button("👤"):
                     st.session_state.show_settings = True
                     st.rerun()
             
-            st.divider()
-            
-            # Chat History
-            st.subheader("📝 Chat History")
+            # Chat history without heading
             chat_history_sidebar(user_id)
 
-            # Download options
-            st.subheader("💾 Download Chat")
+            # Download options in a clean layout
             col1, col2 = st.columns(2)
-            
             with col1:
-                if st.button("Download PDF"):
+                if st.button("📄 PDF"):
                     pdf_file = create_chat_pdf()
                     st.download_button(
                         label="Download PDF",
@@ -440,9 +454,8 @@ def main():
                         file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
                         mime="application/pdf"
                     )
-            
             with col2:
-                if st.button("Download Text"):
+                if st.button("📝 Text"):
                     text_file = create_chat_text()
                     st.download_button(
                         label="Download Text",
@@ -450,9 +463,6 @@ def main():
                         file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
                         mime="text/plain"
                     )
-
-    # Main chat interface
-    st.title("🚨 Disaster Management Assistant")
     
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
