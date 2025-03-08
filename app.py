@@ -287,7 +287,7 @@ def main():
     # Page config
     st.set_page_config(
         page_title="Disaster Management RAG Chatbot",
-        page_icon="🚨",
+        page_icon="🤖",
         layout="wide"
     )
 
@@ -453,9 +453,9 @@ def main():
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin: 1rem 0;
+            margin: 0;
             padding: 0.75rem 1rem;
-            background-color: #252525;
+            background-color: transparent;
             border-radius: 4px;
             max-width: fit-content;
         }
@@ -467,12 +467,25 @@ def main():
             border-top: 2px solid transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-left: 2.5rem;
         }
 
         .thinking-text {
             color: #808080;
             font-size: 0.9rem;
             font-weight: 500;
+        }
+
+        /* Chat message container */
+        .stChatMessage {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .stChatMessageContent {
+            flex: 1;
         }
         </style>
     """, unsafe_allow_html=True)
