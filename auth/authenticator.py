@@ -3,6 +3,8 @@ Firebase authentication handler for Streamlit.
 """
 import streamlit as st
 from firebase_admin import auth
+from firebase_admin._auth_utils import InvalidIdTokenError
+import requests
 from .firebase_config import get_firestore_db, initialize_firebase
 import json
 import base64
@@ -37,6 +39,25 @@ class FirebaseAuthenticator:
     def login_form(self, email: str, password: str):
         """Handle login form submission."""
         try:
+            # Get Firebase Auth REST API endpoint
+            response = requests.post(
+                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={st.secrets.firebase.api_key}",
+                json={
+                    "email": email,
+                    "password": password,
+                    "returnSecureToken": True
+                }
+            )
+            
+            if response.status_code != 200:
+                error_message = response.json().get('error', {}).get('message', 'Login failed')
+                if error_message == 'INVALID_PASSWORD':
+                    return False, "Incorrect password"
+                elif error_message == 'EMAIL_NOT_FOUND':
+                    return False, "Email not found"
+                else:
+                    return False, f"Login failed: {error_message}"
+            
             # Get user from Firebase Auth
             user = auth.get_user_by_email(email)
             
@@ -66,6 +87,8 @@ class FirebaseAuthenticator:
                     })
             
             return True, "Login successful!"
+        except requests.exceptions.RequestException as e:
+            return False, f"Network error: {str(e)}"
         except Exception as e:
             return False, f"Login failed: {str(e)}"
     
