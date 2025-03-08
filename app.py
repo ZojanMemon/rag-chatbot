@@ -341,49 +341,72 @@ def main():
         }
 
         /* User profile button */
-        .user-profile-btn {
-            font-size: 24px;
-            padding: 10px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            background: none;
-            border: none;
+        .profile-button {
             display: flex;
             align-items: center;
-            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        /* Clean sidebar styling */
-        .clean-sidebar {
-            padding: 1rem;
-            background: #ffffff;
+        .profile-button:hover {
+            background: #e9ecef;
         }
 
-        .clean-sidebar .stButton button {
-            border: none;
-            background: none;
-            color: #0066cc;
-            padding: 0.5rem;
-            text-align: left;
-            font-size: 0.9rem;
+        .profile-icon {
+            font-size: 28px;
+            margin-right: 10px;
         }
 
-        .clean-sidebar .stButton button:hover {
-            background: #f0f2f6;
-            border-radius: 4px;
-        }
-
-        /* About section */
-        .about-section {
-            margin-top: 20px;
+        /* Sidebar sections */
+        .sidebar-section {
+            margin-bottom: 20px;
             padding: 15px;
             border-radius: 8px;
             background: #f8f9fa;
         }
 
-        .about-section h4 {
+        .sidebar-section h4 {
             margin: 0;
             padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .streamlit-expanderHeader p {
+            margin: 0;
+        }
+
+        /* Download buttons */
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .download-button {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            background: #f8f9fa;
+            transition: background 0.3s;
+        }
+
+        .download-button:hover {
+            background: #e9ecef;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -392,7 +415,6 @@ def main():
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        # Show welcome message with minimal styling
         st.markdown("""
         <div style="text-align: center; padding: 20px;">
         <h2>🚨 Welcome to the Disaster Management Assistant</h2>
@@ -413,60 +435,75 @@ def main():
         # User profile at the top
         if st.session_state.get('show_settings', False):
             st.title("User Settings")
-            if st.button("← Back"):
+            if st.button("← Back to Chat"):
                 st.session_state.show_settings = False
                 st.rerun()
             user_sidebar(user)
         else:
-            # Clean profile button
-            if st.button("👤 Profile", use_container_width=True):
+            # Profile button with icon
+            if st.button("👤 My Profile", key="profile_btn", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
             
-            # Language settings
-            st.subheader("🌐 Language Settings")
-            input_language = st.selectbox(
-                "Input Language",
-                ["English", "Urdu", "Sindhi"],
-                index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
-            )
-            output_language = st.selectbox(
-                "Output Language",
-                ["English", "Urdu", "Sindhi"],
-                index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
-            )
-            
-            if input_language != st.session_state.input_language:
-                st.session_state.input_language = input_language
-                save_user_preferences(user_id)
-                
-            if output_language != st.session_state.output_language:
-                st.session_state.output_language = output_language
-                save_user_preferences(user_id)
-
             st.divider()
             
-            # About section
+            # Language settings in expander
+            with st.expander("🌐 Language Settings"):
+                input_language = st.selectbox(
+                    "Input Language",
+                    ["English", "Urdu", "Sindhi"],
+                    index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
+                )
+                output_language = st.selectbox(
+                    "Output Language",
+                    ["English", "Urdu", "Sindhi"],
+                    index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
+                )
+                
+                if input_language != st.session_state.input_language:
+                    st.session_state.input_language = input_language
+                    save_user_preferences(user_id)
+                    
+                if output_language != st.session_state.output_language:
+                    st.session_state.output_language = output_language
+                    save_user_preferences(user_id)
+            
+            # About section with icons
             with st.expander("ℹ️ About this Chatbot"):
                 st.markdown("""
-                **Disaster Management Assistant**
+                **🤖 Disaster Management Assistant**
                 
-                This chatbot is designed to help you with disaster-related queries and information. It uses:
+                This intelligent chatbot helps you with disaster-related information:
                 
-                - **RAG Technology**: For accurate and contextual responses
-                - **Multi-language Support**: Communication in English, Urdu, and Sindhi
-                - **Firebase Backend**: For secure data storage and authentication
-                - **LangChain**: For advanced language processing
+                🔍 **RAG Technology**
+                - Accurate and contextual responses
+                - Real-time information retrieval
+                
+                🌍 **Multi-language Support**
+                - English, Urdu, and Sindhi
+                - Natural conversations
+                
+                🔒 **Secure Infrastructure**
+                - Firebase authentication
+                - Encrypted data storage
+                
+                ⚡ **Advanced Features**
+                - LangChain processing
+                - Chat history management
+                - PDF/Text exports
                 
                 Built with ❤️ to help communities during emergencies.
                 """)
             
             st.divider()
             
-            # Chat history without heading
+            # Chat history
             chat_history_sidebar(user_id)
 
-            # Download options in a clean layout
+            st.divider()
+            
+            # Download options with icons
+            st.markdown("### 💾 Export Chat")
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📄 PDF"):
