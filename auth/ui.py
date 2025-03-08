@@ -26,93 +26,157 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     # Add custom CSS
     st.markdown("""
         <style>
-        /* Modern form styling */
+        /* Page background */
+        .stApp {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        /* Card styling */
         div[data-testid="stForm"] {
-            border: 1px solid #2c3e50;
-            border-radius: 10px;
-            padding: 20px;
-            background: #1a1a1a;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
+            border: none;
+            border-radius: 20px;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin: 1rem 0;
         }
         
         /* Tab styling */
         .stTabs [data-baseweb="tab-list"] {
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
         }
         
         .stTabs [data-baseweb="tab"] {
-            height: 50px;
-            white-space: pre-wrap;
-            background-color: #2c3e50;
-            border-radius: 5px;
-            color: #ffffff;
-            font-weight: 500;
+            height: 60px;
+            padding: 0 2rem;
+            font-size: 1.1rem;
+            background: transparent;
+            border: none;
+            color: #a0aec0;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
         
         .stTabs [data-baseweb="tab"]:hover {
-            background-color: #34495e;
             color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
         }
         
         .stTabs [aria-selected="true"] {
-            background-color: #3498db !important;
+            background: linear-gradient(45deg, #3498db, #2980b9) !important;
             color: #ffffff !important;
+            border-radius: 10px;
         }
         
         /* Input field styling */
         div[data-baseweb="input"] {
-            background: #2c3e50;
-            border-radius: 5px;
-            border: 1px solid #34495e;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem;
+            margin: 1rem 0;
             transition: all 0.3s ease;
         }
         
         div[data-baseweb="input"]:focus-within {
             border-color: #3498db;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Input text color */
+        .stTextInput input {
+            color: #ffffff !important;
+            font-size: 1.1rem !important;
+            height: 45px !important;
+        }
+        
+        .stTextInput label {
+            color: #a0aec0 !important;
+            font-size: 1rem !important;
+            font-weight: 500 !important;
         }
         
         /* Button styling */
         .stButton button {
             width: 100%;
-            height: 45px;
+            height: 50px;
             background: linear-gradient(45deg, #3498db, #2980b9);
             color: white;
             border: none;
-            border-radius: 5px;
-            font-weight: 500;
-            margin-top: 10px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 1.5rem;
             transition: all 0.3s ease;
+            text-transform: uppercase;
         }
         
         .stButton button:hover {
             background: linear-gradient(45deg, #2980b9, #3498db);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 16px rgba(52, 152, 219, 0.3);
         }
         
         /* Message styling */
         .stAlert {
-            border-radius: 5px;
-            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: none !important;
+            border-radius: 12px !important;
+            backdrop-filter: blur(10px);
+            margin: 1rem 0 !important;
+            padding: 1rem !important;
+        }
+        
+        /* Heading styles */
+        h1, h2, h3 {
+            font-family: 'Inter', sans-serif !important;
+            letter-spacing: -0.5px !important;
+        }
+        
+        /* Welcome text animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .welcome-text {
+            animation: fadeIn 0.8s ease-out;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    # Center the form
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Center the form with more space
+    col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
-        st.markdown("<h1 style='text-align: center; margin-bottom: 30px; color: #3498db;'>Welcome Back! 👋</h1>", unsafe_allow_html=True)
+        st.markdown("""
+            <div class="welcome-text">
+                <h1 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
+                    Welcome Back! 👋
+                </h1>
+                <p style='text-align: center; color: #a0aec0; font-size: 1.1rem; margin-bottom: 2rem;'>
+                    Log in to access your disaster management assistant
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
         
         # Create tabs for login and signup
         tab1, tab2 = st.tabs(["🔑 Login", "✨ Sign Up"])
         
         with tab1:
             with st.form("login_form"):
-                st.markdown("<h3 style='text-align: center; color: #bdc3c7;'>Login to Your Account</h3>", unsafe_allow_html=True)
+                st.markdown("""
+                    <h3 style='text-align: center; color: #e2e8f0; font-size: 1.5rem; margin-bottom: 2rem;'>
+                        Login to Your Account
+                    </h3>
+                """, unsafe_allow_html=True)
+                
                 email = st.text_input("📧 Email Address", key="login_email")
                 password = st.text_input("🔒 Password", type="password", key="login_password")
                 
@@ -130,7 +194,12 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         
         with tab2:
             with st.form("signup_form"):
-                st.markdown("<h3 style='text-align: center; color: #bdc3c7;'>Create New Account</h3>", unsafe_allow_html=True)
+                st.markdown("""
+                    <h3 style='text-align: center; color: #e2e8f0; font-size: 1.5rem; margin-bottom: 2rem;'>
+                        Create New Account
+                    </h3>
+                """, unsafe_allow_html=True)
+                
                 email = st.text_input("📧 Email Address", key="signup_email")
                 password = st.text_input("🔒 Password", type="password", key="signup_password")
                 confirm_password = st.text_input("🔒 Confirm Password", type="password", key="signup_confirm")
