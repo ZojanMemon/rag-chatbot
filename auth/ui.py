@@ -196,15 +196,39 @@ def load_user_preferences(user: Dict) -> Dict:
     Returns:
         Dict: User preferences
     """
-    preferences = user.get('preferences', {})
+    if not user:
+        return {
+            'input_language': 'English',
+            'output_language': 'English'
+        }
     
-    # Set language preferences
-    if 'input_language' in preferences:
-        st.session_state.input_language = preferences['input_language']
-    if 'output_language' in preferences:
-        st.session_state.output_language = preferences['output_language']
+    # Get Firestore client
+    db = get_firestore_db()
+    if not db:
+        return {
+            'input_language': 'English',
+            'output_language': 'English'
+        }
     
-    return preferences
+    try:
+        # Get user preferences from Firestore
+        user_doc = db.collection('users').document(user['uid']).get()
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            preferences = user_data.get('preferences', {})
+            
+            # Set session state
+            st.session_state.input_language = preferences.get('input_language', 'English')
+            st.session_state.output_language = preferences.get('output_language', 'English')
+            
+            return preferences
+    except Exception as e:
+        st.error(f"Error loading preferences: {str(e)}")
+    
+    return {
+        'input_language': 'English',
+        'output_language': 'English'
+    }
 
 def save_user_preferences(user_id: str) -> None:
     """
@@ -213,11 +237,34 @@ def save_user_preferences(user_id: str) -> None:
     Args:
         user_id: User ID
     """
-    auth = FirebaseAuthenticator()
+    if not user_id:
+        return
     
+    # Get current preferences from session state
     preferences = {
-        'input_language': st.session_state.input_language,
-        'output_language': st.session_state.output_language,
+        'input_language': st.session_state.get('input_language', 'English'),
+        'output_language': st.session_state.get('output_language', 'English')
     }
     
-    auth.update_user_preferences(preferences)
+    # Get Firestore client
+    db = get_firestore_db()
+    if not db:
+        st.error("Could not connect to database")
+        return
+    
+    try:
+        # Update preferences in Firestore
+        db.collection('users').document(user_id).update({
+            'preferences': preferences
+        })
+        
+        # Update session state
+        st.session_state.user['preferences'] = preferences
+        
+        # Update cookie if using persistence
+        if 'auth_cookie' in st.session_state:
+            user_data = st.session_state.user
+            st.session_state.auth_cookie = json.dumps(user_data)
+            
+    except Exception as e:
+        st.error(f"Error saving preferences: {str(e)}")
