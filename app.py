@@ -467,7 +467,7 @@ def main():
             border-top: 2px solid transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-left: 2.5rem;
+           
         }
 
         .thinking-text {
