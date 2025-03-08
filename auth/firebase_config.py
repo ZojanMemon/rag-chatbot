@@ -5,17 +5,13 @@ import os
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, firestore
-from dotenv import load_dotenv, find_dotenv
 
-# Load environment variables from .env file
-load_dotenv(find_dotenv())
+# Firebase Web API Key
+FIREBASE_API_KEY = "AIzaSyDCxbp0QBn88b3VhjElt3VthFETN2JGCFc"
 
 def get_firebase_api_key():
-    """Get Firebase API key from environment variables."""
-    api_key = os.environ.get('FIREBASE_API_KEY')
-    if not api_key:
-        raise ValueError("FIREBASE_API_KEY environment variable is not set. Please check your .env file.")
-    return api_key
+    """Get Firebase API key."""
+    return FIREBASE_API_KEY
 
 def get_service_account_path():
     """Get the path to the Firebase service account file."""
