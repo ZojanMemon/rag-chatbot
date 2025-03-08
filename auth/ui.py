@@ -53,19 +53,19 @@ def user_sidebar(user: Dict) -> None:
     """
     auth = FirebaseAuthenticator()
     
-    # User profile section
-    st.markdown("""
-        <div style='padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;'>
-            <h3 style='margin: 0; display: flex; align-items: center; gap: 10px;'>
-                <span style='font-size: 28px;'>👤</span>
-                <span>User Profile</span>
-            </h3>
-            <div style='margin-top: 15px;'>
-                <p style='margin: 5px 0;'><strong>Name:</strong> {name}</p>
-                <p style='margin: 5px 0;'><strong>Email:</strong> {email}</p>
+    # User profile section with proper styling
+    st.markdown(f"""
+        <div style='background-color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
+            <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;'>
+                <span style='font-size: 2rem;'>👤</span>
+                <h3 style='margin: 0; color: #1a1a1a;'>User Profile</h3>
+            </div>
+            <div style='color: #4a4a4a;'>
+                <p style='margin: 0.5rem 0;'><strong>Name:</strong> {user['name']}</p>
+                <p style='margin: 0.5rem 0;'><strong>Email:</strong> {user['email']}</p>
             </div>
         </div>
-    """.format(name=user['name'], email=user['email']), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     # Sign out button
     if st.button("🚪 Sign Out", type="primary", use_container_width=True):
@@ -83,7 +83,6 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
     history_manager = ChatHistoryManager()
     
     # New chat button with icon
-    st.markdown("### 💬 Chat History")
     if st.button("✨ Start New Chat", type="primary", use_container_width=True):
         session_id = history_manager.create_new_session(user_id)
         st.session_state.messages = []
@@ -91,14 +90,40 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
             on_session_change(session_id)
         st.rerun()
     
-    st.divider()
-    
     # List existing sessions
     sessions = history_manager.get_all_sessions(user_id)
     
     if not sessions:
         st.caption("No previous conversations")
     else:
+        # Custom CSS for chat history items
+        st.markdown("""
+            <style>
+            .chat-history-item {
+                background-color: white;
+                border: 1px solid #e6e6e6;
+                border-radius: 4px;
+                padding: 0.75rem;
+                margin: 0.5rem 0;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.3s ease;
+            }
+            .chat-history-item:hover {
+                background-color: #f8f9fa;
+                border-color: #d9d9d9;
+            }
+            .delete-button {
+                opacity: 0.6;
+                transition: opacity 0.3s ease;
+            }
+            .delete-button:hover {
+                opacity: 1;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
         for session in sessions:
             # Create a container for each chat session
             with st.container():
@@ -112,25 +137,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                         first_msg = messages[0]['content']
                         preview = (first_msg[:40] + '...') if len(first_msg) > 40 else first_msg
                     
-                    # Session button with preview and styling
-                    button_style = """
-                        <style>
-                        div[data-testid="stButton"] button {
-                            background: none;
-                            border: none;
-                            text-align: left;
-                            color: #0066cc;
-                            padding: 8px;
-                            border-radius: 4px;
-                            transition: background 0.3s;
-                        }
-                        div[data-testid="stButton"] button:hover {
-                            background: #f0f2f6;
-                        }
-                        </style>
-                    """
-                    st.markdown(button_style, unsafe_allow_html=True)
-                    
+                    # Session button with preview and icon
                     if st.button(
                         f"💭 {preview}",
                         key=f"session_{session['id']}",

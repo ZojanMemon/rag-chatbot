@@ -316,6 +316,28 @@ def main():
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
+            background-color: white;
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            transition: all 0.3s ease;
+        }
+
+        div.stButton > button:hover {
+            background-color: #f8f9fa;
+            border-color: #d9d9d9;
+        }
+
+        /* Primary buttons */
+        div.stButton > button[kind="primary"] {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+        }
+
+        div.stButton > button[kind="primary"]:hover {
+            background-color: #0052a3;
         }
 
         /* Thinking animation */
@@ -340,73 +362,91 @@ def main():
             border-radius: 50%;
         }
 
-        /* User profile button */
-        .profile-button {
+        /* User profile section */
+        .user-profile {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .user-profile h3 {
             display: flex;
             align-items: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            gap: 0.5rem;
+            margin: 0;
+            color: #1a1a1a;
         }
 
-        .profile-button:hover {
-            background: #e9ecef;
-        }
-
-        .profile-icon {
-            font-size: 28px;
-            margin-right: 10px;
+        .user-profile p {
+            margin: 0.5rem 0;
+            color: #4a4a4a;
         }
 
         /* Sidebar sections */
         .sidebar-section {
-            margin-bottom: 20px;
-            padding: 15px;
+            background-color: white;
             border-radius: 8px;
-            background: #f8f9fa;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        .sidebar-section h4 {
-            margin: 0;
-            padding-bottom: 10px;
+        .section-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        /* Chat history items */
+        .chat-item {
+            background-color: white;
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 1px solid #e6e6e6;
+            transition: all 0.3s ease;
+        }
+
+        .chat-item:hover {
+            background-color: #f8f9fa;
+            border-color: #d9d9d9;
+        }
+
+        /* Icons alignment */
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
         }
 
         /* Expander styling */
         .streamlit-expanderHeader {
-            font-size: 1rem;
+            background-color: white;
+            border-radius: 4px;
+            border: 1px solid #e6e6e6;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
         }
 
-        .streamlit-expanderHeader p {
-            margin: 0;
+        .streamlit-expanderHeader:hover {
+            background-color: #f8f9fa;
         }
 
-        /* Download buttons */
-        .download-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .download-button {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            border-radius: 4px;
-            background: #f8f9fa;
-            transition: background 0.3s;
-        }
-
-        .download-button:hover {
-            background: #e9ecef;
+        .streamlit-expanderContent {
+            border: 1px solid #e6e6e6;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            padding: 1rem;
+            background-color: white;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -432,22 +472,23 @@ def main():
 
     # Sidebar with clean layout
     with st.sidebar:
-        # User profile at the top
+        # Profile section
         if st.session_state.get('show_settings', False):
             st.title("User Settings")
-            if st.button("← Back to Chat"):
+            if st.button("← Back to Chat", type="primary"):
                 st.session_state.show_settings = False
                 st.rerun()
             user_sidebar(user)
         else:
-            # Profile button with icon
-            if st.button("👤 My Profile", key="profile_btn", use_container_width=True):
+            # Profile button
+            st.markdown('<div class="section-header"><span class="icon">👤</span> Profile</div>', unsafe_allow_html=True)
+            if st.button("View Profile Settings", type="primary", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
             
             st.divider()
             
-            # Language settings in expander
+            # Language settings
             with st.expander("🌐 Language Settings"):
                 input_language = st.selectbox(
                     "Input Language",
@@ -468,7 +509,7 @@ def main():
                     st.session_state.output_language = output_language
                     save_user_preferences(user_id)
             
-            # About section with icons
+            # About section
             with st.expander("ℹ️ About this Chatbot"):
                 st.markdown("""
                 **🤖 Disaster Management Assistant**
@@ -497,13 +538,14 @@ def main():
             
             st.divider()
             
-            # Chat history
+            # Chat history section
+            st.markdown('<div class="section-header"><span class="icon">💬</span> Chat History</div>', unsafe_allow_html=True)
             chat_history_sidebar(user_id)
 
             st.divider()
             
-            # Download options with icons
-            st.markdown("### 💾 Export Chat")
+            # Download options
+            st.markdown('<div class="section-header"><span class="icon">💾</span> Export Chat</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📄 PDF"):
