@@ -4,6 +4,7 @@ Firebase authentication handler for Streamlit.
 import streamlit as st
 from firebase_admin import auth
 from .firebase_config import get_firestore_db, initialize_firebase
+import json
 
 class FirebaseAuthenticator:
     """Firebase authentication handler."""
@@ -16,7 +17,15 @@ class FirebaseAuthenticator:
         
         # Initialize session state for auth
         if 'user' not in st.session_state:
-            st.session_state.user = None
+            # Try to load user from cookie
+            if 'auth_cookie' in st.session_state:
+                try:
+                    user_data = json.loads(st.session_state.auth_cookie)
+                    st.session_state.user = user_data
+                except:
+                    st.session_state.user = None
+            else:
+                st.session_state.user = None
     
     def login_form(self):
         """Display login form and handle login."""
@@ -32,12 +41,16 @@ class FirebaseAuthenticator:
                 # Get user from Firebase Auth
                 user = auth.get_user_by_email(email)
                 
-                # Store user data in session
-                st.session_state.user = {
+                # Store user data in session and cookie
+                user_data = {
                     'uid': user.uid,
                     'email': user.email,
                     'display_name': user.display_name or email.split('@')[0]
                 }
+                st.session_state.user = user_data
+                
+                # Save to cookie (30 days expiry)
+                st.session_state.auth_cookie = json.dumps(user_data)
                 
                 # Initialize user document in Firestore if it doesn't exist
                 if self.db:
@@ -80,12 +93,16 @@ class FirebaseAuthenticator:
                     password=password
                 )
                 
-                # Store user data in session
-                st.session_state.user = {
+                # Store user data in session and cookie
+                user_data = {
                     'uid': user.uid,
                     'email': user.email,
                     'display_name': email.split('@')[0]
                 }
+                st.session_state.user = user_data
+                
+                # Save to cookie (30 days expiry)
+                st.session_state.auth_cookie = json.dumps(user_data)
                 
                 # Create user document in Firestore
                 if self.db:
@@ -116,6 +133,9 @@ class FirebaseAuthenticator:
     def logout(self):
         """Log out current user."""
         st.session_state.user = None
+        # Clear cookie
+        if 'auth_cookie' in st.session_state:
+            del st.session_state.auth_cookie
         # Clear other session state
         for key in ['messages', 'current_session_id']:
             if key in st.session_state:
