@@ -9,40 +9,126 @@ from .chat_history import ChatHistoryManager
 from datetime import datetime
 
 def auth_page() -> Tuple[bool, Optional[Dict]]:
-    """
-    Display authentication page with login and signup options.
+    """Handle user authentication and return authentication status."""
     
-    Returns:
-        Tuple[bool, Optional[Dict]]: (Authentication status, User data if authenticated)
-    """
-    auth = FirebaseAuthenticator()
+    # Check if user is already authenticated via session state
+    if 'user_token' in st.session_state:
+        try:
+            user = auth.verify_id_token(st.session_state.user_token)
+            return True, user
+        except:
+            # Token expired or invalid, clear it
+            st.session_state.pop('user_token', None)
+            st.session_state.pop('user', None)
     
-    # Check if already authenticated
-    if auth.is_authenticated():
-        return True, auth.get_current_user()
-    
-    # Create tabs for login and signup
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
-    
-    with tab1:
-        success, message = auth.login_form()
-        if message:
-            if success:
-                st.success(message)
-                st.rerun()  # Refresh the page after successful login
-            else:
-                st.error(message)
-    
-    with tab2:
-        success, message = auth.signup_form()
-        if message:
-            if success:
-                st.success(message)
-                st.rerun()  # Refresh the page after successful signup
-            else:
-                st.error(message)
+    # Check for token in URL parameters
+    if 'token' in st.query_params:
+        try:
+            user = auth.verify_id_token(st.query_params['token'])
+            st.session_state.user_token = st.query_params['token']
+            st.session_state.user = user
+            # Remove token from URL
+            st.query_params.clear()
+            st.rerun()
+            return True, user
+        except:
+            pass
     
     return False, None
+
+def login_page():
+    """Display the login page with authentication options."""
+    st.markdown("""
+        <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 2rem;
+            background: #1E1E1E;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .auth-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #E0E0E0;
+        }
+        .auth-description {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #808080;
+            font-size: 0.9rem;
+        }
+        .auth-button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 4px;
+            background: #252525;
+            color: #E0E0E0;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+        .auth-button:hover {
+            background: #353535;
+            transform: translateY(-1px);
+        }
+        .auth-button.email {
+            background: #404040;
+        }
+        .auth-button.google {
+            background: #4285F4;
+        }
+        .auth-button.github {
+            background: #24292E;
+        }
+        .auth-features {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #252525;
+            border-radius: 4px;
+        }
+        .auth-features ul {
+            margin: 0;
+            padding-left: 1.5rem;
+            color: #808080;
+            font-size: 0.9rem;
+        }
+        .auth-features li {
+            margin: 0.5rem 0;
+        }
+        </style>
+        <div class="auth-container">
+            <h1 class="auth-title">🚨 Disaster Management Assistant</h1>
+            <p class="auth-description">Please sign in to continue using the chatbot</p>
+            <a href="/auth/email" class="auth-button email">
+                ✉️ Continue with Email
+            </a>
+            <a href="/auth/google" class="auth-button google">
+                <img src="https://www.google.com/favicon.ico" width="20" height="20" style="border-radius: 50%">
+                Continue with Google
+            </a>
+            <a href="/auth/github" class="auth-button github">
+                <img src="https://github.com/favicon.ico" width="20" height="20" style="border-radius: 50%">
+                Continue with GitHub
+            </a>
+            <div class="auth-features">
+                <ul>
+                    <li>Secure authentication via Firebase</li>
+                    <li>Your chat history will be saved</li>
+                    <li>Access from any device</li>
+                    <li>Multi-language support</li>
+                </ul>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def user_sidebar(user: Dict) -> None:
     """

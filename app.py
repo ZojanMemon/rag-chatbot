@@ -15,7 +15,7 @@ from typing import Literal
 # Import authentication modules
 from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
-from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
+from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences, login_page
 
 def initialize_firebase():
     # Initialize Firebase
@@ -518,7 +518,7 @@ def main():
 
     # Handle authentication
     if not user:
-        # Get user token from query params (if any)
+        # Check for token in URL parameters
         if 'token' in st.query_params:
             try:
                 # Verify the token and get user info
@@ -532,37 +532,7 @@ def main():
                 pass
         
         # Show login page if not authenticated
-        login_container = st.empty()
-        with login_container:
-            st.title("🚨 Disaster Management Assistant")
-            st.markdown("""
-                Please sign in to continue:
-                
-                - Secure authentication via Firebase
-                - Your chat history will be saved
-                - Access from any device
-            """)
-            
-            # Login buttons
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                if st.button("🔑 Sign in with Email", use_container_width=True):
-                    js = f"""
-                    window.open('{get_auth_url("email")}', '_self');
-                    """
-                    st.components.v1.html(f"<script>{js}</script>")
-            with col2:
-                if st.button("🔵 Sign in with Google", use_container_width=True):
-                    js = f"""
-                    window.open('{get_auth_url("google")}', '_self');
-                    """
-                    st.components.v1.html(f"<script>{js}</script>")
-            with col3:
-                if st.button("⚫ Sign in with GitHub", use_container_width=True):
-                    js = f"""
-                    window.open('{get_auth_url("github")}', '_self');
-                    """
-                    st.components.v1.html(f"<script>{js}</script>")
+        login_page()
         return
 
     # Get user ID after authentication
