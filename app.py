@@ -519,15 +519,14 @@ def main():
     # Handle authentication
     if not user:
         # Get user token from query params (if any)
-        query_params = st.experimental_get_query_params()
-        if 'token' in query_params:
+        if 'token' in st.query_params:
             try:
                 # Verify the token and get user info
-                user = auth.verify_id_token(query_params['token'][0])
-                st.session_state.user_token = query_params['token'][0]
+                user = auth.verify_id_token(st.query_params['token'])
+                st.session_state.user_token = st.query_params['token']
                 st.session_state.user = user
                 # Remove token from URL
-                st.experimental_set_query_params()
+                st.query_params.clear()
                 st.rerun()
             except:
                 pass
