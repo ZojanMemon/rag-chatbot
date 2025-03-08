@@ -489,72 +489,36 @@ def main():
         }
         
         /* Main heading */
-        .main-heading-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        
         .main-heading {
             text-align: center;
             color: #3498db;
             font-weight: 700;
-            font-size: clamp(1rem, 2.5vw, 2rem);
-            margin: 0.5rem auto;
-            padding: 0.5rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            border-radius: 15px;
             backdrop-filter: blur(10px);
-            max-width: 85%;
-            word-wrap: break-word;
-            line-height: 1.2;
-        }
-        
-        /* Emoji size */
-        .main-heading .emoji {
-            font-size: clamp(0.9rem, 2vw, 1.6rem);
-            vertical-align: middle;
-            margin-right: 0.3em;
         }
         
         /* Responsive font sizes */
-        @media screen and (min-width: 992px) {
+        @media screen and (min-width: 768px) {
             .main-heading {
                 font-size: 2.2rem;
-                margin: 1.5rem 0;
-                padding: 1rem;
-            }
-        }
-        
-        @media screen and (min-width: 768px) and (max-width: 991px) {
-            .main-heading {
-                font-size: 1.8rem;
-                margin: 1.25rem 0;
-                padding: 0.875rem;
             }
         }
         
         @media screen and (max-width: 767px) {
             .main-heading {
-                font-size: 1.2rem;
-                margin: 0.75rem 0;
-                padding: 0.625rem;
-                border-radius: 8px;
+                font-size: 1.5rem;
+                margin: 1rem 0;
+                padding: 0.75rem;
             }
         }
         </style>
     """, unsafe_allow_html=True)
 
     # Display main heading
-    st.markdown("""
-        <div class="main-heading-container">
-            <h1 class="main-heading">
-                <span class="emoji">🚨</span> 
-                Welcome to the Disaster Management Assistant
-            </h1>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<h1 class='main-heading'>🚨 Welcome to the Disaster Management Assistant</h1>", unsafe_allow_html=True)
 
     # Handle authentication
     is_authenticated, user = auth_page()
