@@ -6,6 +6,7 @@ import streamlit as st
 from typing import Tuple, Optional, Dict, List, Callable
 from .authenticator import FirebaseAuthenticator
 from .chat_history import ChatHistoryManager
+from datetime import datetime
 
 def auth_page() -> Tuple[bool, Optional[Dict]]:
     """
@@ -52,13 +53,12 @@ def user_sidebar(user: Dict) -> None:
     """
     auth = FirebaseAuthenticator()
     
-    with st.sidebar:
-        st.write(f"👤 **{user['name']}**")
-        st.write(f"📧 {user['email']}")
-        
-        if st.button("Logout"):
-            auth.logout()
-            st.rerun()  # Refresh the page after logout
+    st.write(f"**{user['name']}**")
+    st.write(f"{user['email']}")
+    
+    if st.button("Sign Out", key="signout_btn"):
+        auth.logout()
+        st.rerun()
 
 def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> None:
     """
@@ -70,51 +70,59 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
     """
     history_manager = ChatHistoryManager()
     
-    with st.sidebar:
-        st.subheader("💬 Chat History")
-        
-        # New chat button
-        if st.button("➕ New Chat"):
-            session_id = history_manager.create_new_session(user_id)
-            st.session_state.messages = []  # Clear current messages
-            if on_session_change:
-                on_session_change(session_id)
-            st.rerun()
-        
-        # List existing sessions
-        sessions = history_manager.get_all_sessions(user_id)
-        
-        if not sessions:
-            st.info("No chat history found")
-        else:
-            st.write("Recent Conversations:")
-            
-            for session in sessions:
-                col1, col2 = st.columns([0.8, 0.2])
+    # New chat button
+    if st.button("+ New Chat", use_container_width=True):
+        session_id = history_manager.create_new_session(user_id)
+        st.session_state.messages = []
+        if on_session_change:
+            on_session_change(session_id)
+        st.rerun()
+    
+    st.divider()
+    
+    # List existing sessions
+    sessions = history_manager.get_all_sessions(user_id)
+    
+    if not sessions:
+        st.caption("No previous conversations")
+    else:
+        for session in sessions:
+            # Create a container for each chat session
+            with st.container():
+                col1, col2 = st.columns([0.9, 0.1])
                 
                 with col1:
-                    # Session title with click handler
-                    if st.button(session['title'], key=f"session_{session['id']}"):
-                        # Set as current session
+                    # Format the title and timestamp
+                    timestamp = datetime.fromisoformat(session.get('timestamp', datetime.now().isoformat()))
+                    date_str = timestamp.strftime("%b %d")
+                    
+                    # Get first message as preview if available
+                    preview = ""
+                    messages = history_manager.get_session_history(user_id, session['id'])
+                    if messages:
+                        first_msg = messages[0]['content']
+                        preview = (first_msg[:30] + '...') if len(first_msg) > 30 else first_msg
+                    
+                    # Session button with preview
+                    if st.button(
+                        f"{date_str}\n{preview}", 
+                        key=f"session_{session['id']}",
+                        use_container_width=True
+                    ):
                         history_manager._set_current_session_id(user_id, session['id'])
-                        
-                        # Load messages from this session
                         messages = history_manager.get_session_history(user_id, session['id'])
                         st.session_state.messages = [
                             {"role": msg["role"], "content": msg["content"]} 
                             for msg in messages
                         ]
-                        
                         if on_session_change:
                             on_session_change(session['id'])
-                        
                         st.rerun()
                 
                 with col2:
                     # Delete button
-                    if st.button("🗑️", key=f"delete_{session['id']}"):
+                    if st.button("×", key=f"delete_{session['id']}", help="Delete conversation"):
                         if history_manager.delete_session(user_id, session['id']):
-                            st.success("Session deleted")
                             st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
@@ -167,7 +175,6 @@ def save_user_preferences(user_id: str) -> None:
     preferences = {
         'input_language': st.session_state.input_language,
         'output_language': st.session_state.output_language,
-        'theme': 'dark'  # Or get from session state if you track theme
     }
     
     auth.update_user_preferences(preferences)
