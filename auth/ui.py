@@ -51,25 +51,20 @@ def user_sidebar(user: Dict) -> None:
     Args:
         user: User data dictionary
     """
-    auth = FirebaseAuthenticator()
-    
-    # User profile section with proper styling
-    st.markdown(f"""
-        <div style='background-color: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1);'>
-            <div style='display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;'>
-                <span style='font-size: 2rem;'>👤</span>
-                <h3 style='margin: 0; color: #1a1a1a;'>User Profile</h3>
-            </div>
-            <div style='color: #4a4a4a;'>
-                <p style='margin: 0.5rem 0;'><strong>Name:</strong> {user['name']}</p>
-                <p style='margin: 0.5rem 0;'><strong>Email:</strong> {user['email']}</p>
-            </div>
+    st.markdown("""
+        <div style='background-color: #252525; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;'>
+            <h3 style='margin: 0 0 1rem 0; font-size: 1.2rem;'>👤 User Profile</h3>
+            <p style='margin: 0.5rem 0;'><strong>Name:</strong> {display_name}</p>
+            <p style='margin: 0.5rem 0;'><strong>Email:</strong> {email}</p>
         </div>
-    """, unsafe_allow_html=True)
+    """.format(
+        display_name=user.get('display_name', 'User'),
+        email=user.get('email', '')
+    ), unsafe_allow_html=True)
     
-    # Sign out button
-    if st.button("🚪 Sign Out", type="primary", use_container_width=True):
-        auth.logout()
+    # Logout button
+    if st.button("🚪 Logout", use_container_width=True):
+        FirebaseAuthenticator().logout()
         st.rerun()
 
 def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> None:
