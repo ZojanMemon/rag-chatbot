@@ -474,14 +474,18 @@ def main():
                 st.rerun()
             user_sidebar(user)
         else:
-            # Chat History
+            # New Chat Button
+            if st.button("✨ New Conversation", type="primary", use_container_width=True):
+                st.session_state.messages = []
+                st.rerun()
+            
             st.markdown('<div class="section-header">💬 Recent Conversations</div>', unsafe_allow_html=True)
             chat_history_sidebar(user_id)
             
             st.divider()
             
             # Language Settings
-            with st.expander("🌐 Language Settings"):
+            with st.expander("🌐 Language"):
                 input_language = st.selectbox(
                     "Input Language",
                     ["English", "Urdu", "Sindhi"],
@@ -531,17 +535,17 @@ def main():
             st.divider()
             
             # Profile Button
-            if st.button("👤 Profile Settings", use_container_width=True):
+            if st.button("👤 Settings", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
             
             st.divider()
             
             # Download Options
-            st.markdown('<div class="section-header">💾 Export Options</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">💾 Export</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("📄 PDF"):
+                if st.button("📄 PDF", use_container_width=True):
                     pdf_file = create_chat_pdf()
                     st.download_button(
                         label="Download PDF",
@@ -550,7 +554,7 @@ def main():
                         mime="application/pdf"
                     )
             with col2:
-                if st.button("📝 Text"):
+                if st.button("📝 Text", use_container_width=True):
                     text_file = create_chat_text()
                     st.download_button(
                         label="Download Text",

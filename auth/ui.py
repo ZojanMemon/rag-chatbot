@@ -82,14 +82,6 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
     """
     history_manager = ChatHistoryManager()
     
-    # New chat button with icon
-    if st.button("✨ Start New Chat", type="primary", use_container_width=True):
-        session_id = history_manager.create_new_session(user_id)
-        st.session_state.messages = []
-        if on_session_change:
-            on_session_change(session_id)
-        st.rerun()
-    
     # List existing sessions
     sessions = history_manager.get_all_sessions(user_id)
     
@@ -100,46 +92,59 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
         st.markdown("""
             <style>
             .chat-history-item {
-                background-color: white;
-                border: 1px solid #e6e6e6;
-                border-radius: 4px;
-                padding: 0.75rem;
-                margin: 0.5rem 0;
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-                transition: all 0.3s ease;
+                justify-content: space-between;
+                width: 100%;
+                padding: 0.5rem;
+                margin: 0.25rem 0;
+                background-color: #2d2d2d;
+                border-radius: 4px;
+                transition: all 0.2s ease;
             }
             .chat-history-item:hover {
-                background-color: #f8f9fa;
-                border-color: #d9d9d9;
+                background-color: #3d3d3d;
+                transform: translateY(-1px);
+            }
+            .chat-preview {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                margin-right: 0.5rem;
+                font-size: 0.9rem;
             }
             .delete-button {
+                flex-shrink: 0;
                 opacity: 0.6;
-                transition: opacity 0.3s ease;
+                transition: opacity 0.2s;
+                font-size: 0.9rem;
+                padding: 0.25rem;
+                border-radius: 4px;
             }
             .delete-button:hover {
                 opacity: 1;
+                background-color: #4d4d4d;
             }
             </style>
         """, unsafe_allow_html=True)
         
         for session in sessions:
+            # Get first message as preview
+            preview = "New Conversation"
+            messages = history_manager.get_session_history(user_id, session['id'])
+            if messages:
+                first_msg = messages[0]['content']
+                preview = (first_msg[:30] + '...') if len(first_msg) > 30 else first_msg
+            
             # Create a container for each chat session
             with st.container():
-                col1, col2 = st.columns([0.9, 0.1])
+                col1, col2 = st.columns([0.85, 0.15])
                 
                 with col1:
-                    # Get first message as preview
-                    preview = "New Conversation"
-                    messages = history_manager.get_session_history(user_id, session['id'])
-                    if messages:
-                        first_msg = messages[0]['content']
-                        preview = (first_msg[:40] + '...') if len(first_msg) > 40 else first_msg
-                    
-                    # Session button with preview and icon
+                    # Session button with preview
                     if st.button(
-                        f"💭 {preview}",
+                        f"💬 {preview}",
                         key=f"session_{session['id']}",
                         use_container_width=True
                     ):
