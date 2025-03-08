@@ -7,14 +7,17 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Get the project root directory
+ROOT_DIR = Path(__file__).parent.parent
+
+# Load environment variables from .env file in project root
+load_dotenv(ROOT_DIR / '.env')
 
 def get_firebase_api_key():
     """Get Firebase API key from environment variables."""
     api_key = os.getenv('FIREBASE_API_KEY')
     if not api_key:
-        raise ValueError("FIREBASE_API_KEY environment variable is not set")
+        raise ValueError("FIREBASE_API_KEY environment variable is not set. Please create a .env file in the project root with your Firebase Web API key.")
     return api_key
 
 def get_service_account_path():
@@ -25,8 +28,7 @@ def get_service_account_path():
         return service_account_path
         
     # Then check current directory
-    current_dir = Path(__file__).parent.parent
-    service_account_path = current_dir / 'firebase-service-account.json'
+    service_account_path = ROOT_DIR / 'firebase-service-account.json'
     if service_account_path.exists():
         return str(service_account_path)
         
