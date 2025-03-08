@@ -454,7 +454,7 @@ def main():
             align-items: center;
             gap: 0.75rem;
             margin: 0;
-            padding: 0.20rem 1rem;
+            padding: 0.20rem 0.5rem;
             background-color: transparent;
             border-radius: 4px;
             max-width: fit-content;
