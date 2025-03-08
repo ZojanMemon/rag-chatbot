@@ -661,7 +661,7 @@ def main():
             st.markdown(message["content"])
 
     # Chat input
-    if prompt := st.chat_input("Ask a question about disaster management..."):
+    if prompt := st.chat_input("Ask Your Questions Here..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         if is_authenticated:
