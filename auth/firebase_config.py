@@ -5,7 +5,7 @@ This module handles the initialization of Firebase Admin SDK.
 import os
 import json
 import streamlit as st
-from firebase_admin import credentials, initialize_app, firestore, auth
+from firebase_admin import credentials, initialize_app, firestore, auth, get_app
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -18,32 +18,37 @@ def initialize_firebase():
     The function checks if Firebase is already initialized to prevent multiple initializations.
     It uses service account credentials stored in Streamlit secrets or environment variables.
     """
-    if not 'firebase_initialized' in st.session_state:
+    try:
+        # First check if app is already initialized
         try:
-            # First, try to get credentials from Streamlit secrets
-            if 'FIREBASE_SERVICE_ACCOUNT' in st.secrets:
-                cred_dict = json.loads(st.secrets["FIREBASE_SERVICE_ACCOUNT"])
-                cred = credentials.Certificate(cred_dict)
-            # If not in secrets, try to get from environment variable
-            elif os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
-                cred_dict = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
-                cred = credentials.Certificate(cred_dict)
-            # If not in environment, look for a service account file
-            elif os.path.exists('firebase-service-account.json'):
-                cred = credentials.Certificate('firebase-service-account.json')
-            else:
-                st.error("Firebase credentials not found. Please set up Firebase credentials.")
-                return False
-            
-            # Initialize the app
-            firebase_app = initialize_app(cred)
-            st.session_state.firebase_initialized = True
-            st.session_state.db = firestore.client()
+            app = get_app()
+            if 'db' not in st.session_state:
+                st.session_state.db = firestore.client()
             return True
-        except Exception as e:
-            st.error(f"Error initializing Firebase: {str(e)}")
+        except ValueError:
+            # App not initialized yet, proceed with initialization
+            pass
+
+        # Get Firebase credentials
+        if 'FIREBASE_SERVICE_ACCOUNT' in st.secrets:
+            cred_dict = json.loads(st.secrets["FIREBASE_SERVICE_ACCOUNT"])
+            cred = credentials.Certificate(cred_dict)
+        elif os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
+            cred_dict = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
+            cred = credentials.Certificate(cred_dict)
+        elif os.path.exists('firebase-service-account.json'):
+            cred = credentials.Certificate('firebase-service-account.json')
+        else:
+            st.error("Firebase credentials not found. Please set up Firebase credentials.")
             return False
-    return True
+        
+        # Initialize the app with a name to prevent duplicate initialization
+        firebase_app = initialize_app(cred, name='disaster-management-chatbot')
+        st.session_state.db = firestore.client()
+        return True
+    except Exception as e:
+        st.error(f"Error initializing Firebase: {str(e)}")
+        return False
 
 def get_firestore_db():
     """

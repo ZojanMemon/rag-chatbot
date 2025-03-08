@@ -287,11 +287,11 @@ def main():
     # Page config
     st.set_page_config(
         page_title="Disaster Management RAG Chatbot",
-        page_icon="🤖",
+        page_icon="🚨",
         layout="wide"
     )
 
-    # Custom CSS for layout
+    # Custom CSS for layout and animations
     st.markdown("""
         <style>
         /* Main container styling */
@@ -306,21 +306,6 @@ def main():
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            padding-bottom: 100px;  /* Space for input box */
-        }
-        
-        /* Fixed input container at bottom */
-        .input-container {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 800px;
-            background-color: white;
-            padding: 20px;
-            border-top: 1px solid #ddd;
-            z-index: 1000;
-            display: none;
         }
         
         /* Sidebar styling */
@@ -332,62 +317,107 @@ def main():
         div.stButton > button {
             width: 100%;
         }
+
+        /* Thinking animation */
+        @keyframes thinking {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+        
+        .thinking-animation {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: thinking 1.5s infinite;
+            margin-bottom: 10px;
+        }
+        
+        .thinking-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #0066cc;
+            border-radius: 50%;
+        }
+
+        /* About section styling */
+        .about-section {
+            background-color: #f0f2f6;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .about-section h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
         </style>
     """, unsafe_allow_html=True)
 
-    # Main title
-    st.title("Disaster Management Assistant 🆘")
-    
     # Handle authentication
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        # Show welcome message for non-authenticated users
+        # Show welcome message with previous styling
         st.markdown("""
-        ## Welcome to the Disaster Management Assistant
+        <div class="about-section">
+        <h2>🚨 Welcome to the Disaster Management Assistant</h2>
         
-        Please log in or create an account to access the chatbot and save your chat history.
+        <p>Please log in or create an account to access the chatbot and save your chat history.</p>
         
-        This assistant can help you with:
-        - Emergency preparedness
-        - Disaster response procedures
-        - Safety protocols
-        - And more...
-        """)
+        <h3>How can I help you?</h3>
+        <ul>
+        <li>🏥 Emergency preparedness and response</li>
+        <li>🌊 Natural disaster management</li>
+        <li>🚸 Safety protocols and procedures</li>
+        <li>🏘️ Community disaster resilience</li>
+        <li>🆘 Emergency contact information</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
         return
     
     # User is authenticated
     user_id = user['uid']
-    
-    # Load user preferences
     preferences = load_user_preferences(user)
-    
-    # Display user sidebar with chat history
-    user_sidebar(user)
-    chat_history_sidebar(user_id)
 
-    # Initialize RAG system
-    qa_chain, llm = initialize_rag()
-
-    # Sidebar for language selection
+    # Sidebar with improved layout
     with st.sidebar:
-        st.subheader("Language Settings")
+        st.image("https://img.icons8.com/color/96/000000/emergency-exit.png", width=50)
+        st.title("Settings & Info")
         
-        # Input language selection
+        # About section with previous styling
+        st.markdown("""
+        <div class="about-section">
+        <h3>About this Chatbot</h3>
+        <p>I'm your AI assistant for disaster management. I can help with:</p>
+        <ul>
+        <li>🏥 Emergency preparedness</li>
+        <li>🌊 Natural disasters</li>
+        <li>🚸 Safety protocols</li>
+        <li>🏘️ Community resilience</li>
+        <li>🆘 Emergency contacts</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.divider()
+        
+        # Language Settings
+        st.subheader("🌐 Language Settings")
         input_language = st.selectbox(
             "Input Language:",
             ["English", "Urdu", "Sindhi"],
             index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
         )
         
-        # Output language selection
         output_language = st.selectbox(
             "Output Language:",
             ["English", "Urdu", "Sindhi"],
             index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
         )
         
-        # Update session state if language changed
         if input_language != st.session_state.input_language:
             st.session_state.input_language = input_language
             save_user_preferences(user_id)
@@ -396,12 +426,19 @@ def main():
             st.session_state.output_language = output_language
             save_user_preferences(user_id)
 
+        st.divider()
+
+        # Chat History and User Settings
+        st.subheader("📝 Chat History")
+        chat_history_sidebar(user_id)
+        user_sidebar(user)
+
         # Download options
-        st.subheader("Download Chat")
+        st.subheader("💾 Download Chat")
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("Download as PDF"):
+            if st.button("Download PDF"):
                 pdf_file = create_chat_pdf()
                 st.download_button(
                     label="Download PDF",
@@ -411,7 +448,7 @@ def main():
                 )
         
         with col2:
-            if st.button("Download as Text"):
+            if st.button("Download Text"):
                 text_file = create_chat_text()
                 st.download_button(
                     label="Download Text",
@@ -420,6 +457,12 @@ def main():
                     mime="text/plain"
                 )
 
+    # Main chat interface
+    st.title("🚨 Disaster Management Assistant")
+    
+    # Initialize RAG system
+    qa_chain, llm = initialize_rag()
+
     # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -427,10 +470,8 @@ def main():
 
     # Chat input
     if prompt := st.chat_input("Ask a question about disaster management..."):
-        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Save to Firebase if authenticated
         if is_authenticated:
             metadata = {
                 'language': st.session_state.input_language,
@@ -438,29 +479,30 @@ def main():
             }
             sync_chat_message(user_id, "user", prompt, metadata)
         
-        # Display user message
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        # Generate and display assistant response
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
             
+            # Show thinking animation
+            message_placeholder.markdown("""
+            <div class="thinking-animation">
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+                <div class="thinking-dot"></div>
+            </div>
+            """, unsafe_allow_html=True)
+            
             try:
-                # Check if it's a general chat query
                 if is_general_chat(prompt):
                     response = get_general_response(prompt)
                 else:
-                    # Use RAG for domain-specific questions
                     response = get_rag_response(qa_chain, prompt)
                 
-                # Display response
                 message_placeholder.markdown(response)
-                
-                # Add assistant response to chat history
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
-                # Save to Firebase if authenticated
                 if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
