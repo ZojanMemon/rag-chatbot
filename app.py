@@ -310,143 +310,121 @@ def main():
         
         /* Sidebar styling */
         .css-1d391kg {
-            padding: 20px;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
         }
         
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
-            background-color: white;
-            border: 1px solid #e6e6e6;
-            border-radius: 4px;
-            padding: 0.5rem;
-            margin: 0.25rem 0;
-            transition: all 0.3s ease;
+            background-color: white !important;
+            border: 1px solid #dee2e6 !important;
+            color: #1a1a1a !important;
+            border-radius: 6px !important;
+            padding: 0.75rem !important;
+            margin: 0.5rem 0 !important;
+            font-size: 0.95rem !important;
+            transition: all 0.2s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
         }
 
         div.stButton > button:hover {
-            background-color: #f8f9fa;
-            border-color: #d9d9d9;
+            background-color: #f1f3f5 !important;
+            border-color: #ced4da !important;
+            transform: translateY(-1px);
         }
 
         /* Primary buttons */
         div.stButton > button[kind="primary"] {
-            background-color: #0066cc;
-            color: white;
-            border: none;
+            background-color: #0066cc !important;
+            color: white !important;
+            border: none !important;
         }
 
         div.stButton > button[kind="primary"]:hover {
-            background-color: #0052a3;
+            background-color: #0052a3 !important;
         }
 
-        /* Thinking animation */
-        @keyframes thinking {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
-        }
-        
-        .thinking-animation {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            animation: thinking 1.5s infinite;
-            margin-bottom: 10px;
-        }
-        
-        .thinking-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #0066cc;
-            border-radius: 50%;
-        }
-
-        /* User profile section */
-        .user-profile {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
-        .user-profile h3 {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0;
-            color: #1a1a1a;
-        }
-
-        .user-profile p {
-            margin: 0.5rem 0;
-            color: #4a4a4a;
-        }
-
-        /* Sidebar sections */
-        .sidebar-section {
-            background-color: white;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-
+        /* Section headers */
         .section-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            color: #1a1a1a;
+            color: #1a1a1a !important;
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+            margin: 1.5rem 0 1rem 0 !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
         }
 
         /* Chat history items */
         .chat-item {
             background-color: white;
-            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
             padding: 0.75rem;
             margin: 0.5rem 0;
-            border: 1px solid #e6e6e6;
-            transition: all 0.3s ease;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .chat-item:hover {
-            background-color: #f8f9fa;
-            border-color: #d9d9d9;
-        }
-
-        /* Icons alignment */
-        .icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
+            background-color: #f1f3f5;
+            border-color: #ced4da;
+            transform: translateY(-1px);
         }
 
         /* Expander styling */
         .streamlit-expanderHeader {
-            background-color: white;
-            border-radius: 4px;
-            border: 1px solid #e6e6e6;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            background-color: white !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 6px !important;
+            padding: 0.75rem !important;
+            margin: 0.5rem 0 !important;
+            color: #1a1a1a !important;
+            font-weight: 500 !important;
         }
 
         .streamlit-expanderHeader:hover {
-            background-color: #f8f9fa;
+            background-color: #f1f3f5 !important;
         }
 
         .streamlit-expanderContent {
-            border: 1px solid #e6e6e6;
-            border-top: none;
-            border-radius: 0 0 4px 4px;
-            padding: 1rem;
-            background-color: white;
+            border: 1px solid #dee2e6 !important;
+            border-top: none !important;
+            border-radius: 0 0 6px 6px !important;
+            padding: 1rem !important;
+            background-color: white !important;
+        }
+
+        /* Profile button */
+        .profile-button {
+            background-color: white !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 6px !important;
+            padding: 0.75rem !important;
+            color: #1a1a1a !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 0.75rem !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .profile-button:hover {
+            background-color: #f1f3f5 !important;
+            transform: translateY(-1px);
+        }
+
+        .profile-icon {
+            font-size: 1.5rem !important;
+        }
+
+        /* Dividers */
+        hr {
+            margin: 1.5rem 0 !important;
+            border-color: #dee2e6 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -472,7 +450,6 @@ def main():
 
     # Sidebar with clean layout
     with st.sidebar:
-        # Profile section
         if st.session_state.get('show_settings', False):
             st.title("User Settings")
             if st.button("← Back to Chat", type="primary"):
@@ -480,15 +457,21 @@ def main():
                 st.rerun()
             user_sidebar(user)
         else:
-            # Profile button
-            st.markdown('<div class="section-header"><span class="icon">👤</span> Profile</div>', unsafe_allow_html=True)
-            if st.button("View Profile Settings", type="primary", use_container_width=True):
-                st.session_state.show_settings = True
+            # 1. New Chat Button
+            st.markdown('<div class="section-header">✨ Start New Chat</div>', unsafe_allow_html=True)
+            if st.button("+ New Conversation", type="primary", use_container_width=True):
+                st.session_state.messages = []
                 st.rerun()
             
             st.divider()
             
-            # Language settings
+            # 2. Chat History
+            st.markdown('<div class="section-header">💬 Chat History</div>', unsafe_allow_html=True)
+            chat_history_sidebar(user_id)
+            
+            st.divider()
+            
+            # 3. Language Settings
             with st.expander("🌐 Language Settings"):
                 input_language = st.selectbox(
                     "Input Language",
@@ -509,7 +492,7 @@ def main():
                     st.session_state.output_language = output_language
                     save_user_preferences(user_id)
             
-            # About section
+            # 4. About Section
             with st.expander("ℹ️ About this Chatbot"):
                 st.markdown("""
                 **🤖 Disaster Management Assistant**
@@ -538,14 +521,15 @@ def main():
             
             st.divider()
             
-            # Chat history section
-            st.markdown('<div class="section-header"><span class="icon">💬</span> Chat History</div>', unsafe_allow_html=True)
-            chat_history_sidebar(user_id)
-
+            # 5. Profile Button
+            if st.button("👤 View Profile", use_container_width=True):
+                st.session_state.show_settings = True
+                st.rerun()
+            
             st.divider()
             
-            # Download options
-            st.markdown('<div class="section-header"><span class="icon">💾</span> Export Chat</div>', unsafe_allow_html=True)
+            # 6. Download Options
+            st.markdown('<div class="section-header">💾 Export Chat</div>', unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📄 PDF"):
