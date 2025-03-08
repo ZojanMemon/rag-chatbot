@@ -5,6 +5,7 @@ import streamlit as st
 from firebase_admin import auth
 from .firebase_config import get_firestore_db, initialize_firebase
 import json
+import base64
 
 class FirebaseAuthenticator:
     """Firebase authentication handler."""
@@ -17,15 +18,22 @@ class FirebaseAuthenticator:
         
         # Initialize session state for auth
         if 'user' not in st.session_state:
-            # Try to load user from cookie
-            if 'auth_cookie' in st.session_state:
+            # Try to load user from URL params first
+            params = st.experimental_get_query_params()
+            if 'auth_token' in params:
                 try:
-                    user_data = json.loads(st.session_state.auth_cookie)
+                    auth_token = base64.b64decode(params['auth_token'][0]).decode('utf-8')
+                    user_data = json.loads(auth_token)
                     st.session_state.user = user_data
                 except:
                     st.session_state.user = None
             else:
                 st.session_state.user = None
+    
+    def _save_auth_token(self, user_data: dict):
+        """Save auth token to URL params."""
+        auth_token = base64.b64encode(json.dumps(user_data).encode('utf-8')).decode('utf-8')
+        st.experimental_set_query_params(auth_token=auth_token)
     
     def login_form(self):
         """Display login form and handle login."""
@@ -41,7 +49,7 @@ class FirebaseAuthenticator:
                 # Get user from Firebase Auth
                 user = auth.get_user_by_email(email)
                 
-                # Store user data in session and cookie
+                # Store user data in session
                 user_data = {
                     'uid': user.uid,
                     'email': user.email,
@@ -49,8 +57,8 @@ class FirebaseAuthenticator:
                 }
                 st.session_state.user = user_data
                 
-                # Save to cookie (30 days expiry)
-                st.session_state.auth_cookie = json.dumps(user_data)
+                # Save auth token to URL
+                self._save_auth_token(user_data)
                 
                 # Initialize user document in Firestore if it doesn't exist
                 if self.db:
@@ -93,7 +101,7 @@ class FirebaseAuthenticator:
                     password=password
                 )
                 
-                # Store user data in session and cookie
+                # Store user data in session
                 user_data = {
                     'uid': user.uid,
                     'email': user.email,
@@ -101,8 +109,8 @@ class FirebaseAuthenticator:
                 }
                 st.session_state.user = user_data
                 
-                # Save to cookie (30 days expiry)
-                st.session_state.auth_cookie = json.dumps(user_data)
+                # Save auth token to URL
+                self._save_auth_token(user_data)
                 
                 # Create user document in Firestore
                 if self.db:
@@ -133,9 +141,8 @@ class FirebaseAuthenticator:
     def logout(self):
         """Log out current user."""
         st.session_state.user = None
-        # Clear cookie
-        if 'auth_cookie' in st.session_state:
-            del st.session_state.auth_cookie
+        # Clear URL params
+        st.experimental_set_query_params()
         # Clear other session state
         for key in ['messages', 'current_session_id']:
             if key in st.session_state:
