@@ -311,15 +311,15 @@ def main():
         /* Sidebar styling */
         .css-1d391kg {
             padding: 1.5rem;
-            background-color: #1a1a1a;
+            background-color: #1e1e1e;
         }
         
         /* Streamlit elements styling */
         div.stButton > button {
             width: 100%;
-            background-color: #2d2d2d !important;
+            background-color: #252525 !important;
             border: none !important;
-            color: #e6e6e6 !important;
+            color: #e0e0e0 !important;
             border-radius: 4px !important;
             padding: 0.5rem !important;
             margin: 0.25rem 0 !important;
@@ -331,13 +331,13 @@ def main():
         }
 
         div.stButton > button:hover {
-            background-color: #3d3d3d !important;
+            background-color: #353535 !important;
             transform: translateY(-1px);
         }
 
         /* Primary buttons */
         div.stButton > button[kind="primary"] {
-            background-color: #0066cc !important;
+            background-color: #005fb8 !important;
             color: white !important;
         }
 
@@ -347,22 +347,21 @@ def main():
 
         /* Section headers */
         .section-header {
-            color: #e6e6e6 !important;
-            font-size: 0.9rem !important;
+            color: #808080 !important;
+            font-size: 0.85rem !important;
             font-weight: 500 !important;
             margin: 1rem 0 0.5rem 0 !important;
             padding: 0 !important;
             display: flex !important;
             align-items: center !important;
             gap: 0.5rem !important;
-            opacity: 0.8 !important;
             text-transform: uppercase !important;
             letter-spacing: 0.5px !important;
         }
 
         /* Chat history items */
         .chat-item {
-            background-color: #2d2d2d;
+            background-color: #252525;
             border: none;
             border-radius: 4px;
             padding: 0.5rem;
@@ -372,42 +371,42 @@ def main():
         }
 
         .chat-item:hover {
-            background-color: #3d3d3d;
+            background-color: #353535;
             transform: translateY(-1px);
         }
 
         /* Expander styling */
         .streamlit-expanderHeader {
-            background-color: #2d2d2d !important;
+            background-color: #252525 !important;
             border: none !important;
             border-radius: 4px !important;
             padding: 0.5rem !important;
             margin: 0.25rem 0 !important;
-            color: #e6e6e6 !important;
+            color: #e0e0e0 !important;
             font-weight: normal !important;
             font-size: 0.9rem !important;
         }
 
         .streamlit-expanderHeader:hover {
-            background-color: #3d3d3d !important;
+            background-color: #353535 !important;
         }
 
         .streamlit-expanderContent {
             border: none !important;
             border-radius: 4px !important;
             padding: 0.75rem !important;
-            background-color: #2d2d2d !important;
-            color: #e6e6e6 !important;
+            background-color: #252525 !important;
+            color: #e0e0e0 !important;
             margin-top: 0.25rem !important;
         }
 
         /* Profile button */
         .profile-button {
-            background-color: #2d2d2d !important;
+            background-color: #252525 !important;
             border: none !important;
             border-radius: 4px !important;
             padding: 0.5rem !important;
-            color: #e6e6e6 !important;
+            color: #e0e0e0 !important;
             display: flex !important;
             align-items: center !important;
             gap: 0.5rem !important;
@@ -416,22 +415,22 @@ def main():
         }
 
         .profile-button:hover {
-            background-color: #3d3d3d !important;
+            background-color: #353535 !important;
             transform: translateY(-1px);
         }
 
         /* Dividers */
         hr {
             margin: 1.25rem 0 !important;
-            border-color: #3d3d3d !important;
-            opacity: 0.5 !important;
+            border-color: #353535 !important;
+            opacity: 0.3 !important;
         }
 
         /* Selectbox styling */
         .stSelectbox > div > div {
-            background-color: #2d2d2d !important;
+            background-color: #252525 !important;
             border: none !important;
-            color: #e6e6e6 !important;
+            color: #e0e0e0 !important;
         }
 
         .stSelectbox > div > div:hover {
@@ -440,8 +439,53 @@ def main():
 
         /* Selectbox options */
         .stSelectbox > div > div > div {
-            background-color: #2d2d2d !important;
-            color: #e6e6e6 !important;
+            background-color: #252525 !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Thinking animation */
+        @keyframes thinking {
+            0% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(0.8); opacity: 0.3; }
+        }
+
+        .thinking-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin: 1rem 0;
+            padding: 0.75rem;
+            background-color: #252525;
+            border-radius: 4px;
+        }
+
+        .thinking-text {
+            color: #808080;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .thinking-dots {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .thinking-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #808080;
+            border-radius: 50%;
+            animation: thinking 1.4s infinite;
+        }
+
+        .thinking-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .thinking-dot:nth-child(3) {
+            animation-delay: 0.4s;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -464,6 +508,19 @@ def main():
 
     # Main chat interface
     st.title("🚨 Disaster Management Assistant")
+
+    # Display thinking animation when processing
+    if st.session_state.get('thinking', False):
+        st.markdown("""
+            <div class="thinking-container">
+                <span class="thinking-text">Thinking</span>
+                <div class="thinking-dots">
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
 
     # Sidebar with clean layout
     with st.sidebar:
@@ -590,10 +647,13 @@ def main():
             
             # Show thinking animation
             message_placeholder.markdown("""
-            <div class="thinking-animation">
-                <div class="thinking-dot"></div>
-                <div class="thinking-dot"></div>
-                <div class="thinking-dot"></div>
+            <div class="thinking-container">
+                <span class="thinking-text">Thinking</span>
+                <div class="thinking-dots">
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                    <div class="thinking-dot"></div>
+                </div>
             </div>
             """, unsafe_allow_html=True)
             
