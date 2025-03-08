@@ -128,46 +128,45 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
         sessions = sorted(sessions, key=lambda x: x.get('created_at', 0), reverse=True)
         
         for session in sessions:
-            # Get first message as preview (only first few words)
-            preview = "New Chat"
+            # Get first message as preview
             messages = history_manager.get_session_history(user_id, session['id'])
             if messages:
                 first_msg = messages[0]['content']
                 words = first_msg.split()[:3]  # Get first 3 words
                 preview = ' '.join(words) + '...'
-            
-            # Create a container for each chat session
-            container = st.container()
-            with container:
-                col1, col2 = st.columns([0.85, 0.15])
                 
-                with col1:
-                    # Session button with preview
-                    if st.button(
-                        preview,
-                        key=f"session_{session['id']}",
-                        use_container_width=True
-                    ):
-                        history_manager._set_current_session_id(user_id, session['id'])
-                        messages = history_manager.get_session_history(user_id, session['id'])
-                        st.session_state.messages = [
-                            {"role": msg["role"], "content": msg["content"]} 
-                            for msg in messages
-                        ]
-                        st.session_state.current_session_id = session['id']
-                        if on_session_change:
-                            on_session_change(session['id'])
-                        st.rerun()
-                
-                with col2:
-                    # Delete button with tooltip
-                    if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
-                        if history_manager.delete_session(user_id, session['id']):
-                            # If deleted current session, clear messages
-                            if st.session_state.get('current_session_id') == session['id']:
-                                st.session_state.messages = []
-                                st.session_state.current_session_id = None
+                # Create a container for each chat session
+                container = st.container()
+                with container:
+                    col1, col2 = st.columns([0.85, 0.15])
+                    
+                    with col1:
+                        # Session button with preview
+                        if st.button(
+                            preview,
+                            key=f"session_{session['id']}",
+                            use_container_width=True
+                        ):
+                            history_manager._set_current_session_id(user_id, session['id'])
+                            messages = history_manager.get_session_history(user_id, session['id'])
+                            st.session_state.messages = [
+                                {"role": msg["role"], "content": msg["content"]} 
+                                for msg in messages
+                            ]
+                            st.session_state.current_session_id = session['id']
+                            if on_session_change:
+                                on_session_change(session['id'])
                             st.rerun()
+                    
+                    with col2:
+                        # Delete button with tooltip
+                        if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
+                            if history_manager.delete_session(user_id, session['id']):
+                                # If deleted current session, clear messages
+                                if st.session_state.get('current_session_id') == session['id']:
+                                    st.session_state.messages = []
+                                    st.session_state.current_session_id = None
+                                st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
     """
