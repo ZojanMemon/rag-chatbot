@@ -92,20 +92,16 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 col1, col2 = st.columns([0.9, 0.1])
                 
                 with col1:
-                    # Format the title and timestamp
-                    timestamp = datetime.fromisoformat(session.get('timestamp', datetime.now().isoformat()))
-                    date_str = timestamp.strftime("%b %d")
-                    
-                    # Get first message as preview if available
-                    preview = ""
+                    # Get first message as preview
+                    preview = "New Conversation"
                     messages = history_manager.get_session_history(user_id, session['id'])
                     if messages:
                         first_msg = messages[0]['content']
-                        preview = (first_msg[:30] + '...') if len(first_msg) > 30 else first_msg
+                        preview = (first_msg[:40] + '...') if len(first_msg) > 40 else first_msg
                     
-                    # Session button with preview
+                    # Session button with preview only
                     if st.button(
-                        f"{date_str}\n{preview}", 
+                        preview,
                         key=f"session_{session['id']}",
                         use_container_width=True
                     ):

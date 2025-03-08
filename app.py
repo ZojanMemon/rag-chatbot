@@ -342,19 +342,15 @@ def main():
 
         /* User profile button */
         .user-profile-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
+            font-size: 24px;
+            padding: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
             background: none;
             border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            transition: background-color 0.3s;
-        }
-
-        .user-profile-btn:hover {
-            background-color: #f0f2f6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         /* Clean sidebar styling */
@@ -375,6 +371,19 @@ def main():
         .clean-sidebar .stButton button:hover {
             background: #f0f2f6;
             border-radius: 4px;
+        }
+
+        /* About section */
+        .about-section {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .about-section h4 {
+            margin: 0;
+            padding-bottom: 10px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -399,46 +408,60 @@ def main():
     # Main chat interface
     st.title("🚨 Disaster Management Assistant")
 
-    # Language selection in main panel
-    col1, col2, col3 = st.columns([2,2,1])
-    with col1:
-        input_language = st.selectbox(
-            "Input Language",
-            ["English", "Urdu", "Sindhi"],
-            index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
-        )
-    with col2:
-        output_language = st.selectbox(
-            "Output Language",
-            ["English", "Urdu", "Sindhi"],
-            index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
-        )
-    
-    if input_language != st.session_state.input_language:
-        st.session_state.input_language = input_language
-        save_user_preferences(user_id)
-        
-    if output_language != st.session_state.output_language:
-        st.session_state.output_language = output_language
-        save_user_preferences(user_id)
-
     # Sidebar with clean layout
     with st.sidebar:
-        # User profile button
+        # User profile at the top
         if st.session_state.get('show_settings', False):
             st.title("User Settings")
             if st.button("← Back"):
                 st.session_state.show_settings = False
                 st.rerun()
-            
             user_sidebar(user)
         else:
             # Clean profile button
-            col1, col2 = st.columns([6,1])
-            with col2:
-                if st.button("👤"):
-                    st.session_state.show_settings = True
-                    st.rerun()
+            if st.button("👤 Profile", use_container_width=True):
+                st.session_state.show_settings = True
+                st.rerun()
+            
+            # Language settings
+            st.subheader("🌐 Language Settings")
+            input_language = st.selectbox(
+                "Input Language",
+                ["English", "Urdu", "Sindhi"],
+                index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
+            )
+            output_language = st.selectbox(
+                "Output Language",
+                ["English", "Urdu", "Sindhi"],
+                index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
+            )
+            
+            if input_language != st.session_state.input_language:
+                st.session_state.input_language = input_language
+                save_user_preferences(user_id)
+                
+            if output_language != st.session_state.output_language:
+                st.session_state.output_language = output_language
+                save_user_preferences(user_id)
+
+            st.divider()
+            
+            # About section
+            with st.expander("ℹ️ About this Chatbot"):
+                st.markdown("""
+                **Disaster Management Assistant**
+                
+                This chatbot is designed to help you with disaster-related queries and information. It uses:
+                
+                - **RAG Technology**: For accurate and contextual responses
+                - **Multi-language Support**: Communication in English, Urdu, and Sindhi
+                - **Firebase Backend**: For secure data storage and authentication
+                - **LangChain**: For advanced language processing
+                
+                Built with ❤️ to help communities during emergencies.
+                """)
+            
+            st.divider()
             
             # Chat history without heading
             chat_history_sidebar(user_id)
