@@ -91,7 +91,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
             .chat-history-item {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
+                justify-content: space-between;
                 width: 100%;
                 padding: 0.5rem;
                 margin: 0.25rem 0;
@@ -108,18 +108,20 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                margin-right: 0.5rem;
                 font-size: 0.9rem;
             }
             .delete-button {
+                flex-shrink: 0;
                 opacity: 0.6;
                 transition: opacity 0.2s;
                 font-size: 0.9rem;
-                cursor: pointer;
-                color: #808080;
+                padding: 0.25rem;
+                border-radius: 4px;
             }
             .delete-button:hover {
                 opacity: 1;
-                color: #ff4b4b;
+                background-color: #4d4d4d;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -138,33 +140,34 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 # Create a container for each chat session
                 container = st.container()
                 with container:
-                    # Create a single button that contains both preview and delete icon
-                    col1, col2 = st.columns([0.9, 0.1])
+                    col1, col2 = st.columns([0.85, 0.15])
+                    
                     with col1:
+                        # Session button with preview
                         if st.button(
-                            f"{preview} 🗑️",
+                            preview,
                             key=f"session_{session['id']}",
-                            use_container_width=True,
-                            help="Click to view conversation, click 🗑️ to delete"
+                            use_container_width=True
                         ):
-                            # Check if click was on the delete icon (approximately)
-                            if 'last_click' in st.session_state and st.session_state.last_click == 'delete':
-                                if history_manager.delete_session(user_id, session['id']):
-                                    if st.session_state.get('current_session_id') == session['id']:
-                                        st.session_state.messages = []
-                                        st.session_state.current_session_id = None
-                                    st.rerun()
-                            else:
-                                # Normal session selection
-                                history_manager._set_current_session_id(user_id, session['id'])
-                                messages = history_manager.get_session_history(user_id, session['id'])
-                                st.session_state.messages = [
-                                    {"role": msg["role"], "content": msg["content"]} 
-                                    for msg in messages
-                                ]
-                                st.session_state.current_session_id = session['id']
-                                if on_session_change:
-                                    on_session_change(session['id'])
+                            history_manager._set_current_session_id(user_id, session['id'])
+                            messages = history_manager.get_session_history(user_id, session['id'])
+                            st.session_state.messages = [
+                                {"role": msg["role"], "content": msg["content"]} 
+                                for msg in messages
+                            ]
+                            st.session_state.current_session_id = session['id']
+                            if on_session_change:
+                                on_session_change(session['id'])
+                            st.rerun()
+                    
+                    with col2:
+                        # Delete button with tooltip
+                        if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
+                            if history_manager.delete_session(user_id, session['id']):
+                                # If deleted current session, clear messages
+                                if st.session_state.get('current_session_id') == session['id']:
+                                    st.session_state.messages = []
+                                    st.session_state.current_session_id = None
                                 st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
