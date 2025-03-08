@@ -98,12 +98,12 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 width: 100%;
                 padding: 0.5rem;
                 margin: 0.25rem 0;
-                background-color: #2d2d2d;
+                background-color: #252525;
                 border-radius: 4px;
                 transition: all 0.2s ease;
             }
             .chat-history-item:hover {
-                background-color: #3d3d3d;
+                background-color: #353535;
                 transform: translateY(-1px);
             }
             .chat-preview {
@@ -129,6 +129,9 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
             </style>
         """, unsafe_allow_html=True)
         
+        # Sort sessions by creation time, newest first
+        sessions = sorted(sessions, key=lambda x: x.get('created_at', 0), reverse=True)
+        
         for session in sessions:
             # Get first message as preview (only first few words)
             preview = "New Chat"
@@ -139,7 +142,8 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 preview = ' '.join(words) + '...'
             
             # Create a container for each chat session
-            with st.container():
+            container = st.container()
+            with container:
                 col1, col2 = st.columns([0.85, 0.15])
                 
                 with col1:
@@ -155,6 +159,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                             {"role": msg["role"], "content": msg["content"]} 
                             for msg in messages
                         ]
+                        st.session_state.current_session_id = session['id']
                         if on_session_change:
                             on_session_change(session['id'])
                         st.rerun()
@@ -163,6 +168,10 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                     # Delete button with tooltip
                     if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
                         if history_manager.delete_session(user_id, session['id']):
+                            # If deleted current session, clear messages
+                            if st.session_state.get('current_session_id') == session['id']:
+                                st.session_state.messages = []
+                                st.session_state.current_session_id = None
                             st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:

@@ -505,6 +505,9 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
+    # Initialize RAG system
+    qa_chain, llm = initialize_rag()
+
     # Sidebar with clean layout
     with st.sidebar:
         if st.session_state.get('show_settings', False):
@@ -516,7 +519,11 @@ def main():
         else:
             # New Chat Button
             if st.button("✨ New Conversation", type="primary", use_container_width=True):
+                # Create new session and clear messages
+                history_manager = ChatHistoryManager()
+                session_id = history_manager.create_new_session(user_id)
                 st.session_state.messages = []
+                st.session_state.current_session_id = session_id
                 st.rerun()
             
             chat_history_sidebar(user_id)
@@ -602,9 +609,6 @@ def main():
                         mime="text/plain"
                     )
     
-    # Initialize RAG system
-    qa_chain, llm = initialize_rag()
-
     # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
