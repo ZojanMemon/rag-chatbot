@@ -193,8 +193,17 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                     </h3>
                 """, unsafe_allow_html=True)
                 
-                email = st.text_input("📧 Email Address", key="login_email_input")
-                password = st.text_input("🔒 Password", type="password", key="login_password_input")
+                email = st.text_input(
+                    "📧 Email Address",
+                    key="login_email_input",
+                    autocomplete="email"
+                )
+                password = st.text_input(
+                    "🔒 Password",
+                    type="password",
+                    key="login_password_input",
+                    autocomplete="current-password"
+                )
                 
                 if st.form_submit_button("Login", type="primary", use_container_width=True):
                     if not email or not password:
@@ -216,9 +225,23 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                     </h3>
                 """, unsafe_allow_html=True)
                 
-                email = st.text_input("📧 Email Address", key="signup_email_input")
-                password = st.text_input("🔒 Password", type="password", key="signup_password_input")
-                confirm_password = st.text_input("🔒 Confirm Password", type="password", key="signup_confirm_input")
+                email = st.text_input(
+                    "📧 Email Address",
+                    key="signup_email_input",
+                    autocomplete="email"
+                )
+                password = st.text_input(
+                    "🔒 Password",
+                    type="password",
+                    key="signup_password_input",
+                    autocomplete="new-password"
+                )
+                confirm_password = st.text_input(
+                    "🔒 Confirm Password",
+                    type="password",
+                    key="signup_confirm_input",
+                    autocomplete="new-password"
+                )
                 
                 if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
                     if not email or not password or not confirm_password:

@@ -492,13 +492,27 @@ def main():
         .main-heading {
             text-align: center;
             color: #3498db;
-            font-size: 2.2rem;
             font-weight: 700;
-            margin: 2rem 0;
+            margin: 1.5rem 0;
             padding: 1rem;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
             backdrop-filter: blur(10px);
+        }
+        
+        /* Responsive font sizes */
+        @media screen and (min-width: 768px) {
+            .main-heading {
+                font-size: 2.2rem;
+            }
+        }
+        
+        @media screen and (max-width: 767px) {
+            .main-heading {
+                font-size: 1.5rem;
+                margin: 1rem 0;
+                padding: 0.75rem;
+            }
         }
         </style>
     """, unsafe_allow_html=True)
