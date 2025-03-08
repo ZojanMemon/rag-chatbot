@@ -17,6 +17,14 @@ from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
 from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
 
+def initialize_firebase():
+    # Initialize Firebase
+    pass
+
+def get_auth_url(provider):
+    # Return authentication URL for the given provider
+    pass
+
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -290,7 +298,38 @@ def main():
         page_icon="🚨",
         layout="wide"
     )
+    
+    # Initialize Firebase
+    initialize_firebase()
+    
+    # Check if user is already authenticated
+    if 'user_token' in st.session_state:
+        try:
+            # Verify the token and get user info
+            user = auth.verify_id_token(st.session_state.user_token)
+            user_id = user['uid']
+        except:
+            # Token expired or invalid, clear it
+            st.session_state.pop('user_token', None)
+            st.session_state.pop('user', None)
+            user = None
+            user_id = None
+    else:
+        user = None
+        user_id = None
 
+    # Initialize session state
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+    if 'thinking' not in st.session_state:
+        st.session_state.thinking = False
+    if 'show_settings' not in st.session_state:
+        st.session_state.show_settings = False
+    if 'input_language' not in st.session_state:
+        st.session_state.input_language = "English"
+    if 'output_language' not in st.session_state:
+        st.session_state.output_language = "English"
+    
     # Custom CSS for layout and animations
     st.markdown("""
         <style>
@@ -478,21 +517,61 @@ def main():
     """, unsafe_allow_html=True)
 
     # Handle authentication
-    is_authenticated, user = auth_page()
-    
-    if not is_authenticated:
-        st.markdown("""
-        <div style="text-align: center; padding: 20px;">
-        <h2>🚨 Welcome to the Disaster Management Assistant</h2>
-        <p>Please log in or create an account to access the chatbot.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    if not user:
+        # Get user token from query params (if any)
+        query_params = st.experimental_get_query_params()
+        if 'token' in query_params:
+            try:
+                # Verify the token and get user info
+                user = auth.verify_id_token(query_params['token'][0])
+                st.session_state.user_token = query_params['token'][0]
+                st.session_state.user = user
+                # Remove token from URL
+                st.experimental_set_query_params()
+                st.rerun()
+            except:
+                pass
+        
+        # Show login page if not authenticated
+        login_container = st.empty()
+        with login_container:
+            st.title("🚨 Disaster Management Assistant")
+            st.markdown("""
+                Please sign in to continue:
+                
+                - Secure authentication via Firebase
+                - Your chat history will be saved
+                - Access from any device
+            """)
+            
+            # Login buttons
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                if st.button("🔑 Sign in with Email", use_container_width=True):
+                    js = f"""
+                    window.open('{get_auth_url("email")}', '_self');
+                    """
+                    st.components.v1.html(f"<script>{js}</script>")
+            with col2:
+                if st.button("🔵 Sign in with Google", use_container_width=True):
+                    js = f"""
+                    window.open('{get_auth_url("google")}', '_self');
+                    """
+                    st.components.v1.html(f"<script>{js}</script>")
+            with col3:
+                if st.button("⚫ Sign in with GitHub", use_container_width=True):
+                    js = f"""
+                    window.open('{get_auth_url("github")}', '_self');
+                    """
+                    st.components.v1.html(f"<script>{js}</script>")
         return
-    
-    # User is authenticated
-    user_id = user['uid']
-    preferences = load_user_preferences(user)
 
+    # Get user ID after authentication
+    user_id = user['uid']
+    
+    # Load user preferences
+    load_user_preferences(user_id)
+    
     # Main chat interface
     st.title("🚨 Disaster Management Assistant")
 
@@ -618,7 +697,7 @@ def main():
     if prompt := st.chat_input("Ask a question about disaster management..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        if is_authenticated:
+        if user:
             metadata = {
                 'language': st.session_state.input_language,
                 'timestamp': datetime.now().isoformat()
@@ -648,7 +727,7 @@ def main():
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
-                if is_authenticated:
+                if user:
                     metadata = {
                         'language': st.session_state.output_language,
                         'timestamp': datetime.now().isoformat(),

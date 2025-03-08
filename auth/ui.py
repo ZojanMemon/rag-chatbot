@@ -86,93 +86,98 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
     sessions = history_manager.get_all_sessions(user_id)
     
     if not sessions:
-        st.caption("No previous conversations")
-    else:
-        # Custom CSS for chat history items
-        st.markdown("""
-            <style>
-            .chat-history-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                padding: 0.5rem;
-                margin: 0.25rem 0;
-                background-color: #252525;
-                border-radius: 4px;
-                transition: all 0.2s ease;
-            }
-            .chat-history-item:hover {
-                background-color: #353535;
-                transform: translateY(-1px);
-            }
-            .chat-preview {
-                flex: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                margin-right: 0.5rem;
-                font-size: 0.9rem;
-            }
-            .delete-button {
-                flex-shrink: 0;
-                opacity: 0.6;
-                transition: opacity 0.2s;
-                font-size: 0.9rem;
-                padding: 0.25rem;
-                border-radius: 4px;
-            }
-            .delete-button:hover {
-                opacity: 1;
-                background-color: #4d4d4d;
-            }
-            </style>
-        """, unsafe_allow_html=True)
-        
-        # Sort sessions by creation time, newest first
-        sessions = sorted(sessions, key=lambda x: x.get('created_at', 0), reverse=True)
-        
-        for session in sessions:
-            # Get first message as preview (only first few words)
-            preview = "New Chat"
-            messages = history_manager.get_session_history(user_id, session['id'])
-            if messages:
-                first_msg = messages[0]['content']
-                words = first_msg.split()[:3]  # Get first 3 words
-                preview = ' '.join(words) + '...'
+        # Clear any remaining session state
+        st.session_state.messages = []
+        st.session_state.current_session_id = None
+        return
+    
+    # Custom CSS for chat history items
+    st.markdown("""
+        <style>
+        .chat-history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background-color: #252525;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .chat-history-item:hover {
+            background-color: #353535;
+            transform: translateY(-1px);
+        }
+        .chat-preview {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .delete-button {
+            flex-shrink: 0;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            font-size: 0.9rem;
+            padding: 0.25rem;
+            border-radius: 4px;
+        }
+        .delete-button:hover {
+            opacity: 1;
+            background-color: #4d4d4d;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Sort sessions by creation time, newest first
+    sessions = sorted(sessions, key=lambda x: x.get('created_at', 0), reverse=True)
+    
+    for session in sessions:
+        # Skip empty sessions
+        messages = history_manager.get_session_history(user_id, session['id'])
+        if not messages:
+            history_manager.delete_session(user_id, session['id'])
+            continue
             
-            # Create a container for each chat session
-            container = st.container()
-            with container:
-                col1, col2 = st.columns([0.85, 0.15])
-                
-                with col1:
-                    # Session button with preview
-                    if st.button(
-                        preview,
-                        key=f"session_{session['id']}",
-                        use_container_width=True
-                    ):
-                        history_manager._set_current_session_id(user_id, session['id'])
-                        messages = history_manager.get_session_history(user_id, session['id'])
-                        st.session_state.messages = [
-                            {"role": msg["role"], "content": msg["content"]} 
-                            for msg in messages
-                        ]
-                        st.session_state.current_session_id = session['id']
-                        if on_session_change:
-                            on_session_change(session['id'])
+        # Get first message as preview (only first few words)
+        first_msg = messages[0]['content']
+        words = first_msg.split()[:3]  # Get first 3 words
+        preview = ' '.join(words) + '...'
+        
+        # Create a container for each chat session
+        container = st.container()
+        with container:
+            col1, col2 = st.columns([0.85, 0.15])
+            
+            with col1:
+                # Session button with preview
+                if st.button(
+                    preview,
+                    key=f"session_{session['id']}",
+                    use_container_width=True
+                ):
+                    history_manager._set_current_session_id(user_id, session['id'])
+                    st.session_state.messages = [
+                        {"role": msg["role"], "content": msg["content"]} 
+                        for msg in messages
+                    ]
+                    st.session_state.current_session_id = session['id']
+                    if on_session_change:
+                        on_session_change(session['id'])
+                    st.rerun()
+            
+            with col2:
+                # Delete button with tooltip
+                if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
+                    if history_manager.delete_session(user_id, session['id']):
+                        # If deleted current session, clear messages
+                        if st.session_state.get('current_session_id') == session['id']:
+                            st.session_state.messages = []
+                            st.session_state.current_session_id = None
                         st.rerun()
-                
-                with col2:
-                    # Delete button with tooltip
-                    if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
-                        if history_manager.delete_session(user_id, session['id']):
-                            # If deleted current session, clear messages
-                            if st.session_state.get('current_session_id') == session['id']:
-                                st.session_state.messages = []
-                                st.session_state.current_session_id = None
-                            st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
     """
