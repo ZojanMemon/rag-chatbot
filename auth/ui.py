@@ -130,12 +130,13 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
         """, unsafe_allow_html=True)
         
         for session in sessions:
-            # Get first message as preview
-            preview = "New Conversation"
+            # Get first message as preview (only first few words)
+            preview = "New Chat"
             messages = history_manager.get_session_history(user_id, session['id'])
             if messages:
                 first_msg = messages[0]['content']
-                preview = (first_msg[:30] + '...') if len(first_msg) > 30 else first_msg
+                words = first_msg.split()[:3]  # Get first 3 words
+                preview = ' '.join(words) + '...'
             
             # Create a container for each chat session
             with st.container():
@@ -144,7 +145,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 with col1:
                     # Session button with preview
                     if st.button(
-                        f"💬 {preview}",
+                        preview,
                         key=f"session_{session['id']}",
                         use_container_width=True
                     ):

@@ -444,10 +444,9 @@ def main():
         }
 
         /* Thinking animation */
-        @keyframes thinking {
-            0% { transform: scale(0.8); opacity: 0.3; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(0.8); opacity: 0.3; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         .thinking-container {
@@ -455,37 +454,25 @@ def main():
             align-items: center;
             gap: 0.75rem;
             margin: 1rem 0;
-            padding: 0.75rem;
+            padding: 0.75rem 1rem;
             background-color: #252525;
             border-radius: 4px;
+            max-width: fit-content;
+        }
+
+        .thinking-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #808080;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
         .thinking-text {
             color: #808080;
             font-size: 0.9rem;
             font-weight: 500;
-        }
-
-        .thinking-dots {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .thinking-dot {
-            width: 6px;
-            height: 6px;
-            background-color: #808080;
-            border-radius: 50%;
-            animation: thinking 1.4s infinite;
-        }
-
-        .thinking-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .thinking-dot:nth-child(3) {
-            animation-delay: 0.4s;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -513,12 +500,8 @@ def main():
     if st.session_state.get('thinking', False):
         st.markdown("""
             <div class="thinking-container">
-                <span class="thinking-text">Thinking</span>
-                <div class="thinking-dots">
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                </div>
+                <div class="thinking-spinner"></div>
+                <span class="thinking-text">Thinking...</span>
             </div>
         """, unsafe_allow_html=True)
 
@@ -536,7 +519,6 @@ def main():
                 st.session_state.messages = []
                 st.rerun()
             
-            st.markdown('<div class="section-header">💬 Recent Conversations</div>', unsafe_allow_html=True)
             chat_history_sidebar(user_id)
             
             st.divider()
@@ -648,12 +630,8 @@ def main():
             # Show thinking animation
             message_placeholder.markdown("""
             <div class="thinking-container">
-                <span class="thinking-text">Thinking</span>
-                <div class="thinking-dots">
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                    <div class="thinking-dot"></div>
-                </div>
+                <div class="thinking-spinner"></div>
+                <span class="thinking-text">Thinking...</span>
             </div>
             """, unsafe_allow_html=True)
             
