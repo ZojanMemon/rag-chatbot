@@ -581,7 +581,7 @@ def main():
             st.divider()
             
             # Profile Button
-            if st.button("👤 Settings", use_container_width=True):
+            if st.button("🙍🏻‍♂️ Profile", use_container_width=True):
                 st.session_state.show_settings = True
                 st.rerun()
             
