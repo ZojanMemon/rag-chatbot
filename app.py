@@ -487,8 +487,24 @@ def main():
         .stChatMessageContent {
             flex: 1;
         }
+        
+        /* Main heading */
+        .main-heading {
+            text-align: center;
+            color: #3498db;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
         </style>
     """, unsafe_allow_html=True)
+
+    # Display main heading
+    st.markdown("<h1 class='main-heading'>🚨 Welcome to the Disaster Management Assistant</h1>", unsafe_allow_html=True)
 
     # Handle authentication
     is_authenticated, user = auth_page()

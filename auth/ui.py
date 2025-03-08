@@ -75,31 +75,41 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         
         /* Input field styling */
         div[data-baseweb="input"] {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem;
-            margin: 1rem 0;
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-radius: 12px !important;
+            border: 2px solid rgba(255, 255, 255, 0.1) !important;
+            padding: 0.5rem !important;
+            margin: 1rem 0 !important;
+            transition: all 0.3s ease !important;
         }
         
         div[data-baseweb="input"]:focus-within {
-            border-color: #3498db;
-            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2);
-            background: rgba(255, 255, 255, 0.1);
+            border-color: #3498db !important;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.2) !important;
+            background: rgba(255, 255, 255, 0.1) !important;
         }
         
-        /* Input text color */
-        .stTextInput input {
+        /* Input text styling */
+        .stTextInput input, .stTextInput textarea {
             color: #ffffff !important;
             font-size: 1.1rem !important;
+            padding: 0.5rem 1rem !important;
+            background: transparent !important;
+            border: none !important;
             height: 45px !important;
+            width: 100% !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        
+        .stTextInput input::placeholder, .stTextInput textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
         }
         
         .stTextInput label {
             color: #a0aec0 !important;
             font-size: 1rem !important;
             font-weight: 500 !important;
+            padding: 0.5rem 0 !important;
         }
         
         /* Button styling */
