@@ -6,7 +6,9 @@ import streamlit as st
 from typing import Tuple, Optional, Dict, List, Callable
 from .authenticator import FirebaseAuthenticator
 from .chat_history import ChatHistoryManager
+from .firebase_config import get_firestore_db
 from datetime import datetime
+import json
 
 def auth_page() -> Tuple[bool, Optional[Dict]]:
     """
