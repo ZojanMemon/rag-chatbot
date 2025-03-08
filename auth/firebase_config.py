@@ -5,13 +5,22 @@ import os
 from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, firestore
-
-# Firebase Web API Key
-FIREBASE_API_KEY = "AIzaSyDCxbp0QBn88b3VhjElt3VthFETN2JGCFc"
+import streamlit as st
 
 def get_firebase_api_key():
-    """Get Firebase API key."""
-    return FIREBASE_API_KEY
+    """Get Firebase API key from environment variables or Streamlit secrets."""
+    # Try getting from Streamlit secrets first
+    try:
+        return st.secrets["FIREBASE_API_KEY"]
+    except:
+        # Fall back to environment variable
+        api_key = os.environ.get('FIREBASE_API_KEY')
+        if not api_key:
+            raise ValueError(
+                "Firebase API key not found. Please set it in Streamlit secrets or "
+                "as an environment variable 'FIREBASE_API_KEY'."
+            )
+        return api_key
 
 def get_service_account_path():
     """Get the path to the Firebase service account file."""
