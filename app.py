@@ -523,7 +523,7 @@ def main():
     preferences = load_user_preferences(user)
 
     # Main chat interface
-    st.title("🚨 Disaster Management Assistant")
+    st.title("")
 
     # Display thinking animation when processing
     if st.session_state.get('thinking', False):
