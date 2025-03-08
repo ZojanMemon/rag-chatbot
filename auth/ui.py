@@ -23,26 +23,131 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     if auth.is_authenticated():
         return True, auth.get_current_user()
     
-    # Create tabs for login and signup
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    # Add custom CSS
+    st.markdown("""
+        <style>
+        /* Modern form styling */
+        div[data-testid="stForm"] {
+            border: 1px solid #2c3e50;
+            border-radius: 10px;
+            padding: 20px;
+            background: #1a1a1a;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        /* Tab styling */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stTabs [data-baseweb="tab"] {
+            height: 50px;
+            white-space: pre-wrap;
+            background-color: #2c3e50;
+            border-radius: 5px;
+            color: #ffffff;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .stTabs [data-baseweb="tab"]:hover {
+            background-color: #34495e;
+            color: #ffffff;
+        }
+        
+        .stTabs [aria-selected="true"] {
+            background-color: #3498db !important;
+            color: #ffffff !important;
+        }
+        
+        /* Input field styling */
+        div[data-baseweb="input"] {
+            background: #2c3e50;
+            border-radius: 5px;
+            border: 1px solid #34495e;
+            transition: all 0.3s ease;
+        }
+        
+        div[data-baseweb="input"]:focus-within {
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        /* Button styling */
+        .stButton button {
+            width: 100%;
+            height: 45px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .stButton button:hover {
+            background: linear-gradient(45deg, #2980b9, #3498db);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Message styling */
+        .stAlert {
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     
-    with tab1:
-        success, message = auth.login_form()
-        if message:
-            if success:
-                st.success(message)
-                st.rerun()  # Refresh the page after successful login
-            else:
-                st.error(message)
-    
-    with tab2:
-        success, message = auth.signup_form()
-        if message:
-            if success:
-                st.success(message)
-                st.rerun()  # Refresh the page after successful signup
-            else:
-                st.error(message)
+    # Center the form
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<h1 style='text-align: center; margin-bottom: 30px; color: #3498db;'>Welcome Back! 👋</h1>", unsafe_allow_html=True)
+        
+        # Create tabs for login and signup
+        tab1, tab2 = st.tabs(["🔑 Login", "✨ Sign Up"])
+        
+        with tab1:
+            with st.form("login_form"):
+                st.markdown("<h3 style='text-align: center; color: #bdc3c7;'>Login to Your Account</h3>", unsafe_allow_html=True)
+                email = st.text_input("📧 Email Address", key="login_email")
+                password = st.text_input("🔒 Password", type="password", key="login_password")
+                
+                if st.form_submit_button("Login", type="primary", use_container_width=True):
+                    if not email or not password:
+                        st.error("Please fill in all fields")
+                    else:
+                        success, message = auth.login_form()
+                        if message:
+                            if success:
+                                st.success(message)
+                                st.rerun()
+                            else:
+                                st.error(message)
+        
+        with tab2:
+            with st.form("signup_form"):
+                st.markdown("<h3 style='text-align: center; color: #bdc3c7;'>Create New Account</h3>", unsafe_allow_html=True)
+                email = st.text_input("📧 Email Address", key="signup_email")
+                password = st.text_input("🔒 Password", type="password", key="signup_password")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password", key="signup_confirm")
+                
+                if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
+                    if not email or not password or not confirm_password:
+                        st.error("Please fill in all fields")
+                    elif password != confirm_password:
+                        st.error("Passwords do not match")
+                    else:
+                        success, message = auth.signup_form()
+                        if message:
+                            if success:
+                                st.success(message)
+                                st.rerun()
+                            else:
+                                st.error(message)
     
     return False, None
 
