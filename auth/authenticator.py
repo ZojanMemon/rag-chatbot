@@ -19,10 +19,9 @@ class FirebaseAuthenticator:
         # Initialize session state for auth
         if 'user' not in st.session_state:
             # Try to load user from URL params first
-            params = st.experimental_get_query_params()
-            if 'auth_token' in params:
+            if 'auth_token' in st.query_params:
                 try:
-                    auth_token = base64.b64decode(params['auth_token'][0]).decode('utf-8')
+                    auth_token = base64.b64decode(st.query_params['auth_token']).decode('utf-8')
                     user_data = json.loads(auth_token)
                     st.session_state.user = user_data
                 except:
@@ -33,7 +32,7 @@ class FirebaseAuthenticator:
     def _save_auth_token(self, user_data: dict):
         """Save auth token to URL params."""
         auth_token = base64.b64encode(json.dumps(user_data).encode('utf-8')).decode('utf-8')
-        st.experimental_set_query_params(auth_token=auth_token)
+        st.query_params['auth_token'] = auth_token
     
     def login_form(self):
         """Display login form and handle login."""
@@ -142,7 +141,7 @@ class FirebaseAuthenticator:
         """Log out current user."""
         st.session_state.user = None
         # Clear URL params
-        st.experimental_set_query_params()
+        st.query_params.clear()
         # Clear other session state
         for key in ['messages', 'current_session_id']:
             if key in st.session_state:
