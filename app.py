@@ -15,15 +15,7 @@ from typing import Literal
 # Import authentication modules
 from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
-from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences, login_page
-
-def initialize_firebase():
-    # Initialize Firebase
-    pass
-
-def get_auth_url(provider):
-    # Return authentication URL for the given provider
-    pass
+from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
 
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
@@ -298,38 +290,7 @@ def main():
         page_icon="🚨",
         layout="wide"
     )
-    
-    # Initialize Firebase
-    initialize_firebase()
-    
-    # Check if user is already authenticated
-    if 'user_token' in st.session_state:
-        try:
-            # Verify the token and get user info
-            user = auth.verify_id_token(st.session_state.user_token)
-            user_id = user['uid']
-        except:
-            # Token expired or invalid, clear it
-            st.session_state.pop('user_token', None)
-            st.session_state.pop('user', None)
-            user = None
-            user_id = None
-    else:
-        user = None
-        user_id = None
 
-    # Initialize session state
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
-    if 'thinking' not in st.session_state:
-        st.session_state.thinking = False
-    if 'show_settings' not in st.session_state:
-        st.session_state.show_settings = False
-    if 'input_language' not in st.session_state:
-        st.session_state.input_language = "English"
-    if 'output_language' not in st.session_state:
-        st.session_state.output_language = "English"
-    
     # Custom CSS for layout and animations
     st.markdown("""
         <style>
@@ -517,30 +478,21 @@ def main():
     """, unsafe_allow_html=True)
 
     # Handle authentication
-    if not user:
-        # Check for token in URL parameters
-        if 'token' in st.query_params:
-            try:
-                # Verify the token and get user info
-                user = auth.verify_id_token(st.query_params['token'])
-                st.session_state.user_token = st.query_params['token']
-                st.session_state.user = user
-                # Remove token from URL
-                st.query_params.clear()
-                st.rerun()
-            except:
-                pass
-        
-        # Show login page if not authenticated
-        login_page()
+    is_authenticated, user = auth_page()
+    
+    if not is_authenticated:
+        st.markdown("""
+        <div style="text-align: center; padding: 20px;">
+        <h2>🚨 Welcome to the Disaster Management Assistant</h2>
+        <p>Please log in or create an account to access the chatbot.</p>
+        </div>
+        """, unsafe_allow_html=True)
         return
-
-    # Get user ID after authentication
+    
+    # User is authenticated
     user_id = user['uid']
-    
-    # Load user preferences
-    load_user_preferences(user_id)
-    
+    preferences = load_user_preferences(user)
+
     # Main chat interface
     st.title("🚨 Disaster Management Assistant")
 
@@ -666,7 +618,7 @@ def main():
     if prompt := st.chat_input("Ask a question about disaster management..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        if user:
+        if is_authenticated:
             metadata = {
                 'language': st.session_state.input_language,
                 'timestamp': datetime.now().isoformat()
@@ -696,7 +648,7 @@ def main():
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
-                if user:
+                if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
                         'timestamp': datetime.now().isoformat(),
