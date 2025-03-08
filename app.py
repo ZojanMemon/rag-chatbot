@@ -305,12 +305,12 @@ def main():
         .chat-container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 1rem;
+            padding: 20px;
         }
         
         /* Sidebar styling */
         .css-1d391kg {
-            padding: 1rem;
+            padding: 1.5rem;
             background-color: #1e1e1e;
         }
         
@@ -328,9 +328,6 @@ def main():
             display: flex !important;
             align-items: center !important;
             gap: 0.5rem !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
         }
 
         div.stButton > button:hover {
@@ -353,7 +350,7 @@ def main():
             color: #808080 !important;
             font-size: 0.85rem !important;
             font-weight: 500 !important;
-            margin: 0.75rem 0 0.5rem 0 !important;
+            margin: 1rem 0 0.5rem 0 !important;
             padding: 0 !important;
             display: flex !important;
             align-items: center !important;
@@ -371,9 +368,6 @@ def main():
             margin: 0.25rem 0;
             cursor: pointer;
             transition: all 0.2s ease;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .chat-item:hover {
@@ -427,7 +421,7 @@ def main():
 
         /* Dividers */
         hr {
-            margin: 1rem 0 !important;
+            margin: 1.25rem 0 !important;
             border-color: #353535 !important;
             opacity: 0.3 !important;
         }
@@ -460,7 +454,7 @@ def main():
             align-items: center;
             gap: 0.75rem;
             margin: 0;
-            padding: 0.5rem;
+            padding: 0.5rem 0.5rem;
             background-color: transparent;
             border-radius: 4px;
             max-width: fit-content;
@@ -473,10 +467,11 @@ def main():
             border-top: 2px solid transparent;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+           
         }
 
         .thinking-text {
-            color: #ffffff;
+            color: #fffffff;
             font-size: 0.9rem;
             font-weight: 500;
         }
@@ -487,71 +482,10 @@ def main():
             align-items: flex-start;
             gap: 1rem;
             padding: 1rem;
-            flex-wrap: wrap;
         }
 
         .stChatMessageContent {
             flex: 1;
-            min-width: 200px;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            .main {
-                padding: 0.5rem;
-            }
-            
-            .chat-container {
-                padding: 0.5rem;
-            }
-            
-            div.stButton > button {
-                padding: 0.75rem 0.5rem !important;
-                font-size: 0.85rem !important;
-            }
-            
-            .section-header {
-                font-size: 0.8rem !important;
-            }
-            
-            .streamlit-expanderHeader {
-                padding: 0.5rem !important;
-                font-size: 0.85rem !important;
-            }
-            
-            .streamlit-expanderContent {
-                padding: 0.5rem !important;
-            }
-            
-            .stChatMessage {
-                padding: 0.75rem;
-                gap: 0.75rem;
-            }
-            
-            .stChatMessageContent {
-                font-size: 0.9rem;
-            }
-            
-            /* Adjust sidebar width */
-            .css-1d391kg {
-                padding: 0.75rem;
-                min-width: auto !important;
-                width: auto !important;
-            }
-            
-            /* Make text inputs and selects more touch-friendly */
-            .stTextInput > div > div > input,
-            .stSelectbox > div > div {
-                height: 2.5rem !important;
-                font-size: 16px !important;  /* Prevents iOS zoom on focus */
-            }
-            
-            /* Improve button touch targets */
-            div.stButton > button {
-                min-height: 2.5rem;
-            }
         }
         </style>
     """, unsafe_allow_html=True)
