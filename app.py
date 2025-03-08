@@ -512,8 +512,8 @@ def main():
     if not is_authenticated:
         st.markdown("""
         <div style="text-align: center; padding: 20px;">
-        <h2>🚨 Welcome to the Disaster Management Assistant</h2>
-        <p>Please log in or create an account to access the chatbot.</p>
+        <h2></h2>
+        <p></p>
         </div>
         """, unsafe_allow_html=True)
         return
