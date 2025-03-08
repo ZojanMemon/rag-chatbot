@@ -88,40 +88,39 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
         # Custom CSS for chat history items
         st.markdown("""
             <style>
-            .chat-history-item {
+            .chat-preview-container {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                padding: 0.5rem;
-                margin: 0.25rem 0;
+                gap: 0.5rem;
                 background-color: #252525;
+                padding: 0.5rem;
                 border-radius: 4px;
+                margin: 0.25rem 0;
                 transition: all 0.2s ease;
             }
-            .chat-history-item:hover {
+            .chat-preview-container:hover {
                 background-color: #353535;
                 transform: translateY(-1px);
             }
-            .chat-preview {
+            .chat-preview-text {
                 flex: 1;
+                white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                white-space: nowrap;
-                margin-right: 0.5rem;
+                color: #e0e0e0;
                 font-size: 0.9rem;
             }
             .delete-button {
-                flex-shrink: 0;
+                color: #808080;
                 opacity: 0.6;
                 transition: opacity 0.2s;
-                font-size: 0.9rem;
+                cursor: pointer;
                 padding: 0.25rem;
                 border-radius: 4px;
             }
             .delete-button:hover {
                 opacity: 1;
-                background-color: #4d4d4d;
+                background-color: #454545;
             }
             </style>
         """, unsafe_allow_html=True)
@@ -137,18 +136,13 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                 words = first_msg.split()[:3]  # Get first 3 words
                 preview = ' '.join(words) + '...'
                 
-                # Create a container for each chat session
+                # Create container for preview and delete button
                 container = st.container()
                 with container:
-                    col1, col2 = st.columns([0.85, 0.15])
-                    
+                    # Create a single button that contains both preview text and delete icon
+                    col1, col2 = st.columns([0.9, 0.1])
                     with col1:
-                        # Session button with preview
-                        if st.button(
-                            preview,
-                            key=f"session_{session['id']}",
-                            use_container_width=True
-                        ):
+                        if st.button(preview, key=f"session_{session['id']}", use_container_width=True):
                             history_manager._set_current_session_id(user_id, session['id'])
                             messages = history_manager.get_session_history(user_id, session['id'])
                             st.session_state.messages = [
@@ -161,10 +155,8 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                             st.rerun()
                     
                     with col2:
-                        # Delete button with tooltip
                         if st.button("🗑️", key=f"delete_{session['id']}", help="Delete conversation"):
                             if history_manager.delete_session(user_id, session['id']):
-                                # If deleted current session, clear messages
                                 if st.session_state.get('current_session_id') == session['id']:
                                     st.session_state.messages = []
                                     st.session_state.current_session_id = None
