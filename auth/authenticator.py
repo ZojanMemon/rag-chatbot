@@ -5,7 +5,7 @@ import streamlit as st
 from firebase_admin import auth
 from firebase_admin._auth_utils import InvalidIdTokenError
 import requests
-from .firebase_config import get_firestore_db, initialize_firebase
+from .firebase_config import get_firestore_db, initialize_firebase, get_firebase_api_key
 import json
 import base64
 
@@ -17,6 +17,7 @@ class FirebaseAuthenticator:
         # Ensure Firebase is initialized
         initialize_firebase()
         self.db = get_firestore_db()
+        self.api_key = get_firebase_api_key()
         
         # Initialize session state for auth
         if 'user' not in st.session_state:
@@ -41,7 +42,7 @@ class FirebaseAuthenticator:
         try:
             # Get Firebase Auth REST API endpoint
             response = requests.post(
-                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={st.secrets.firebase.api_key}",
+                f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={self.api_key}",
                 json={
                     "email": email,
                     "password": password,

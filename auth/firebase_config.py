@@ -1,66 +1,53 @@
 """
-Firebase configuration for authentication and chat history storage.
-This module handles the initialization of Firebase Admin SDK.
+Firebase configuration and initialization.
 """
 import os
-import json
-import streamlit as st
-from firebase_admin import credentials, initialize_app, firestore, auth, get_app
+from pathlib import Path
+import firebase_admin
+from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-def initialize_firebase():
-    """
-    Initialize Firebase Admin SDK with credentials.
-    
-    The function checks if Firebase is already initialized to prevent multiple initializations.
-    It uses service account credentials stored in Streamlit secrets or environment variables.
-    """
-    try:
-        # First check if app is already initialized
-        try:
-            app = get_app()
-            # Initialize db client if not already initialized
-            if 'db' not in st.session_state:
-                st.session_state.db = firestore.client()
-            return True
-        except ValueError:
-            # App not initialized yet, proceed with initialization
-            pass
+def get_firebase_api_key():
+    """Get Firebase API key from environment variables."""
+    api_key = os.getenv('FIREBASE_API_KEY')
+    if not api_key:
+        raise ValueError("FIREBASE_API_KEY environment variable is not set")
+    return api_key
 
-        # Get Firebase credentials
-        cred = None
-        if 'FIREBASE_SERVICE_ACCOUNT' in st.secrets:
-            cred_dict = json.loads(st.secrets["FIREBASE_SERVICE_ACCOUNT"])
-            cred = credentials.Certificate(cred_dict)
-        elif os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
-            cred_dict = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
-            cred = credentials.Certificate(cred_dict)
-        elif os.path.exists('firebase-service-account.json'):
-            cred = credentials.Certificate('firebase-service-account.json')
+def get_service_account_path():
+    """Get the path to the Firebase service account file."""
+    # First check environment variable
+    service_account_path = os.getenv('FIREBASE_SERVICE_ACCOUNT_PATH')
+    if service_account_path:
+        return service_account_path
         
-        if cred is None:
-            st.error("Firebase credentials not found. Please set up Firebase credentials.")
-            return False
+    # Then check current directory
+    current_dir = Path(__file__).parent.parent
+    service_account_path = current_dir / 'firebase-service-account.json'
+    if service_account_path.exists():
+        return str(service_account_path)
         
-        # Initialize the app with a name to prevent duplicate initialization
-        firebase_app = initialize_app(cred, name='disaster-management-chatbot')
-        st.session_state.db = firestore.client()
-        return True
-    except Exception as e:
-        st.error(f"Error initializing Firebase: {str(e)}")
-        return False
+    raise ValueError(
+        "Firebase service account file not found. Please set FIREBASE_SERVICE_ACCOUNT_PATH "
+        "environment variable or place firebase-service-account.json in the project root."
+    )
+
+def initialize_firebase():
+    """Initialize Firebase Admin SDK if not already initialized."""
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        # Not initialized, so initialize
+        service_account_path = get_service_account_path()
+        cred = credentials.Certificate(service_account_path)
+        firebase_admin.initialize_app(cred)
 
 def get_firestore_db():
-    """
-    Get the Firestore database client.
-    
-    Returns:
-        Firestore client or None if not initialized
-    """
-    if 'db' not in st.session_state:
-        if not initialize_firebase():
-            return None
-    return st.session_state.db
+    """Get Firestore database client."""
+    try:
+        return firestore.client()
+    except Exception:
+        return None
