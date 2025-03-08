@@ -340,17 +340,19 @@ def main():
             border-radius: 50%;
         }
 
-        /* About section styling */
-        .about-section {
-            background-color: #f0f2f6;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
+        /* User profile button */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
 
-        .about-section h3 {
-            color: #0066cc;
-            margin-bottom: 10px;
+        .user-profile:hover {
+            background-color: #f0f2f6;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -359,21 +361,11 @@ def main():
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        # Show welcome message with previous styling
+        # Show welcome message with minimal styling
         st.markdown("""
-        <div class="about-section">
+        <div style="text-align: center; padding: 20px;">
         <h2>🚨 Welcome to the Disaster Management Assistant</h2>
-        
-        <p>Please log in or create an account to access the chatbot and save your chat history.</p>
-        
-        <h3>How can I help you?</h3>
-        <ul>
-        <li>🏥 Emergency preparedness and response</li>
-        <li>🌊 Natural disaster management</li>
-        <li>🚸 Safety protocols and procedures</li>
-        <li>🏘️ Community disaster resilience</li>
-        <li>🆘 Emergency contact information</li>
-        </ul>
+        <p>Please log in or create an account to access the chatbot.</p>
         </div>
         """, unsafe_allow_html=True)
         return
@@ -385,77 +377,79 @@ def main():
     # Sidebar with improved layout
     with st.sidebar:
         st.image("https://img.icons8.com/color/96/000000/emergency-exit.png", width=50)
-        st.title("Settings & Info")
         
-        # About section with previous styling
-        st.markdown("""
-        <div class="about-section">
-        <h3>About this Chatbot</h3>
-        <p>I'm your AI assistant for disaster management. I can help with:</p>
-        <ul>
-        <li>🏥 Emergency preparedness</li>
-        <li>🌊 Natural disasters</li>
-        <li>🚸 Safety protocols</li>
-        <li>🏘️ Community resilience</li>
-        <li>🆘 Emergency contacts</li>
-        </ul>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.divider()
-        
-        # Language Settings
-        st.subheader("🌐 Language Settings")
-        input_language = st.selectbox(
-            "Input Language:",
-            ["English", "Urdu", "Sindhi"],
-            index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
-        )
-        
-        output_language = st.selectbox(
-            "Output Language:",
-            ["English", "Urdu", "Sindhi"],
-            index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
-        )
-        
-        if input_language != st.session_state.input_language:
-            st.session_state.input_language = input_language
-            save_user_preferences(user_id)
+        # User profile section
+        if st.session_state.get('show_settings', False):
+            st.title("User Settings")
+            # Back button
+            if st.button("← Back to Chat"):
+                st.session_state.show_settings = False
+                st.rerun()
             
-        if output_language != st.session_state.output_language:
-            st.session_state.output_language = output_language
-            save_user_preferences(user_id)
+            # User profile settings
+            st.subheader("Profile")
+            user_sidebar(user)
+            
+            # Language Settings
+            st.subheader("🌐 Language Settings")
+            input_language = st.selectbox(
+                "Input Language:",
+                ["English", "Urdu", "Sindhi"],
+                index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
+            )
+            
+            output_language = st.selectbox(
+                "Output Language:",
+                ["English", "Urdu", "Sindhi"],
+                index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
+            )
+            
+            if input_language != st.session_state.input_language:
+                st.session_state.input_language = input_language
+                save_user_preferences(user_id)
+                
+            if output_language != st.session_state.output_language:
+                st.session_state.output_language = output_language
+                save_user_preferences(user_id)
+        else:
+            # Show minimal sidebar with user profile button
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                st.markdown("👤")
+            with col2:
+                if st.button(f"Profile Settings"):
+                    st.session_state.show_settings = True
+                    st.rerun()
+            
+            st.divider()
+            
+            # Chat History
+            st.subheader("📝 Chat History")
+            chat_history_sidebar(user_id)
 
-        st.divider()
-
-        # Chat History and User Settings
-        st.subheader("📝 Chat History")
-        chat_history_sidebar(user_id)
-        user_sidebar(user)
-
-        # Download options
-        st.subheader("💾 Download Chat")
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("Download PDF"):
-                pdf_file = create_chat_pdf()
-                st.download_button(
-                    label="Download PDF",
-                    data=pdf_file,
-                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                    mime="application/pdf"
-                )
-        
-        with col2:
-            if st.button("Download Text"):
-                text_file = create_chat_text()
-                st.download_button(
-                    label="Download Text",
-                    data=text_file,
-                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
-                    mime="text/plain"
-                )
+            # Download options
+            st.subheader("💾 Download Chat")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("Download PDF"):
+                    pdf_file = create_chat_pdf()
+                    st.download_button(
+                        label="Download PDF",
+                        data=pdf_file,
+                        file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        mime="application/pdf"
+                    )
+            
+            with col2:
+                if st.button("Download Text"):
+                    text_file = create_chat_text()
+                    st.download_button(
+                        label="Download Text",
+                        data=text_file,
+                        file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                        mime="text/plain"
+                    )
 
     # Main chat interface
     st.title("🚨 Disaster Management Assistant")
