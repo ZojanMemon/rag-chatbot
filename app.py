@@ -12,6 +12,11 @@ import io
 import textwrap
 from typing import Literal
 
+# Import authentication modules
+from auth.authenticator import FirebaseAuthenticator
+from auth.chat_history import ChatHistoryManager
+from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
+
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -169,6 +174,28 @@ def get_general_response(query):
         else:
             return "I'm specialized in disaster management topics. While I can't help with general topics, I'd be happy to answer any questions about disaster management, emergency procedures, or safety protocols."
 
+def get_rag_response(qa_chain, query):
+    """
+    Get a response from the RAG system for a domain-specific query.
+    
+    Args:
+        qa_chain: The initialized QA chain
+        query: User's question
+        
+    Returns:
+        str: Generated response
+    """
+    try:
+        # Add language-specific instructions based on output language
+        lang_instruction = get_language_prompt(st.session_state.output_language)
+        
+        # Get response from RAG system
+        response = qa_chain({"query": f"{query}\n\n{lang_instruction}"})
+        return response['result']
+    except Exception as e:
+        st.error(f"Error generating RAG response: {str(e)}")
+        return f"I'm sorry, I couldn't generate a response. Error: {str(e)}"
+
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -307,136 +334,145 @@ def main():
         }
         </style>
     """, unsafe_allow_html=True)
+
+    # Main title
+    st.title("Disaster Management Assistant 🆘")
     
-    try:
-        # Initialize RAG system
-        qa_chain, llm = initialize_rag()
+    # Handle authentication
+    is_authenticated, user = auth_page()
+    
+    if not is_authenticated:
+        # Show welcome message for non-authenticated users
+        st.markdown("""
+        ## Welcome to the Disaster Management Assistant
+        
+        Please log in or create an account to access the chatbot and save your chat history.
+        
+        This assistant can help you with:
+        - Emergency preparedness
+        - Disaster response procedures
+        - Safety protocols
+        - And more...
+        """)
+        return
+    
+    # User is authenticated
+    user_id = user['uid']
+    
+    # Load user preferences
+    preferences = load_user_preferences(user)
+    
+    # Display user sidebar with chat history
+    user_sidebar(user)
+    chat_history_sidebar(user_id)
 
-        # Sidebar with settings and info
-        with st.sidebar:
-            st.title("Settings & Info")
+    # Initialize RAG system
+    qa_chain, llm = initialize_rag()
+
+    # Sidebar for language selection
+    with st.sidebar:
+        st.subheader("Language Settings")
+        
+        # Input language selection
+        input_language = st.selectbox(
+            "Input Language:",
+            ["English", "Urdu", "Sindhi"],
+            index=["English", "Urdu", "Sindhi"].index(st.session_state.input_language)
+        )
+        
+        # Output language selection
+        output_language = st.selectbox(
+            "Output Language:",
+            ["English", "Urdu", "Sindhi"],
+            index=["English", "Urdu", "Sindhi"].index(st.session_state.output_language)
+        )
+        
+        # Update session state if language changed
+        if input_language != st.session_state.input_language:
+            st.session_state.input_language = input_language
+            save_user_preferences(user_id)
             
-            # Language Settings in an expander
-            with st.expander("🌐 Language Settings", expanded=False):
-                input_lang = st.selectbox(
-                    "Select Input Language",
-                    ["English", "Urdu", "Sindhi"],
-                    key="input_language_selector",
-                    index=0 if st.session_state.input_language == "English" else 1 if st.session_state.input_language == "Urdu" else 2
+        if output_language != st.session_state.output_language:
+            st.session_state.output_language = output_language
+            save_user_preferences(user_id)
+
+        # Download options
+        st.subheader("Download Chat")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Download as PDF"):
+                pdf_file = create_chat_pdf()
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_file,
+                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                    mime="application/pdf"
                 )
-                output_lang = st.selectbox(
-                    "Select Output Language",
-                    ["English", "Urdu", "Sindhi"],
-                    key="output_language_selector",
-                    index=0 if st.session_state.output_language == "English" else 1 if st.session_state.output_language == "Urdu" else 2
+        
+        with col2:
+            if st.button("Download as Text"):
+                text_file = create_chat_text()
+                st.download_button(
+                    label="Download Text",
+                    data=text_file,
+                    file_name=f"chat_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                    mime="text/plain"
                 )
-                
-                # Update session state if language changed
-                if input_lang != st.session_state.input_language:
-                    st.session_state.input_language = input_lang
-                if output_lang != st.session_state.output_language:
-                    st.session_state.output_language = output_lang
-            
-            # About section in an expander
-            with st.expander("ℹ️ About", expanded=False):
-                st.markdown("""
-                ### Features
-                This chatbot uses:
-                - 🧠 Gemini Pro for text generation
-                - 🔍 Pinecone for vector storage
-                - ⚡ LangChain for the RAG pipeline
-                - 🌐 Multilingual support (English, Urdu & Sindhi)
-                
-                ### Topics
-                You can ask questions about:
-                - 📋 Disaster management procedures
-                - 🚨 Emergency protocols
-                - 🛡️ Safety measures
-                - 📊 Risk assessment
-                - 🏥 Relief operations
-                
-                ### Tips
-                - Be specific in your questions
-                - Ask about one topic at a time
-                - Use clear, simple language
-                """)
-            
-            # Download options in an expander
-            with st.expander("💾 Download Chat History", expanded=False):
-                col_download_pdf, col_download_text = st.columns(2)
-                
-                with col_download_pdf:
-                    if st.button("Generate PDF"):
-                        st.session_state.pdf_data = create_chat_pdf()
-                        st.success("PDF generated! Click download button below.")
-                    
-                    if "pdf_data" in st.session_state and st.session_state.pdf_data is not None:
-                        if st.download_button(
-                            "Download PDF",
-                            data=st.session_state.pdf_data,
-                            file_name="chat_history.pdf",
-                            mime="application/pdf"
-                        ):
-                            st.success("PDF downloaded!")
-                
-                with col_download_text:
-                    text_data = create_chat_text()
-                    if text_data is not None:
-                        if st.download_button(
-                            "Download Text",
-                            data=text_data,
-                            file_name="chat_history.txt",
-                            mime="text/plain"
-                        ):
-                            st.success("Text downloaded!")
-            
-            # Clear chat button at the bottom of sidebar
-            if st.button("🗑️ Clear Chat History"):
-                st.session_state.messages = []
-                if "pdf_data" in st.session_state:
-                    del st.session_state.pdf_data
-                st.rerun()
 
-        # Main chat interface
-        st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    # Display chat messages
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Chat input
+    if prompt := st.chat_input("Ask a question about disaster management..."):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Display chat title
-        st.title("Disaster Management Assistant 🤖")
+        # Save to Firebase if authenticated
+        if is_authenticated:
+            metadata = {
+                'language': st.session_state.input_language,
+                'timestamp': datetime.now().isoformat()
+            }
+            sync_chat_message(user_id, "user", prompt, metadata)
         
-        # Display chat messages
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-
-        # Fixed input box at bottom
-        st.markdown('<div class="input-container">', unsafe_allow_html=True)
-        if prompt := st.chat_input("Ask your question here"):
-            # Display user message
-            with st.chat_message("user"):
-                st.markdown(prompt)
-            st.session_state.messages.append({"role": "user", "content": prompt})
-
-            # Display assistant response
-            with st.chat_message("assistant"):
-                with st.spinner("Thinking..."):
-                    if is_general_chat(prompt):
-                        response_text = get_general_response(prompt)
-                    else:
-                        response = qa_chain({"query": prompt})
-                        response_text = response['result']
-                    st.markdown(response_text)
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
+        # Display user message
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Generate and display assistant response
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
             
-            # Update PDF data after new message
-            if "pdf_data" in st.session_state:
-                st.session_state.pdf_data = create_chat_pdf()
+            try:
+                # Check if it's a general chat query
+                if is_general_chat(prompt):
+                    response = get_general_response(prompt)
+                else:
+                    # Use RAG for domain-specific questions
+                    response = get_rag_response(qa_chain, prompt)
                 
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
+                # Display response
+                message_placeholder.markdown(response)
+                
+                # Add assistant response to chat history
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Save to Firebase if authenticated
+                if is_authenticated:
+                    metadata = {
+                        'language': st.session_state.output_language,
+                        'timestamp': datetime.now().isoformat(),
+                        'type': 'general' if is_general_chat(prompt) else 'rag'
+                    }
+                    sync_chat_message(user_id, "assistant", response, metadata)
+                
+            except Exception as e:
+                error_message = f"Error generating response: {str(e)}"
+                message_placeholder.error(error_message)
+                st.session_state.messages.append({"role": "assistant", "content": error_message})
 
 if __name__ == "__main__":
     main()
