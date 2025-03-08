@@ -78,9 +78,11 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
             background: rgba(255, 255, 255, 0.05) !important;
             border-radius: 12px !important;
             border: 2px solid rgba(255, 255, 255, 0.1) !important;
-            padding: 0.5rem !important;
             margin: 1rem 0 !important;
             transition: all 0.3s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            min-height: 45px !important;
         }
         
         div[data-baseweb="input"]:focus-within {
@@ -93,12 +95,15 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         .stTextInput input, .stTextInput textarea {
             color: #ffffff !important;
             font-size: 1.1rem !important;
-            padding: 0.5rem 1rem !important;
             background: transparent !important;
             border: none !important;
-            height: 45px !important;
             width: 100% !important;
             font-family: 'Inter', sans-serif !important;
+            padding: 0.5rem 1rem !important;
+            line-height: 1.5 !important;
+            margin: 0 !important;
+            height: auto !important;
+            min-height: 45px !important;
         }
         
         .stTextInput input::placeholder, .stTextInput textarea::placeholder {
@@ -110,6 +115,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
             font-size: 1rem !important;
             font-weight: 500 !important;
             padding: 0.5rem 0 !important;
+            margin-bottom: 0.25rem !important;
         }
         
         /* Button styling */
@@ -180,21 +186,21 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         tab1, tab2 = st.tabs(["🔑 Login", "✨ Sign Up"])
         
         with tab1:
-            with st.form("login_form"):
+            with st.form("login_form", clear_on_submit=True):
                 st.markdown("""
                     <h3 style='text-align: center; color: #e2e8f0; font-size: 1.5rem; margin-bottom: 2rem;'>
                         Login to Your Account
                     </h3>
                 """, unsafe_allow_html=True)
                 
-                email = st.text_input("📧 Email Address", key="login_email")
-                password = st.text_input("🔒 Password", type="password", key="login_password")
+                email = st.text_input("📧 Email Address", key="login_email_input")
+                password = st.text_input("🔒 Password", type="password", key="login_password_input")
                 
                 if st.form_submit_button("Login", type="primary", use_container_width=True):
                     if not email or not password:
                         st.error("Please fill in all fields")
                     else:
-                        success, message = auth.login_form()
+                        success, message = auth.login_form(email, password)
                         if message:
                             if success:
                                 st.success(message)
@@ -203,16 +209,16 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                                 st.error(message)
         
         with tab2:
-            with st.form("signup_form"):
+            with st.form("signup_form", clear_on_submit=True):
                 st.markdown("""
                     <h3 style='text-align: center; color: #e2e8f0; font-size: 1.5rem; margin-bottom: 2rem;'>
                         Create New Account
                     </h3>
                 """, unsafe_allow_html=True)
                 
-                email = st.text_input("📧 Email Address", key="signup_email")
-                password = st.text_input("🔒 Password", type="password", key="signup_password")
-                confirm_password = st.text_input("🔒 Confirm Password", type="password", key="signup_confirm")
+                email = st.text_input("📧 Email Address", key="signup_email_input")
+                password = st.text_input("🔒 Password", type="password", key="signup_password_input")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password", key="signup_confirm_input")
                 
                 if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
                     if not email or not password or not confirm_password:
@@ -220,7 +226,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                     elif password != confirm_password:
                         st.error("Passwords do not match")
                     else:
-                        success, message = auth.signup_form()
+                        success, message = auth.signup_form(email, password)
                         if message:
                             if success:
                                 st.success(message)
