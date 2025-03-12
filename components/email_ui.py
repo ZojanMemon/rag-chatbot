@@ -73,7 +73,6 @@ def show_email_ui(messages, user_email="Anonymous"):
     display_options = [emergency_labels[key] for key in emergency_types.keys()]
     option_keys = list(emergency_types.keys())
     
-    # Create a more structured layout to ensure consistent alignment
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -83,16 +82,11 @@ def show_email_ui(messages, user_email="Anonymous"):
             select_label = "ایمرجنسی کی قسم منتخب کریں"
         elif current_language == "Sindhi":
             select_label = "ايمرجنسي جو قسم چونڊيو"
-        
-        # Add the label separately to control spacing
-        st.markdown(f"**{select_label}**")
-        
-        # Add the selectbox without a label
+            
         selected_index = st.selectbox(
-            "",  # Empty label
+            select_label,
             options=display_options,
-            key="share_emergency_type",
-            label_visibility="collapsed"  # Hide the label completely
+            key="share_emergency_type"
         )
         
         # Convert display label back to key
@@ -100,10 +94,16 @@ def show_email_ui(messages, user_email="Anonymous"):
         emergency_type = option_keys[selected_index_position]
     
     with col2:
-        # Add empty space with the same height as the label
-        st.markdown("&nbsp;")  # Non-breaking space for consistent height
+        # Use custom CSS to ensure button stays at fixed position with 24px margin
+        st.markdown("""
+        <style>
+        /* Target the specific button in the second column */
+        [data-testid="stHorizontalBlock"] > div:nth-child(2) [data-testid="baseButton-primary"] {
+            margin-top: 24px !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
         
-        # Now the button will align with the selectbox
         if st.button(share_button_text, type="primary", use_container_width=True):
             email_service = EmailService()
             success, _ = email_service.send_email(
