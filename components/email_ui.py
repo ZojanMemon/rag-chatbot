@@ -8,9 +8,31 @@ def show_email_ui(messages, user_email="Anonymous"):
     if len(messages) < 2:
         return
 
-    st.markdown("---")  # Visual separator
-    st.markdown("### 📧 Share with Authorities")
-    st.info("Share this conversation with relevant authorities for immediate assistance.")
+    # Get current language from session state
+    current_language = st.session_state.get("output_language", "English")
+    
+    # Separator
+    st.markdown("---")
+    
+    # Email sharing section with language-specific labels
+    if current_language == "Urdu":
+        st.markdown("### 📧 حکام کے ساتھ شیئر کریں")
+        st.info("فوری مدد کے لیے یہ گفتگو متعلقہ حکام کے ساتھ شیئر کریں۔")
+        share_button_text = "📤 شیئر کریں"
+        success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
+        error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
+    elif current_language == "Sindhi":
+        st.markdown("### 📧 اختيارن سان شيئر ڪريو")
+        st.info("فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو.")
+        share_button_text = "📤 شيئر ڪريو"
+        success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
+        error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
+    else:  # English
+        st.markdown("### 📧 Share with Authorities")
+        st.info("Share this conversation with relevant authorities for immediate assistance.")
+        share_button_text = "📤 Share"
+        success_message = "✅ Shared with {} authorities"
+        error_message = "❌ Could not share the conversation"
     
     # Emergency type selection
     emergency_types = {
@@ -21,17 +43,58 @@ def show_email_ui(messages, user_email="Anonymous"):
         "General": "themusicking151@gmail.com"
     }
     
+    # Emergency type labels based on language
+    if current_language == "Urdu":
+        emergency_labels = {
+            "Flood": "سیلاب",
+            "Earthquake": "زلزلہ",
+            "Fire": "آگ",
+            "Medical": "طبی",
+            "General": "عام"
+        }
+    elif current_language == "Sindhi":
+        emergency_labels = {
+            "Flood": "ٻوڏ",
+            "Earthquake": "زلزلو",
+            "Fire": "باهه",
+            "Medical": "طبي",
+            "General": "عام"
+        }
+    else:  # English
+        emergency_labels = {
+            "Flood": "Flood",
+            "Earthquake": "Earthquake",
+            "Fire": "Fire",
+            "Medical": "Medical",
+            "General": "General"
+        }
+    
+    # Create display options with translated labels but keep keys the same
+    display_options = [emergency_labels[key] for key in emergency_types.keys()]
+    option_keys = list(emergency_types.keys())
+    
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        emergency_type = st.selectbox(
-            "Select Emergency Type",
-            options=list(emergency_types.keys()),
+        # Select box label based on language
+        select_label = "Select Emergency Type"
+        if current_language == "Urdu":
+            select_label = "ایمرجنسی کی قسم منتخب کریں"
+        elif current_language == "Sindhi":
+            select_label = "ايمرجنسي جو قسم چونڊيو"
+            
+        selected_index = st.selectbox(
+            select_label,
+            options=display_options,
             key="share_emergency_type"
         )
+        
+        # Convert display label back to key
+        selected_index_position = display_options.index(selected_index)
+        emergency_type = option_keys[selected_index_position]
     
     with col2:
-        if st.button("📤 Share", type="primary", use_container_width=True):
+        if st.button(share_button_text, type="primary", use_container_width=True):
             email_service = EmailService()
             success, _ = email_service.send_email(
                 recipient_email=emergency_types[emergency_type],
@@ -41,6 +104,6 @@ def show_email_ui(messages, user_email="Anonymous"):
             )
             
             if success:
-                st.success(f"✅ Shared with {emergency_type} authorities")
+                st.success(success_message.format(emergency_labels[emergency_type]))
             else:
-                st.error("❌ Could not share the conversation")
+                st.error(error_message)
