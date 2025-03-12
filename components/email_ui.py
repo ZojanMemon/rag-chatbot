@@ -17,26 +17,22 @@ def show_email_ui(messages, user_email="Anonymous"):
     # Email sharing section with language-specific labels
     if current_language == "Urdu":
         expander_title = "📧 حکام کے ساتھ شیئر کریں"
-        info_text = "فوری مدد کے لیے یہ گفتگو متعلقہ حکام کے ساتھ شیئر کریں۔"
         share_button_text = "📤 شیئر کریں"
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
-        info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
         share_button_text = "📤 شيئر ڪريو"
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
     else:  # English
         expander_title = "📧 Share with Authorities"
-        info_text = "Share this conversation with relevant authorities for immediate assistance."
         share_button_text = "📤 Share"
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
         
     # Create an expander for the email sharing UI
-    with st.expander(expander_title, expanded=False):
-        st.info(info_text)
+    with st.expander(expander_title):
         # Emergency type selection
         emergency_types = {
             "Flood": "themusicking151@gmail.com",
