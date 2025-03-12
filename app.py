@@ -537,13 +537,9 @@ def main():
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        st.markdown("""
-        <div style="text-align: center; padding: 20px;">
-        <h2></h2>
-        <p></p>
-        </div>
-        """, unsafe_allow_html=True)
-        return
+        st.error("⚠️ Authentication Required")
+        st.info("Please log in or sign up to access the Disaster Management Assistant.")
+        st.stop()
     
     # User is authenticated
     user_id = user['uid']

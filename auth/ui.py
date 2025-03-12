@@ -17,26 +17,11 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     Returns:
         Tuple[bool, Optional[Dict]]: (Authentication status, User data if authenticated)
     """
-    # Check if we're in production mode
-    is_production = st.secrets.get("PRODUCTION", False)
-    
-    # Initialize session state for user
-    if "user" not in st.session_state:
-        st.session_state.user = None
+    auth = FirebaseAuthenticator()
     
     # Check if already authenticated
-    if st.session_state.user:
-        return True, st.session_state.user
-    
-    if not is_production:
-        # Development mode - auto-login with dummy user
-        dummy_user = {
-            "email": "guest@example.com",
-            "uid": "guest-user",
-            "display_name": "Guest User"
-        }
-        st.session_state.user = dummy_user
-        return True, dummy_user
+    if auth.is_authenticated():
+        return True, auth.get_current_user()
     
     # Add custom CSS
     st.markdown("""
@@ -189,10 +174,10 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         st.markdown("""
             <div class="welcome-text">
                 <h1 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
-                    Welcome Back! 👋
+                    Welcome to the Disaster Management Assistant 🚨
                 </h1>
                 <p style='text-align: center; color: #a0aec0; font-size: 1.1rem; margin-bottom: 2rem;'>
-                    Log in to access your disaster management assistant
+                    Please log in or create an account to access the chatbot
                 </p>
             </div>
         """, unsafe_allow_html=True)
@@ -249,7 +234,8 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                     "🔒 Password",
                     type="password",
                     key="signup_password_input",
-                    autocomplete="new-password"
+                    autocomplete="new-password",
+                    help="Password must be at least 6 characters long"
                 )
                 confirm_password = st.text_input(
                     "🔒 Confirm Password",
@@ -261,6 +247,8 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
                     if not email or not password or not confirm_password:
                         st.error("Please fill in all fields")
+                    elif len(password) < 6:
+                        st.error("Password must be at least 6 characters long")
                     elif password != confirm_password:
                         st.error("Passwords do not match")
                     else:
