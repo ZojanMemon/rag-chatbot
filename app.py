@@ -17,6 +17,18 @@ from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
 from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
 
+# Import email service
+from services.email_service import EmailService
+
+# Emergency authority email mapping
+EMERGENCY_AUTHORITIES = {
+    "Flood": "flood.authority@example.com",
+    "Earthquake": "earthquake.response@example.com",
+    "Fire": "fire.department@example.com",
+    "Medical": "medical.emergency@example.com",
+    "General": "general.emergency@example.com"
+}
+
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -693,6 +705,32 @@ def main():
                 
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Add minimal email sharing UI after chatbot response
+                if len(st.session_state.messages) >= 2:  # Only show after some conversation
+                    with st.expander("📧 Share with Authorities"):
+                        emergency_type = st.selectbox(
+                            "Select Emergency Type",
+                            list(EMERGENCY_AUTHORITIES.keys()),
+                            key="emergency_type"
+                        )
+                        if st.button("📤 Share"):
+                            try:
+                                email_service = EmailService()
+                                recipient_email = EMERGENCY_AUTHORITIES[emergency_type]
+                                user_email = st.session_state.user.get('email', 'Anonymous')
+                                success, message = email_service.send_email(
+                                    recipient_email,
+                                    st.session_state.messages,
+                                    user_email,
+                                    emergency_type
+                                )
+                                if success:
+                                    st.success(f"✅ Shared with {emergency_type} authority!")
+                                else:
+                                    st.error(f"❌ Failed to share: {message}")
+                            except Exception as e:
+                                st.error(f"❌ Error: {str(e)}")
                 
                 if is_authenticated:
                     metadata = {
