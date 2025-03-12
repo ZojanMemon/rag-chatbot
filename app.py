@@ -11,6 +11,7 @@ from fpdf import FPDF
 import io
 import textwrap
 from typing import Literal
+from components.email_ui import show_email_ui
 
 # Import authentication modules
 from auth.authenticator import FirebaseAuthenticator
@@ -667,10 +668,18 @@ def main():
                         mime="text/plain"
                     )
     
-    # Display chat messages
+       # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+
+    # Show email sharing UI if we have messages
+    if "user" in locals():
+        user_email = user.get('email', 'Anonymous')
+    else:
+        user_email = "Anonymous"
+    show_email_ui(st.session_state.messages, user_email)
+
 
     # Chat input
     if prompt := st.chat_input("Ask Your Questions Here..."):

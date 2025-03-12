@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import streamlit as st
 
+
 class EmailService:
     def __init__(self):
         """Initialize email service with Gmail SMTP settings."""
