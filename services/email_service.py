@@ -11,10 +11,6 @@ class EmailService:
     def __init__(self):
         """Initialize email service with Gmail SMTP settings."""
         try:
-            # Debug: Print all available secrets
-            all_secrets = [key for key in st.secrets.keys()]
-            st.write("Available secret keys:", all_secrets)
-            
             # Get email credentials
             self.sender_email = st.secrets.get("GMAIL_ADDRESS")
             self.app_password = st.secrets.get("GMAIL_APP_PASSWORD")
@@ -25,8 +21,6 @@ class EmailService:
             if not self.app_password:
                 raise ValueError("GMAIL_APP_PASSWORD not found in secrets")
                 
-            st.write(f"Using sender email: {self.sender_email}")
-            
             # SMTP Settings
             self.smtp_server = "smtp.gmail.com"
             self.smtp_port = 587
@@ -67,21 +61,11 @@ Chat History:
             # Attach body
             message.attach(MIMEText(body, 'plain'))
             
-            # Debug info
-            st.info("Preparing to send email...")
-            st.write(f"From: {self.sender_email}")
-            st.write(f"To: {recipient_email}")
-            st.write(f"Subject: Emergency Assistance Required: {emergency_type}")
-            
             # Send email
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                st.write("1. Connecting to SMTP server...")
                 server.starttls()
-                st.write("2. Starting secure connection...")
                 server.login(self.sender_email, self.app_password)
-                st.write("3. Logging in...")
                 server.send_message(message)
-                st.write("4. Sending message...")
                 st.success("✅ Email sent successfully!")
                 return True, "Email sent successfully!"
             
