@@ -712,40 +712,6 @@ def main():
                 else:
                     response = get_rag_response(qa_chain, prompt)
                 
-                message_placeholder.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                
-                # Add minimal email sharing UI after chatbot response
-                if len(st.session_state.messages) >= 2:  # Only show after some conversation
-                    with st.expander("📧 Share with Authorities"):
-                        st.info("Share this conversation with relevant authorities for immediate assistance.")
-                        emergency_type = st.selectbox(
-                            "Select Emergency Type",
-                            list(EMERGENCY_AUTHORITIES.keys()),
-                            key="emergency_type"
-                        )
-                        
-                        if st.button("📤 Share Conversation", type="primary", use_container_width=True):
-                            with st.spinner("Sending your conversation..."):
-                                try:
-                                    email_service = EmailService()
-                                    recipient_email = EMERGENCY_AUTHORITIES[emergency_type]
-                                    user_email = user.get('email', 'Anonymous')
-                                    
-                                    success, message = email_service.send_email(
-                                        recipient_email,
-                                        st.session_state.messages,
-                                        user_email,
-                                        emergency_type
-                                    )
-                                    
-                                    if success:
-                                        st.success(f"✅ Your conversation has been shared with {emergency_type} authorities. They will review and respond as needed.")
-                                    else:
-                                        st.error(f"❌ Could not share the conversation: {message}")
-                                except Exception as e:
-                                    st.error(f"❌ An error occurred while sharing: {str(e)}")
-                
                 if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
