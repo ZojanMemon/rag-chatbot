@@ -17,11 +17,26 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     Returns:
         Tuple[bool, Optional[Dict]]: (Authentication status, User data if authenticated)
     """
-    auth = FirebaseAuthenticator()
+    # Check if we're in production mode
+    is_production = st.secrets.get("PRODUCTION", False)
+    
+    # Initialize session state for user
+    if "user" not in st.session_state:
+        st.session_state.user = None
     
     # Check if already authenticated
-    if auth.is_authenticated():
-        return True, auth.get_current_user()
+    if st.session_state.user:
+        return True, st.session_state.user
+    
+    if not is_production:
+        # Development mode - auto-login with dummy user
+        dummy_user = {
+            "email": "guest@example.com",
+            "uid": "guest-user",
+            "display_name": "Guest User"
+        }
+        st.session_state.user = dummy_user
+        return True, dummy_user
     
     # Add custom CSS
     st.markdown("""

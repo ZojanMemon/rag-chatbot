@@ -24,7 +24,21 @@ def get_firebase_api_key():
 
 def get_service_account_path():
     """Get the path to the Firebase service account file."""
-    # First check environment variable
+    # First try getting from Streamlit secrets
+    try:
+        import json
+        service_account_json = st.secrets["FIREBASE_SERVICE_ACCOUNT"]
+        
+        # Write to a temporary file
+        root_dir = Path(__file__).parent.parent
+        temp_path = root_dir / 'firebase-service-account.json'
+        with open(temp_path, 'w') as f:
+            json.dump(service_account_json, f)
+        return str(temp_path)
+    except Exception:
+        pass
+        
+    # Then check environment variable
     service_account_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH')
     if service_account_path:
         if os.path.isabs(service_account_path):
@@ -39,9 +53,27 @@ def get_service_account_path():
     if service_account_path.exists():
         return str(service_account_path)
         
+    # If no auth is found, create a dummy service account for development
+    if not st.secrets.get("PRODUCTION", False):
+        dummy_account = {
+            "type": "service_account",
+            "project_id": "dummy-project",
+            "private_key_id": "dummy",
+            "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9QFbDLHsGjwKR\n-----END PRIVATE KEY-----\n",
+            "client_email": "dummy@dummy-project.iam.gserviceaccount.com",
+            "client_id": "dummy",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_x509_cert_url": "dummy"
+        }
+        with open(service_account_path, 'w') as f:
+            json.dump(dummy_account, f)
+        return str(service_account_path)
+        
     raise ValueError(
-        "Firebase service account file not found. Please set FIREBASE_SERVICE_ACCOUNT_PATH "
-        "environment variable or place firebase-service-account.json in the project root."
+        "Firebase service account not found. Please set it in Streamlit secrets as FIREBASE_SERVICE_ACCOUNT, "
+        "in environment variable FIREBASE_SERVICE_ACCOUNT_PATH, or place firebase-service-account.json in the project root."
     )
 
 def initialize_firebase():
