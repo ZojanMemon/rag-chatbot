@@ -73,6 +73,38 @@ def show_email_ui(messages, user_email="Anonymous"):
     display_options = [emergency_labels[key] for key in emergency_types.keys()]
     option_keys = list(emergency_types.keys())
     
+    # User contact information section with language-specific labels
+    if current_language == "Urdu":
+        user_info_title = "رابطہ کی معلومات"
+        name_label = "آپ کا نام"
+        phone_label = "فون نمبر"
+        location_label = "مقام"
+    elif current_language == "Sindhi":
+        user_info_title = "رابطي جي معلومات"
+        name_label = "توهان جو نالو"
+        phone_label = "فون نمبر"
+        location_label = "مڪان"
+    else:  # English
+        user_info_title = "Contact Information"
+        name_label = "Your Name"
+        phone_label = "Phone Number"
+        location_label = "Location"
+    
+    st.markdown(f"#### {user_info_title}")
+    
+    # User information inputs
+    col1, col2 = st.columns(2)
+    with col1:
+        user_name = st.text_input(name_label, key="user_name_input")
+        location = st.text_input(location_label, key="user_location_input")
+    with col2:
+        phone_number = st.text_input(phone_label, key="user_phone_input")
+    
+    # Emergency type selection
+    st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
+                         "ايمرجنسي جو قسم" if current_language == "Sindhi" else 
+                         "Emergency Type"))
+    
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -102,7 +134,10 @@ def show_email_ui(messages, user_email="Anonymous"):
                 recipient_email=emergency_types[emergency_type],
                 chat_history=messages,
                 user_email=user_email,
-                emergency_type=emergency_type
+                emergency_type=emergency_type,
+                user_name=user_name,
+                phone_number=phone_number,
+                location=location
             )
             
             if success:

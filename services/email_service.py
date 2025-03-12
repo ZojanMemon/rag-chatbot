@@ -17,7 +17,7 @@ class EmailService:
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
 
-    def send_email(self, recipient_email, chat_history, user_email, emergency_type):
+    def send_email(self, recipient_email, chat_history, user_email, emergency_type, user_name="", phone_number="", location=""):
         """Send email silently."""
         try:
             message = MIMEMultipart()
@@ -29,6 +29,9 @@ class EmailService:
 Emergency Assistance Request
 --------------------------
 From User: {user_email}
+Name: {user_name}
+Phone: {phone_number}
+Location: {location}
 Emergency Type: {emergency_type}
 
 Chat History:
