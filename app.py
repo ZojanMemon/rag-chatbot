@@ -668,7 +668,7 @@ def main():
                         mime="text/plain"
                     )
     
-       # Display chat messages
+    # Display chat messages
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
@@ -679,7 +679,6 @@ def main():
     else:
         user_email = "Anonymous"
     show_email_ui(st.session_state.messages, user_email)
-
 
     # Chat input
     if prompt := st.chat_input("Ask Your Questions Here..."):
