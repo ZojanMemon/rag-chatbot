@@ -94,6 +94,8 @@ def show_email_ui(messages, user_email="Anonymous"):
         emergency_type = option_keys[selected_index_position]
     
     with col2:
+        # Add margin-top to the share button
+        st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
         if st.button(share_button_text, type="primary", use_container_width=True):
             email_service = EmailService()
             success, _ = email_service.send_email(
