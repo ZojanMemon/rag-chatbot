@@ -24,6 +24,9 @@ build/
 .vscode/
 .idea/
 
+# Firebase credentials
+firebase-service-account.json
+
 # System Files
 .DS_Store
 Thumbs.db
