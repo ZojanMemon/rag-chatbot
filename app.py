@@ -712,6 +712,9 @@ def main():
                 else:
                     response = get_rag_response(qa_chain, prompt)
                 
+                message_placeholder.markdown(response)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                
                 if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
