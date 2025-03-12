@@ -39,9 +39,9 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             if st.button("📤 Share", type="primary", use_container_width=True):
                 try:
-                    with st.spinner("Sending..."):
+                    with st.spinner(""):  # Empty spinner to avoid extra text
                         email_service = EmailService()
-                        success, message = email_service.send_email(
+                        success, _ = email_service.send_email(
                             recipient_email=emergency_types[emergency_type],
                             chat_history=messages,
                             user_email=user_email,
@@ -51,6 +51,4 @@ def show_email_ui(messages, user_email="Anonymous"):
                         if success:
                             st.success(f"✅ Shared with {emergency_type} authorities")
                         else:
-                            st.error(f"❌ {message}")
-                except Exception as e:
-                    st.error(f"❌ Error: {str(e)}")
+                            st.error("❌ Could not share the conversation")
