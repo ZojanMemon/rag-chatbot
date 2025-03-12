@@ -6,6 +6,7 @@ from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, firestore
 import streamlit as st
+import json
 
 def get_firebase_api_key():
     """Get Firebase API key from environment variables or Streamlit secrets."""
@@ -22,59 +23,34 @@ def get_firebase_api_key():
             )
         return api_key
 
-def get_service_account_path():
-    """Get the path to the Firebase service account file."""
-    # First try getting from Streamlit secrets
+def get_service_account_info():
+    """Get the Firebase service account info from Streamlit secrets or environment."""
     try:
-        import json
+        # Try getting from Streamlit secrets first
         service_account_json = st.secrets["FIREBASE_SERVICE_ACCOUNT"]
-        
-        # Write to a temporary file
-        root_dir = Path(__file__).parent.parent
-        temp_path = root_dir / 'firebase-service-account.json'
-        with open(temp_path, 'w') as f:
-            json.dump(service_account_json, f)
-        return str(temp_path)
-    except Exception:
-        pass
-        
-    # Then check environment variable
-    service_account_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH')
-    if service_account_path:
-        if os.path.isabs(service_account_path):
-            return service_account_path
+        return json.loads(service_account_json)
+    except Exception as e:
+        # Fall back to file-based approach
+        service_account_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH')
+        if service_account_path:
+            if os.path.isabs(service_account_path):
+                path = service_account_path
+            else:
+                # Convert relative path to absolute
+                path = str(Path(__file__).parent.parent / service_account_path)
         else:
-            # Convert relative path to absolute
-            return str(Path(__file__).parent.parent / service_account_path)
-        
-    # Then check current directory
-    root_dir = Path(__file__).parent.parent
-    service_account_path = root_dir / 'firebase-service-account.json'
-    if service_account_path.exists():
-        return str(service_account_path)
-        
-    # If no auth is found, create a dummy service account for development
-    if not st.secrets.get("PRODUCTION", False):
-        dummy_account = {
-            "type": "service_account",
-            "project_id": "dummy-project",
-            "private_key_id": "dummy",
-            "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC9QFbDLHsGjwKR\n-----END PRIVATE KEY-----\n",
-            "client_email": "dummy@dummy-project.iam.gserviceaccount.com",
-            "client_id": "dummy",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "dummy"
-        }
-        with open(service_account_path, 'w') as f:
-            json.dump(dummy_account, f)
-        return str(service_account_path)
-        
-    raise ValueError(
-        "Firebase service account not found. Please set it in Streamlit secrets as FIREBASE_SERVICE_ACCOUNT, "
-        "in environment variable FIREBASE_SERVICE_ACCOUNT_PATH, or place firebase-service-account.json in the project root."
-    )
+            # Check current directory
+            root_dir = Path(__file__).parent.parent
+            path = root_dir / 'firebase-service-account.json'
+            
+        if not os.path.exists(path):
+            raise ValueError(
+                "Firebase service account not found. Please set FIREBASE_SERVICE_ACCOUNT "
+                "in Streamlit secrets or provide a valid service account file."
+            )
+            
+        with open(path) as f:
+            return json.load(f)
 
 def initialize_firebase():
     """Initialize Firebase Admin SDK if not already initialized."""
@@ -82,8 +58,8 @@ def initialize_firebase():
         firebase_admin.get_app()
     except ValueError:
         # Not initialized, so initialize
-        service_account_path = get_service_account_path()
-        cred = credentials.Certificate(service_account_path)
+        service_account_info = get_service_account_info()
+        cred = credentials.Certificate(service_account_info)
         firebase_admin.initialize_app(cred)
 
 def get_firestore_db():
