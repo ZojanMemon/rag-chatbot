@@ -673,12 +673,16 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Show email sharing UI if we have messages
-    if "user" in locals():
-        user_email = user.get('email', 'Anonymous')
-    else:
-        user_email = "Anonymous"
-    show_email_ui(st.session_state.messages, user_email)
+    # Create a dedicated container for the email UI
+    email_ui_container = st.container()
+
+    # Show email sharing UI in the dedicated container
+    with email_ui_container:
+        if "user" in locals():
+            user_email = user.get('email', 'Anonymous')
+        else:
+            user_email = "Anonymous"
+        show_email_ui(st.session_state.messages, user_email)
 
     # Chat input
     if prompt := st.chat_input("Ask Your Questions Here..."):
@@ -722,10 +726,16 @@ def main():
                     }
                     sync_chat_message(user_id, "assistant", response, metadata)
                 
+                # Force Streamlit to rerun to refresh the UI and show the email sharing component
+                st.rerun()
+                
             except Exception as e:
                 error_message = f"Error generating response: {str(e)}"
                 message_placeholder.error(error_message)
                 st.session_state.messages.append({"role": "assistant", "content": error_message})
+                
+                # Force Streamlit to rerun even in case of error
+                st.rerun()
 
 if __name__ == "__main__":
     main()
