@@ -165,14 +165,10 @@ def get_map_html(current_language: str = "English") -> str:
                 .then(data => {{
                     if (data.display_name) {{
                         document.getElementById('preview').innerHTML = `📍 ${{data.display_name}}`;
-                        // Send to Streamlit
+                        // Update Streamlit immediately
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: {{
-                                address: data.display_name,
-                                lat: latlng[0],
-                                lng: latlng[1]
-                            }}
+                            value: data.display_name
                         }}, '*');
                     }}
                 }});
@@ -184,14 +180,10 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(response => response.json())
                     .then(data => {{
                         if (data.display_name) {{
-                            // Send to Streamlit
+                            // Update Streamlit
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: {{
-                                    address: data.display_name,
-                                    lat: selectedLocation[0],
-                                    lng: selectedLocation[1]
-                                }}
+                                value: data.display_name
                             }}, '*');
                         }}
                     }});
@@ -211,14 +203,13 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     if 'selected_location' not in st.session_state:
         st.session_state.selected_location = None
 
-    # Show map component
+    # Show map component with location preview
     component_value = html(get_map_html(current_language), height=500)
     
     # Handle location selection
     if component_value is not None:
-        location_data = component_value
-        if isinstance(location_data, dict) and 'address' in location_data:
-            st.session_state.selected_location = location_data['address']
-            return location_data['address']
+        st.session_state.selected_location = component_value
+        st.success(f"📍 {component_value}")
+        return component_value
     
     return st.session_state.get('selected_location')
