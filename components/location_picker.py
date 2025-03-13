@@ -192,7 +192,10 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update Streamlit with confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: address
+                                value: {{
+                                    type: 'confirm_location',
+                                    address: address
+                                }}
                             }}, '*');
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
@@ -207,7 +210,7 @@ def get_map_html(current_language: str = "English") -> str:
 
         // If there's a location in session state, show it as confirmed
         if (window.parent.streamlitPythonGetSessionState) {{
-            const location = window.parent.streamlitPythonGetSessionState('selected_location');
+            const location = window.parent.streamlitPythonGetSessionState('confirmed_location');
             if (location) {{
                 confirmedLocation = location;
                 document.getElementById('preview').innerHTML = `✅ ${{location}}`;
@@ -222,15 +225,16 @@ def get_map_html(current_language: str = "English") -> str:
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
     # Initialize session state for location if not present
-    if 'selected_location' not in st.session_state:
-        st.session_state.selected_location = None
+    if 'confirmed_location' not in st.session_state:
+        st.session_state.confirmed_location = None
 
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
     # Handle location selection
-    if component_value is not None:
-        st.session_state.selected_location = component_value
-        return component_value
+    if component_value is not None and isinstance(component_value, dict):
+        if component_value.get('type') == 'confirm_location':
+            st.session_state.confirmed_location = component_value['address']
     
-    return st.session_state.selected_location
+    # Return the confirmed location
+    return st.session_state.confirmed_location

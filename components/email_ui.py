@@ -102,7 +102,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Location picker
         st.markdown(f"#### {location_label}")
         location_container = st.container()
-        selected_location = show_location_picker(current_language)
+        _ = show_location_picker(current_language)  # We'll get location from session state
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -133,8 +133,8 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
-                # Use the selected location directly from the picker
-                location = selected_location if selected_location else ""
+                # Get location from session state
+                location = st.session_state.get('confirmed_location', '')
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
@@ -151,7 +151,7 @@ def show_email_ui(messages, user_email="Anonymous"):
                 if success:
                     st.success(success_message.format(emergency_labels[emergency_type]))
                     # Clear location after successful send
-                    if 'selected_location' in st.session_state:
-                        del st.session_state.selected_location
+                    if 'confirmed_location' in st.session_state:
+                        del st.session_state.confirmed_location
                 else:
                     st.error(error_message)
