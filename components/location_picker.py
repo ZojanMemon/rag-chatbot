@@ -3,62 +3,71 @@ import streamlit as st
 import requests
 import json
 from typing import Optional, Tuple
+import folium
+from streamlit_folium import folium_static
 
 def get_user_location() -> Optional[Tuple[float, float]]:
     """Get user's location using browser's geolocation API."""
     # Create a container for the location status
     status_container = st.empty()
     
-    # Check if location is already in session state
-    if 'user_location' not in st.session_state:
-        st.session_state.user_location = None
-    
-    if st.session_state.user_location is None:
-        # Use JavaScript to get user location
-        status_container.info("📍 Detecting your location...")
-        get_location_js = """
-        <script>
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    window.parent.postMessage({
-                        type: 'location',
-                        lat: lat,
-                        lon: lon
-                    }, '*');
-                },
-                function(error) {
-                    window.parent.postMessage({
-                        type: 'location_error',
-                        message: error.message
-                    }, '*');
-                }
-            );
-        } else {
-            window.parent.postMessage({
-                type: 'location_error',
-                message: 'Geolocation is not supported by this browser.'
-            }, '*');
-        }
-        </script>
-        """
-        st.components.v1.html(get_location_js, height=0)
+    # Initialize session state for location data
+    if 'location_data' not in st.session_state:
+        st.session_state.location_data = None
         
-        # Handle the location data using Streamlit events
-        if st.session_state.get('location_received'):
-            lat = st.session_state.get('latitude')
-            lon = st.session_state.get('longitude')
-            if lat and lon:
-                st.session_state.user_location = (lat, lon)
-                status_container.success("📍 Location detected!")
-                return lat, lon
-            else:
-                status_container.error("❌ Could not detect location")
-                return None
+    # Add JavaScript to handle location
+    location_js = """
+    <script>
+    if ("geolocation" in navigator) {
+        console.log("Requesting location...");
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                console.log("Location received:", position);
+                const data = {
+                    lat: position.coords.latitude,
+                    lon: position.coords.longitude
+                };
+                window.parent.postMessage(
+                    {
+                        type: "streamlit:set_location",
+                        data: data
+                    },
+                    "*"
+                );
+            },
+            function(error) {
+                console.error("Location error:", error);
+                window.parent.postMessage(
+                    {
+                        type: "streamlit:location_error",
+                        data: error.message
+                    },
+                    "*"
+                );
+            }
+        );
+    } else {
+        console.error("Geolocation not available");
+    }
+    </script>
+    """
     
-    return st.session_state.user_location
+    # Only inject the JavaScript if we haven't received location data yet
+    if not st.session_state.location_data:
+        st.components.v1.html(location_js, height=0)
+        status_container.info("📍 Detecting your location...")
+        
+        # Check for location data in session state (set by JavaScript)
+        if 'LOCATION_DATA' in st.session_state:
+            data = st.session_state.LOCATION_DATA
+            if isinstance(data, dict) and 'lat' in data and 'lon' in data:
+                st.session_state.location_data = (data['lat'], data['lon'])
+                status_container.success("📍 Location detected!")
+                return st.session_state.location_data
+            
+        return None
+        
+    return st.session_state.location_data
 
 def get_location_name(lat: float, lon: float) -> str:
     """Get location name from coordinates using Nominatim API."""
@@ -99,21 +108,24 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     if current_language == "Urdu":
         auto_detect_text = "📍 مقام کا خود بخود پتہ لگائیں"
         map_select_text = "🗺️ نقشے سے مقام منتخب کریں"
-        detecting_text = "📍 مقام کا پتہ لگایا جا رہا ہے..."
-        detected_text = "📍 مقام کا پتہ چل گیا"
-        error_text = "❌ مقام کا پتہ نہیں چل سکا"
+        confirm_text = "اس مقام کی تصدیق کریں"
+        location_text = "منتخب کردہ مقام"
     elif current_language == "Sindhi":
         auto_detect_text = "📍 مڪان جو پاڻ سڃاڻپ ڪريو"
         map_select_text = "🗺️ نقشي مان مڪان چونڊيو"
-        detecting_text = "📍 مڪان جي سڃاڻپ ڪري رهيو آهي..."
-        detected_text = "📍 مڪان سڃاتو ويو"
-        error_text = "❌ مڪان سڃاڻي نه سگهيو"
+        confirm_text = "هن مڪان جي تصديق ڪريو"
+        location_text = "چونڊيل مڪان"
     else:  # English
         auto_detect_text = "📍 Auto-detect Location"
         map_select_text = "🗺️ Select on Map"
-        detecting_text = "📍 Detecting location..."
-        detected_text = "📍 Location detected"
-        error_text = "❌ Could not detect location"
+        confirm_text = "Confirm this location"
+        location_text = "Selected Location"
+    
+    # Initialize session state
+    if 'map_location' not in st.session_state:
+        st.session_state.map_location = None
+    if 'selected_location' not in st.session_state:
+        st.session_state.selected_location = None
     
     col1, col2 = st.columns(2)
     
@@ -124,29 +136,47 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
                 lat, lon = coords
                 location_name = get_location_name(lat, lon)
                 st.session_state.selected_location = location_name
-                return location_name
+                st.session_state.map_location = (lat, lon)
+                st.rerun()
     
     with col2:
         if st.button(map_select_text, use_container_width=True):
-            # Show map for location selection
-            if 'selected_location' not in st.session_state:
-                st.session_state.selected_location = None
-                
-            # Default to a central location if no location detected
-            default_location = st.session_state.get('user_location', (0, 0))
-            
-            # Create the map using Streamlit's map component
-            st.map(data=None, zoom=2)
-            st.info("🗺️ Click on the map to select your location")
-            
-            # Handle map click events
-            if st.session_state.get('map_clicked'):
-                lat = st.session_state.get('map_lat')
-                lon = st.session_state.get('map_lon')
-                if lat and lon:
-                    location_name = get_location_name(lat, lon)
-                    st.session_state.selected_location = location_name
-                    return location_name
+            st.session_state.show_map = True
+            st.rerun()
     
-    # Return currently selected location if any
+    # Show map for location selection
+    if st.session_state.get('show_map', False):
+        # Get default center location
+        if st.session_state.map_location:
+            center = st.session_state.map_location
+        else:
+            # Default to a central location
+            center = (30.3753, 69.3451)  # Center of Pakistan
+        
+        # Create a Folium map
+        m = folium.Map(location=center, zoom_start=6)
+        
+        # Add click event handler
+        m.add_child(folium.LatLngPopup())
+        
+        # Display the map
+        map_data = folium_static(m, width=700)
+        
+        # Handle map click
+        if 'last_clicked' in st.session_state:
+            lat, lon = st.session_state.last_clicked
+            location_name = get_location_name(lat, lon)
+            
+            st.markdown(f"#### {location_text}")
+            st.info(f"📍 {location_name}")
+            
+            if st.button(confirm_text, type="primary"):
+                st.session_state.selected_location = location_name
+                st.session_state.show_map = False
+                st.rerun()
+            
+    # Show currently selected location if any
+    if st.session_state.get('selected_location'):
+        st.success(f"📍 {st.session_state.selected_location}")
+    
     return st.session_state.get('selected_location')
