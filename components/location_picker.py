@@ -22,17 +22,17 @@ def show_location_picker(current_language: str = "English") -> str:
     """Display the location picker component with language support."""
     # Labels based on language
     if current_language == "Urdu":
-        auto_detect_label = "📍 اپنی موجودہ لوکیشن کا پتہ لگائیں"
+        auto_detect_label = " اپنی موجودہ لوکیشن کا پتہ لگائیں"
         location_label = "مقام"
         detecting_label = "لوکیشن کا پتہ لگایا جا رہا ہے..."
         map_help = "نقشے پر کلک کر کے اپنی لوکیشن منتخب کریں"
     elif current_language == "Sindhi":
-        auto_detect_label = "📍 پنهنجي موجوده مڪان جو پتو لڳايو"
+        auto_detect_label = " پنهنجي موجوده مڪان جو پتو لڳايو"
         location_label = "مڪان"
         detecting_label = "مڪان جو پتو لڳايو پيو وڃي..."
         map_help = "نقشي تي ڪلڪ ڪري پنهنجي مڪان چونڊيو"
     else:  # English
-        auto_detect_label = "📍 Detect My Location"
+        auto_detect_label = " Detect My Location"
         location_label = "Location"
         detecting_label = "Detecting location..."
         map_help = "Click on the map to select your location"
@@ -98,19 +98,22 @@ def show_location_picker(current_language: str = "English") -> str:
             m,
             height=300,
             width="100%",
-            returned_objects=["last_clicked"]
+            returned_objects=["last_clicked"],
+            key="location_map"
         )
 
         # Handle map clicks
-        if (map_data["last_clicked"] and 
-            map_data["last_clicked"]["lat"] != st.session_state.location_lat or 
-            map_data["last_clicked"]["lng"] != st.session_state.location_lng):
+        if map_data["last_clicked"] is not None:
+            clicked_lat = map_data["last_clicked"]["lat"]
+            clicked_lng = map_data["last_clicked"]["lng"]
             
-            lat = map_data["last_clicked"]["lat"]
-            lng = map_data["last_clicked"]["lng"]
-            st.session_state.location_address = get_address_from_coords(lat, lng)
-            st.session_state.location_lat = lat
-            st.session_state.location_lng = lng
-            st.session_state.location_zoom = 13
+            # Only update if the click is in a new location
+            if (clicked_lat != st.session_state.location_lat or 
+                clicked_lng != st.session_state.location_lng):
+                
+                st.session_state.location_address = get_address_from_coords(clicked_lat, clicked_lng)
+                st.session_state.location_lat = clicked_lat
+                st.session_state.location_lng = clicked_lng
+                st.session_state.location_zoom = 13
 
     return st.session_state.location_address
