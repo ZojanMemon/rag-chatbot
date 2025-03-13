@@ -1,313 +1,152 @@
 """
-Email service for sending chat conversations.
+Email service for sending chat history to authorities.
 """
+import os
 import smtplib
+import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import streamlit as st
 from datetime import datetime
 import json
 
-
 class EmailService:
+    """Email service for sending chat history to authorities."""
+
     def __init__(self):
-        """Initialize email service."""
-        self.sender_email = st.secrets.get("GMAIL_ADDRESS")
-        self.app_password = st.secrets.get("GMAIL_APP_PASSWORD")
-        if not self.sender_email or not self.app_password:
-            raise ValueError("Email credentials not found")
+        """Initialize the email service with Gmail SMTP settings."""
         self.smtp_server = "smtp.gmail.com"
-        self.smtp_port = 587
+        self.port = 587
+        self.sender_email = os.environ.get("EMAIL_USER", "themusicking151@gmail.com")
+        self.password = os.environ.get("EMAIL_PASSWORD", "xoqz qqkf wkqm ycgc")
+
+    def format_chat_history(self, messages):
+        """Format chat history for email."""
+        formatted_history = []
+        for message in messages:
+            role = message.get("role", "")
+            content = message.get("content", "")
+            
+            if role == "user":
+                formatted_history.append(f"<p><strong>User:</strong> {content}</p>")
+            elif role == "assistant":
+                formatted_history.append(f"<p><strong>Assistant:</strong> {content}</p>")
+        
+        return "".join(formatted_history)
+
+    def create_email_content(self, chat_history, emergency_type, user_name, phone_number, location, user_email):
+        """Create the email content with chat history and user details."""
+        formatted_history = self.format_chat_history(chat_history)
+        
+        # Clean location data
+        clean_location = "Not provided"
+        if location:
+            if isinstance(location, str):
+                # Remove any emoji prefixes if present
+                if "✅" in location:
+                    location = location.split("✅", 1)[1].strip()
+                clean_location = location
+        
+        # Current date and time
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # HTML content
+        html = f"""
+        <html>
+        <head>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                .header {{
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin-bottom: 20px;
+                    border-left: 5px solid #ff4b4b;
+                }}
+                .chat-history {{
+                    background-color: #f8f9fa;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin-top: 20px;
+                }}
+                .user-info {{
+                    margin-bottom: 20px;
+                }}
+                .user-info p {{
+                    margin: 5px 0;
+                }}
+                h2 {{
+                    color: #ff4b4b;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 10px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>Emergency Assistance Request: {emergency_type}</h2>
+                <p>This conversation was shared on {current_time}</p>
+            </div>
+            
+            <div class="user-info">
+                <h3>User Information</h3>
+                <p><strong>Name:</strong> {user_name or "Not provided"}</p>
+                <p><strong>Phone:</strong> {phone_number or "Not provided"}</p>
+                <p><strong>Email:</strong> {user_email}</p>
+                <p><strong>Location:</strong> {clean_location}</p>
+            </div>
+            
+            <div class="chat-history">
+                <h3>Chat History</h3>
+                {formatted_history}
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html
 
     def send_email(self, recipient_email, chat_history, user_email, emergency_type, user_name="", phone_number="", location=""):
-        """Send email silently."""
+        """Send an email with the chat history and user details."""
         try:
-            # Create message container - the correct MIME type is multipart/alternative.
-            message = MIMEMultipart('alternative')
-            message['Subject'] = f"🚨 Emergency Assistance Required: {emergency_type}"
-            # Use the authenticated user's email as the Reply-To address
-            message['From'] = f"Disaster Management Assistant <{self.sender_email}>"
-            message['Reply-To'] = user_email
-            message['To'] = recipient_email
+            # Create message
+            message = MIMEMultipart("alternative")
+            message["Subject"] = f"Emergency Assistance Request: {emergency_type}"
+            message["From"] = self.sender_email
+            message["To"] = recipient_email
             
-            # Current time for the email
-            current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
+            # Create HTML content
+            html_content = self.create_email_content(
+                chat_history, 
+                emergency_type, 
+                user_name, 
+                phone_number, 
+                location,
+                user_email
+            )
             
-            # DEBUG: Create debug information
-            debug_info = {
-                "original_location": repr(location),
-                "location_type": type(location).__name__,
-                "is_empty": location == "",
-                "is_none": location is None,
-                "length": len(str(location)) if location else 0
-            }
-            debug_str = json.dumps(debug_info, indent=2)
+            # Attach HTML content
+            html_part = MIMEText(html_content, "html")
+            message.attach(html_part)
             
-            # Ensure location is a valid string
-            if not location or location == "":
-                location_text = "Not provided"
-            else:
-                # Make sure it's a string and remove any emoji prefixes
-                location_text = str(location)
-                if location_text.startswith("✅ "):
-                    location_text = location_text[2:].strip()
-                elif location_text.startswith("📍 "):
-                    location_text = location_text[2:].strip()
+            # Create a secure SSL context
+            context = ssl.create_default_context()
             
-            # Create plain text version as fallback
-            plain_text = f"""
-Emergency Assistance Request
---------------------------
-Time: {current_time}
-Type: {emergency_type}
-
-Contact Information:
-- Name: {user_name or 'Not provided'}
-- Email: {user_email}
-- Phone: {phone_number or 'Not provided'}
-- Location: {location_text}
-
-DEBUG INFO:
-{debug_str}
-
-Chat History:
-"""
-            for msg in chat_history:
-                plain_text += f"\n{msg['role'].title()}: {msg['content']}\n"
+            # Connect to server and send email
+            with smtplib.SMTP(self.smtp_server, self.port) as server:
+                server.starttls(context=context)
+                server.login(self.sender_email, self.password)
+                server.sendmail(self.sender_email, recipient_email, message.as_string())
             
-            # Create the HTML version
-            html = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    /* Reset styles */
-                    * {{
-                        margin: 0;
-                        padding: 0;
-                        box-sizing: border-box;
-                    }}
-                    
-                    body {{
-                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                        line-height: 1.6;
-                        color: #333333;
-                        background-color: #f5f5f5;
-                        margin: 0;
-                        padding: 0;
-                    }}
-                    
-                    .email-wrapper {{
-                        max-width: 600px;
-                        margin: 0 auto;
-                        background-color: #ffffff;
-                        border-radius: 8px;
-                        overflow: hidden;
-                        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    }}
-                    
-                    .header {{
-                        background-color: #dc3545;
-                        color: white;
-                        padding: 24px;
-                        text-align: center;
-                    }}
-                    
-                    .header h1 {{
-                        margin: 0;
-                        font-size: 24px;
-                        font-weight: 600;
-                    }}
-                    
-                    .header p {{
-                        margin: 8px 0 0 0;
-                        opacity: 0.9;
-                    }}
-                    
-                    .content {{
-                        padding: 24px;
-                    }}
-                    
-                    .info-box {{
-                        background-color: #f8f9fa;
-                        border: 1px solid #e9ecef;
-                        border-radius: 6px;
-                        padding: 20px;
-                        margin-bottom: 24px;
-                    }}
-                    
-                    .info-box h2 {{
-                        color: #2c3e50;
-                        font-size: 18px;
-                        margin-bottom: 16px;
-                        font-weight: 600;
-                    }}
-                    
-                    .info-item {{
-                        margin: 12px 0;
-                        display: flex;
-                        align-items: baseline;
-                    }}
-                    
-                    .label {{
-                        font-weight: 600;
-                        color: #495057;
-                        width: 100px;
-                        flex-shrink: 0;
-                    }}
-                    
-                    .value {{
-                        color: #212529;
-                    }}
-                    
-                    .chat-history {{
-                        border-top: 2px solid #e9ecef;
-                        padding-top: 24px;
-                        margin-top: 24px;
-                    }}
-                    
-                    .chat-history h2 {{
-                        color: #2c3e50;
-                        font-size: 18px;
-                        margin-bottom: 16px;
-                        font-weight: 600;
-                    }}
-                    
-                    .message {{
-                        margin: 16px 0;
-                        padding: 12px 16px;
-                        border-radius: 8px;
-                        position: relative;
-                    }}
-                    
-                    .user-message {{
-                        background-color: #e3f2fd;
-                        border: 1px solid #bbdefb;
-                        margin-left: 16px;
-                    }}
-                    
-                    .assistant-message {{
-                        background-color: #f5f5f5;
-                        border: 1px solid #e0e0e0;
-                        margin-right: 16px;
-                    }}
-                    
-                    .message strong {{
-                        color: #1976d2;
-                        display: block;
-                        margin-bottom: 4px;
-                        font-size: 14px;
-                    }}
-                    
-                    .timestamp {{
-                        text-align: center;
-                        color: #6c757d;
-                        font-size: 14px;
-                        margin-top: 24px;
-                        padding-top: 16px;
-                        border-top: 1px solid #e9ecef;
-                    }}
-                    
-                    .debug-info {{
-                        margin-top: 20px;
-                        padding: 10px;
-                        background-color: #f8d7da;
-                        border: 1px solid #f5c6cb;
-                        border-radius: 4px;
-                        font-family: monospace;
-                        white-space: pre-wrap;
-                        font-size: 12px;
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="email-wrapper">
-                    <div class="header">
-                        <h1>🚨 Emergency Assistance Required</h1>
-                        <p>Type: {emergency_type}</p>
-                    </div>
-                    <div class="content">
-                        <div class="info-box">
-                            <h2>Contact Information</h2>
-                            <div class="info-item">
-                                <span class="label">Name:</span>
-                                <span class="value">{user_name or 'Not provided'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Email:</span>
-                                <span class="value">{user_email}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Phone:</span>
-                                <span class="value">{phone_number or 'Not provided'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Location:</span>
-                                <span class="value">{location_text}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="debug-info">
-                            <h3>DEBUG INFO:</h3>
-                            <pre>{debug_str}</pre>
-                        </div>
-                        
-                        <div class="chat-history">
-                            <h2>Chat History</h2>
-                            {self._format_chat_history(chat_history)}
-                        </div>
-                        
-                        <div class="timestamp">
-                            Sent on {current_time}
-                        </div>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-            
-            # Record the MIME types
-            part1 = MIMEText(plain_text, 'plain')
-            part2 = MIMEText(html, 'html')
-
-            # Attach parts into message container
-            message.attach(part1)
-            message.attach(part2)
-
-            # Send email silently
-            with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.sender_email, self.app_password)
-                server.send_message(message)
-                
             return True, None
         except Exception as e:
             return False, str(e)
-
-    def _format_chat_history(self, chat_history):
-        """Format chat history as HTML."""
-        html = ""
-        for msg in chat_history:
-            role = msg["role"]
-            content = msg["content"]
-            
-            if role == "user":
-                html += f"""
-                <div class="message user-message">
-                    <strong>You</strong>
-                    {content}
-                </div>
-                """
-            elif role == "assistant":
-                html += f"""
-                <div class="message assistant-message">
-                    <strong>Assistant</strong>
-                    {content}
-                </div>
-                """
-        return html
 
 
 # Dictionary mapping emergency types to authority email addresses

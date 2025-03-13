@@ -157,11 +157,6 @@ def get_map_html(current_language: str = "English") -> str:
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
-                        // Clear any existing confirmation
-                        window.parent.postMessage({{
-                            type: 'streamlit:setComponentValue',
-                            value: null
-                        }}, '*');
                     }}
                 }});
         }}
@@ -174,24 +169,13 @@ def get_map_html(current_language: str = "English") -> str:
                         if (data.display_name) {{
                             const address = data.display_name;
                             confirmedLocation = address;
-                            // Update Streamlit with confirmed location
-                            window.parent.postMessage({{
-                                type: 'streamlit:setComponentValue',
-                                value: `✅ ${{address}}`
-                            }}, '*');
+                            
+                            // Store the address in localStorage
+                            localStorage.setItem('confirmedAddress', address);
+                            
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Also try to directly set the session state
-                            try {{
-                                if (window.parent.streamlitPythonSetSessionState) {{
-                                    window.parent.streamlitPythonSetSessionState('confirmed_address', address);
-                                    console.log("Directly set session state to:", address);
-                                }}
-                            }} catch(e) {{
-                                console.error("Error setting session state:", e);
-                            }}
                         }}
                     }});
             }}
@@ -199,45 +183,29 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
-
-        // If there's a location in session state, show it as confirmed
-        if (window.parent.streamlitPythonGetSessionState) {{
-            const location = window.parent.streamlitPythonGetSessionState('confirmed_address');
-            if (location) {{
-                confirmedLocation = location;
-                document.getElementById('preview').innerHTML = `✅ ${{location}}`;
-                document.getElementById('confirm-btn').classList.add('hidden');
-            }}
-        }}
         </script>
     </body>
     </html>
     """
 
-def show_location_picker(current_language: str = "English") -> Optional[str]:
+def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for location if not present
-    if 'confirmed_address' not in st.session_state:
-        st.session_state.confirmed_address = ""
+    # Display the map component
+    html(get_map_html(current_language), height=500)
     
-    # Debug the current session state
-    st.write("DEBUG - Before map: confirmed_address =", repr(st.session_state.confirmed_address))
-
-    # Show map component
-    component_value = html(get_map_html(current_language), height=500)
+    # Add a separate button to manually confirm the location
+    col1, col2 = st.columns([3, 1])
     
-    # Debug the component value
-    st.write("DEBUG - Component returned:", repr(component_value))
+    with col1:
+        address = st.text_input("Confirm your address", key="manual_address_input")
     
-    # If we got a value from the component, update the session state
-    if component_value and isinstance(component_value, str):
-        # Check if it's a confirmed location (starts with ✅)
-        if component_value.startswith("✅ "):
-            # Extract the address (remove the ✅ prefix)
-            clean_address = component_value[2:].strip()
-            # Store in session state
-            st.session_state.confirmed_address = clean_address
-            st.write("DEBUG - Updated confirmed_address =", repr(clean_address))
+    with col2:
+        if st.button("Confirm Address", type="primary"):
+            if address:
+                st.session_state.confirmed_address = address
+                st.success(f"Location confirmed: {address}")
+            else:
+                st.error("Please enter an address")
     
-    # Return the raw component value (which may include emoji prefixes)
-    return component_value
+    # Return the confirmed address from session state
+    return st.session_state.get("confirmed_address", "")

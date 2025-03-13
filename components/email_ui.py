@@ -1,7 +1,6 @@
 """Email sharing component for the chatbot."""
 import streamlit as st
 import time
-import json
 from services.email_service import EmailService
 from components.location_picker import show_location_picker
 
@@ -101,35 +100,15 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             phone_number = st.text_input(phone_label, key="user_phone_input")
         
+        # Initialize session state for confirmed address if not present
+        if "confirmed_address" not in st.session_state:
+            st.session_state.confirmed_address = ""
+            
         # Location picker
         st.markdown(f"#### {location_label}")
         
-        # Create a container for the location picker
-        location_container = st.container()
-        
-        # Create a session state variable for the confirmed address
-        if "confirmed_address" not in st.session_state:
-            st.session_state.confirmed_address = ""
-        
         # Show the location picker
-        with location_container:
-            selected_location = show_location_picker(current_language)
-            
-            # Display debug information about the selected location
-            st.write("DEBUG - Selected location from picker:", repr(selected_location))
-            st.write("DEBUG - Type:", type(selected_location).__name__)
-            
-            # If a location is selected and it starts with ✅, it's confirmed
-            if selected_location and isinstance(selected_location, str) and selected_location.startswith("✅ "):
-                # Extract the address (remove the ✅ prefix)
-                address = selected_location[2:].strip()
-                # Store it in session state
-                st.session_state.confirmed_address = address
-                # Show confirmation
-                st.success(f"Location confirmed: {address}")
-                
-            # Show debug information about the session state
-            st.write("DEBUG - Session state confirmed_address:", repr(st.session_state.get("confirmed_address")))
+        show_location_picker(current_language)
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -161,10 +140,7 @@ def show_email_ui(messages, user_email="Anonymous"):
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
                 # Get the confirmed address from session state
-                location = st.session_state.confirmed_address
-                
-                # Show debug information before sending
-                st.write("DEBUG - About to send email with location:", repr(location))
+                location = st.session_state.get("confirmed_address", "")
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
@@ -182,7 +158,5 @@ def show_email_ui(messages, user_email="Anonymous"):
                     st.success(success_message.format(emergency_labels[emergency_type]))
                     # Clear location after successful send
                     st.session_state.confirmed_address = ""
-                    if 'selected_location' in st.session_state:
-                        del st.session_state.selected_location
                 else:
                     st.error(f"{error_message}: {error}")
