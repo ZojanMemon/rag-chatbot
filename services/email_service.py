@@ -32,6 +32,14 @@ class EmailService:
             # Current time for the email
             current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
             
+            # Clean location string
+            location_text = location or 'Not provided'
+            if isinstance(location_text, str):
+                if location_text.startswith('✅ '):
+                    location_text = location_text[2:].strip()
+                elif location_text.startswith('📍 '):
+                    location_text = location_text[2:].strip()
+            
             # Create plain text version as fallback
             plain_text = f"""
 Emergency Assistance Request
@@ -43,7 +51,7 @@ Contact Information:
 - Name: {user_name or 'Not provided'}
 - Email: {user_email}
 - Phone: {phone_number or 'Not provided'}
-- Location: {location or 'Not provided'}
+- Location: {location_text}
 
 Chat History:
 """
@@ -209,13 +217,21 @@ Chat History:
                             </div>
                             <div class="info-item">
                                 <span class="label">Location:</span>
-                                <span class="value">{location or 'Not provided'}</span>
+                                <span class="value">{location_text}</span>
                             </div>
                         </div>
                         
                         <div class="chat-history">
                             <h2>Chat History</h2>
-                            {self._format_chat_history(chat_history)}
+                            {
+                                ''.join([
+                                    f'<div class="message {"user-message" if msg["role"] == "user" else "assistant-message"}">'
+                                    f'<strong>{msg["role"].title()}</strong>'
+                                    f'{msg["content"]}'
+                                    f'</div>'
+                                    for msg in chat_history
+                                ])
+                            }
                         </div>
                         
                         <div class="timestamp">
@@ -227,20 +243,21 @@ Chat History:
             </html>
             """
             
-            # Record the MIME types
+            # Turn these into plain/html MIMEText objects
             part1 = MIMEText(plain_text, 'plain')
             part2 = MIMEText(html, 'html')
 
-            # Attach parts into message container
+            # Add HTML/plain-text parts to MIMEMultipart message
+            # The email client will try to render the last part first
             message.attach(part1)
             message.attach(part2)
 
-            # Send email silently
+            # Create SMTP session
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.sender_email, self.app_password)
                 server.send_message(message)
-                
+            
             return True, None
         except Exception as e:
             return False, str(e)
