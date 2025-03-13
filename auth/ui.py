@@ -17,11 +17,6 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     Returns:
         Tuple[bool, Optional[Dict]]: (Authentication status, User data if authenticated)
     """
-    # Clear any cached state
-    if 'welcome_text_shown' not in st.session_state:
-        st.session_state.welcome_text_shown = False
-        st.experimental_rerun()
-
     auth = FirebaseAuthenticator()
     
     # Check if already authenticated
@@ -170,27 +165,18 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         .welcome-text {
             animation: fadeIn 0.8s ease-out;
         }
-        
-        /* Remove default Streamlit padding */
-        .main > div {
-            padding-top: 0 !important;
-        }
-        
-        .stApp > header {
-            display: none !important;
-        }
         </style>
     """, unsafe_allow_html=True)
-
+    
     # Center the form with more space
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
         st.markdown("""
-            <div class="welcome-text" style="margin-top: 2rem;">
-                <h1 style='text-align: center; margin-bottom: 0.5rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
+            <div class="welcome-text">
+                <h1 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
                     🚨 Welcome to the Disaster Management Assistant
                 </h1>
-                <h2 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2rem; font-weight: 600;'>
+                <h2 style='text-align: center; color: #3498db; font-size: 2rem; font-weight: 600; margin-bottom: 1.5rem;'>
                     Welcome Back 👋🏻
                 </h2>
                 <p style='text-align: center; color: #a0aec0; font-size: 1.1rem; margin-bottom: 2rem;'>
@@ -198,8 +184,6 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 </p>
             </div>
         """, unsafe_allow_html=True)
-        
-        st.session_state.welcome_text_shown = True
         
         # Create tabs for login and signup
         tab1, tab2 = st.tabs(["🔑 Login", "✨ Sign Up"])
@@ -232,7 +216,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                         if message:
                             if success:
                                 st.success(message)
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error(message)
         
@@ -272,7 +256,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                         if message:
                             if success:
                                 st.success(message)
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 st.error(message)
     
@@ -299,7 +283,7 @@ def user_sidebar(user: Dict) -> None:
     # Logout button
     if st.button("🚪 Logout", use_container_width=True):
         FirebaseAuthenticator().logout()
-        st.experimental_rerun()
+        st.rerun()
 
 def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> None:
     """
@@ -390,7 +374,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                             st.session_state.current_session_id = session['id']
                             if on_session_change:
                                 on_session_change(session['id'])
-                            st.experimental_rerun()
+                            st.rerun()
                     
                     with col2:
                         # Delete button with tooltip
@@ -400,7 +384,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                                 if st.session_state.get('current_session_id') == session['id']:
                                     st.session_state.messages = []
                                     st.session_state.current_session_id = None
-                                st.experimental_rerun()
+                                st.rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
     """
