@@ -33,8 +33,10 @@ class EmailService:
             current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
             
             # Clean location string
-            location_text = location or 'Not provided'
-            if isinstance(location_text, str):
+            location_text = 'Not provided'
+            if location and isinstance(location, str):
+                location_text = location.strip()
+                # Remove any emoji prefixes
                 if location_text.startswith('✅ '):
                     location_text = location_text[2:].strip()
                 elif location_text.startswith('📍 '):
@@ -223,15 +225,7 @@ Chat History:
                         
                         <div class="chat-history">
                             <h2>Chat History</h2>
-                            {
-                                ''.join([
-                                    f'<div class="message {"user-message" if msg["role"] == "user" else "assistant-message"}">'
-                                    f'<strong>{msg["role"].title()}</strong>'
-                                    f'{msg["content"]}'
-                                    f'</div>'
-                                    for msg in chat_history
-                                ])
-                            }
+                            {self._format_chat_history(chat_history)}
                         </div>
                         
                         <div class="timestamp">
