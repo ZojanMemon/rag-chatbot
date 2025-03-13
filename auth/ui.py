@@ -17,6 +17,11 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     Returns:
         Tuple[bool, Optional[Dict]]: (Authentication status, User data if authenticated)
     """
+    # Clear any cached state
+    if 'welcome_text_shown' not in st.session_state:
+        st.session_state.welcome_text_shown = False
+        st.experimental_rerun()
+
     auth = FirebaseAuthenticator()
     
     # Check if already authenticated
@@ -176,7 +181,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         }
         </style>
     """, unsafe_allow_html=True)
-    
+
     # Center the form with more space
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
@@ -193,6 +198,8 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 </p>
             </div>
         """, unsafe_allow_html=True)
+        
+        st.session_state.welcome_text_shown = True
         
         # Create tabs for login and signup
         tab1, tab2 = st.tabs(["🔑 Login", "✨ Sign Up"])
@@ -225,7 +232,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                         if message:
                             if success:
                                 st.success(message)
-                                st.rerun()
+                                st.experimental_rerun()
                             else:
                                 st.error(message)
         
@@ -265,7 +272,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                         if message:
                             if success:
                                 st.success(message)
-                                st.rerun()
+                                st.experimental_rerun()
                             else:
                                 st.error(message)
     
@@ -292,7 +299,7 @@ def user_sidebar(user: Dict) -> None:
     # Logout button
     if st.button("🚪 Logout", use_container_width=True):
         FirebaseAuthenticator().logout()
-        st.rerun()
+        st.experimental_rerun()
 
 def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> None:
     """
@@ -383,7 +390,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                             st.session_state.current_session_id = session['id']
                             if on_session_change:
                                 on_session_change(session['id'])
-                            st.rerun()
+                            st.experimental_rerun()
                     
                     with col2:
                         # Delete button with tooltip
@@ -393,7 +400,7 @@ def chat_history_sidebar(user_id: str, on_session_change: Callable = None) -> No
                                 if st.session_state.get('current_session_id') == session['id']:
                                     st.session_state.messages = []
                                     st.session_state.current_session_id = None
-                                st.rerun()
+                                st.experimental_rerun()
 
 def sync_chat_message(user_id: str, role: str, content: str, metadata: Optional[Dict] = None) -> None:
     """
