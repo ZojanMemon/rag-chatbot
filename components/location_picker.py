@@ -37,14 +37,15 @@ def show_location_picker(current_language: str = "English") -> str:
         detecting_label = "Detecting location..."
         map_help = "Click on the map to select your location"
 
-    # Initialize session state for location data
-    if 'location_data' not in st.session_state:
-        st.session_state.location_data = {
-            'address': '',
-            'lat': 30.3753,  # Default to Pakistan's center
-            'lng': 69.3451,
-            'zoom': 5
-        }
+    # Initialize session state variables
+    if 'location_lat' not in st.session_state:
+        st.session_state.location_lat = 30.3753  # Default to Pakistan's center
+    if 'location_lng' not in st.session_state:
+        st.session_state.location_lng = 69.3451
+    if 'location_address' not in st.session_state:
+        st.session_state.location_address = ''
+    if 'location_zoom' not in st.session_state:
+        st.session_state.location_zoom = 5
 
     # Container for location input
     location_container = st.container()
@@ -55,7 +56,7 @@ def show_location_picker(current_language: str = "English") -> str:
         
         with col1:
             st.text_input(location_label, 
-                         value=st.session_state.location_data['address'],
+                         value=st.session_state.location_address,
                          key="location_input",
                          disabled=True)
         
@@ -66,35 +67,31 @@ def show_location_picker(current_language: str = "English") -> str:
                     if loc:
                         lat = loc['coords']['latitude']
                         lng = loc['coords']['longitude']
-                        address = get_address_from_coords(lat, lng)
-                        
-                        st.session_state.location_data.update({
-                            'lat': lat,
-                            'lng': lng,
-                            'address': address,
-                            'zoom': 13
-                        })
-                        st.experimental_rerun()
+                        st.session_state.location_address = get_address_from_coords(lat, lng)
+                        st.session_state.location_lat = lat
+                        st.session_state.location_lng = lng
+                        st.session_state.location_zoom = 13
 
         # Show interactive map
         st.caption(map_help)
         
         # Create a folium map
         m = folium.Map(
-            location=[st.session_state.location_data['lat'], 
-                     st.session_state.location_data['lng']],
-            zoom_start=st.session_state.location_data['zoom'],
+            location=[st.session_state.location_lat, 
+                     st.session_state.location_lng],
+            zoom_start=st.session_state.location_zoom,
             dragging=True,
             scrollWheelZoom=True
         )
 
         # Add a marker for current location
-        folium.Marker(
-            [st.session_state.location_data['lat'], 
-             st.session_state.location_data['lng']],
-            popup="Selected Location",
-            icon=folium.Icon(color='red', icon='info-sign')
-        ).add_to(m)
+        if st.session_state.location_address:
+            folium.Marker(
+                [st.session_state.location_lat, 
+                 st.session_state.location_lng],
+                popup="Selected Location",
+                icon=folium.Icon(color='red', icon='info-sign')
+            ).add_to(m)
 
         # Display the map
         map_data = st_folium(
@@ -105,17 +102,15 @@ def show_location_picker(current_language: str = "English") -> str:
         )
 
         # Handle map clicks
-        if map_data["last_clicked"]:
+        if (map_data["last_clicked"] and 
+            map_data["last_clicked"]["lat"] != st.session_state.location_lat or 
+            map_data["last_clicked"]["lng"] != st.session_state.location_lng):
+            
             lat = map_data["last_clicked"]["lat"]
             lng = map_data["last_clicked"]["lng"]
-            address = get_address_from_coords(lat, lng)
-            
-            st.session_state.location_data.update({
-                'lat': lat,
-                'lng': lng,
-                'address': address,
-                'zoom': 13
-            })
-            st.experimental_rerun()
+            st.session_state.location_address = get_address_from_coords(lat, lng)
+            st.session_state.location_lat = lat
+            st.session_state.location_lng = lng
+            st.session_state.location_zoom = 13
 
-    return st.session_state.location_data['address']
+    return st.session_state.location_address
