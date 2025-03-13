@@ -106,8 +106,6 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Show location preview if available
         if selected_location:
             st.success(f"📍 {selected_location}")
-        else:
-            st.info(select_location_text)
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 

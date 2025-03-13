@@ -178,16 +178,11 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for location
-    if 'selected_location' not in st.session_state:
-        st.session_state.selected_location = None
-
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
     # Handle location selection
     if component_value is not None and isinstance(component_value, str):
         st.session_state.selected_location = component_value
-        return component_value
     
     return st.session_state.get('selected_location')
