@@ -10,12 +10,15 @@ def get_map_html(current_language: str = "English") -> str:
     if current_language == "Urdu":
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
+        confirm_text = "اس مقام کی تصدیق کریں"
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
+        confirm_text = "هن مڪان جي تصديق ڪريو"
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
+        confirm_text = "Confirm Location"
 
     return f"""
     <!DOCTYPE html>
@@ -70,6 +73,9 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 font-size: 14px;
             }}
+            .hidden {{
+                display: none;
+            }}
         </style>
     </head>
     <body>
@@ -78,6 +84,9 @@ def get_map_html(current_language: str = "English") -> str:
             <button onclick="detectLocation()" class="secondary">
                 📍 {auto_detect_text}
             </button>
+            <button onclick="confirmLocation()" class="primary hidden" id="confirm-btn">
+                ✓ {confirm_text}
+            </button>
         </div>
         <div id="preview" class="location-preview"></div>
 
@@ -85,6 +94,7 @@ def get_map_html(current_language: str = "English") -> str:
         let map;
         let marker;
         let selectedLocation = null;
+        let confirmedLocation = null;
 
         function initMap() {{
             // Center of Pakistan
@@ -160,23 +170,42 @@ def get_map_html(current_language: str = "English") -> str:
                     if (data.display_name) {{
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
-                        // Update Streamlit immediately
-                        window.parent.postMessage({{
-                            type: 'streamlit:setComponentValue',
-                            value: address
-                        }}, '*');
+                        document.getElementById('confirm-btn').classList.remove('hidden');
                     }}
                 }});
+        }}
+
+        function confirmLocation() {{
+            if (selectedLocation) {{
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.display_name) {{
+                            const address = data.display_name;
+                            confirmedLocation = address;
+                            // Update Streamlit
+                            window.parent.postMessage({{
+                                type: 'streamlit:setComponentValue',
+                                value: address
+                            }}, '*');
+                            // Update UI
+                            document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                            document.getElementById('confirm-btn').classList.add('hidden');
+                        }}
+                    }});
+            }}
         }}
 
         // Initialize the map
         initMap();
 
-        // If there's a location in session state, show it
+        // If there's a location in session state, show it as confirmed
         if (window.parent.streamlitPythonGetSessionState) {{
             const location = window.parent.streamlitPythonGetSessionState('selected_location');
             if (location) {{
-                document.getElementById('preview').innerHTML = `📍 ${{location}}`;
+                confirmedLocation = location;
+                document.getElementById('preview').innerHTML = `✅ ${{location}}`;
+                document.getElementById('confirm-btn').classList.add('hidden');
             }}
         }}
         </script>
