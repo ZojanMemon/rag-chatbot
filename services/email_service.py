@@ -151,14 +151,14 @@ class EmailService:
                 .value {{
                     color: #212529;
                     padding-top: 2px;
-                    padding-left: 40px;
+                    padding-left: 60px !important;
                 }}
 
                 /* Additional specificity for email clients */
                 [class~="value"],
                 .info-item .value,
                 .info-box .value {{
-                    padding-left: 40px !important;
+                    padding-left: 60px !important;
                 }}
                 
                 .chat-history {{
