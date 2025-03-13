@@ -174,8 +174,11 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         st.markdown("""
             <div class="welcome-text">
                 <h1 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
-                    Welcome Back 👋🏻
+                    🚨 Welcome to the Disaster Management Assistant
                 </h1>
+                <h2 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2rem; font-weight: 700;'>
+                    Welcome Back 👋🏻
+                </h2>
                 <p style='text-align: center; color: #a0aec0; font-size: 1.1rem; margin-bottom: 2rem;'>
                     Please log in or create an account to access the chatbot
                 </p>
