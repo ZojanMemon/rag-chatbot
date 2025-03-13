@@ -173,9 +173,12 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     with col2:
         st.markdown("""
             <div class="welcome-text">
-                <h1 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
-                    Welcome to the Disaster Management Assistant 🚨
+                <h1 style='text-align: center; margin-bottom: 0.5rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
+                    🚨 Welcome to the Disaster Management Assistant
                 </h1>
+                <h2 style='text-align: center; margin-bottom: 2rem; color: #3498db; font-size: 2rem; font-weight: 600;'>
+                    Welcome Back 👋🏻
+                </h2>
                 <p style='text-align: center; color: #a0aec0; font-size: 1.1rem; margin-bottom: 2rem;'>
                     Please log in or create an account to access the chatbot
                 </p>
@@ -234,8 +237,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                     "🔒 Password",
                     type="password",
                     key="signup_password_input",
-                    autocomplete="new-password",
-                    help="Password must be at least 6 characters long"
+                    autocomplete="new-password"
                 )
                 confirm_password = st.text_input(
                     "🔒 Confirm Password",
@@ -247,8 +249,6 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
                     if not email or not password or not confirm_password:
                         st.error("Please fill in all fields")
-                    elif len(password) < 6:
-                        st.error("Password must be at least 6 characters long")
                     elif password != confirm_password:
                         st.error("Passwords do not match")
                     else:
