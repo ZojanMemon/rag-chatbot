@@ -135,11 +135,14 @@ def show_email_ui(messages, user_email="Anonymous"):
             if st.button(share_button_text, type="primary", use_container_width=True):
                 # Get location from session state if available
                 location = None
-                if 'selected_location' in st.session_state and st.session_state.selected_location:
-                    if isinstance(st.session_state.selected_location, dict):
-                        location = st.session_state.selected_location.get('address', '')
-                    else:
-                        location = st.session_state.selected_location
+                if 'selected_location' in st.session_state:
+                    location = st.session_state.selected_location
+                    # Extract plain text from location preview
+                    if location and isinstance(location, str):
+                        if location.startswith('✅ '):
+                            location = location[2:].strip()
+                        elif location.startswith('📍 '):
+                            location = location[2:].strip()
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
