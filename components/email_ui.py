@@ -19,21 +19,21 @@ def show_email_ui(messages, user_email="Anonymous"):
         share_button_text = "📤 شیئر کریں"
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
-        location_required = "براہ کرم مقام کی تصدیق کریں"
+        select_location_text = "براہ کرم مقام منتخب کریں"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
         share_button_text = "📤 شيئر ڪريو"
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
-        location_required = "مهرباني ڪري مڪان جي تصديق ڪريو"
+        select_location_text = "مهرباني ڪري مڪان چونڊيو"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
         share_button_text = "📤 Share"
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
-        location_required = "Please confirm your location"
+        select_location_text = "Please select a location"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -101,12 +101,25 @@ def show_email_ui(messages, user_email="Anonymous"):
         
         # Location picker
         st.markdown(f"#### {location_label}")
+        
+        # Create a container for the location picker
         location_container = st.container()
         with location_container:
-            location = show_location_picker(current_language)
-            if location:
-                # Store confirmed location in session state
-                st.session_state.confirmed_location = location
+            # Use a separate container for the location picker to avoid the component being passed directly
+            selected_location = show_location_picker(current_language)
+            
+            # Store the location in session state as a string
+            if selected_location is not None and isinstance(selected_location, str):
+                if selected_location.startswith("✅ "):
+                    # Remove the emoji prefix if present
+                    clean_location = selected_location[2:].strip()
+                    st.session_state.clean_location = clean_location
+                elif selected_location.startswith("📍 "):
+                    # Remove the emoji prefix if present
+                    clean_location = selected_location[2:].strip()
+                    st.session_state.clean_location = clean_location
+                else:
+                    st.session_state.clean_location = selected_location
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -137,29 +150,27 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
-                # Get location from session state
-                location = st.session_state.get('confirmed_location')
+                # Get the clean location from session state
+                location = st.session_state.get("clean_location", "")
                 
-                # Check if location is confirmed
-                if not location:
-                    st.error(location_required)
+                # Always send the email since location is confirmed by the confirm button
+                email_service = EmailService()
+                success, _ = email_service.send_email(
+                    recipient_email=emergency_types[emergency_type],
+                    chat_history=messages,
+                    user_email=user_email,
+                    emergency_type=emergency_type,
+                    user_name=user_name,
+                    phone_number=phone_number,
+                    location=location
+                )
+                
+                if success:
+                    st.success(success_message.format(emergency_labels[emergency_type]))
+                    # Clear location after successful send
+                    if 'selected_location' in st.session_state:
+                        del st.session_state.selected_location
+                    if 'clean_location' in st.session_state:
+                        del st.session_state.clean_location
                 else:
-                    # Send the email with the confirmed location
-                    email_service = EmailService()
-                    success, _ = email_service.send_email(
-                        recipient_email=emergency_types[emergency_type],
-                        chat_history=messages,
-                        user_email=user_email,
-                        emergency_type=emergency_type,
-                        user_name=user_name,
-                        phone_number=phone_number,
-                        location=location
-                    )
-                    
-                    if success:
-                        st.success(success_message.format(emergency_labels[emergency_type]))
-                        # Clear location after successful send
-                        if 'confirmed_location' in st.session_state:
-                            del st.session_state.confirmed_location
-                    else:
-                        st.error(error_message)
+                    st.error(error_message)
