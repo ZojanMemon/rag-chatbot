@@ -101,6 +101,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         
         # Location picker
         st.markdown(f"#### {location_label}")
+        location_container = st.container()
         selected_location = show_location_picker(current_language)
         
         # Emergency type selection
@@ -141,7 +142,7 @@ def show_email_ui(messages, user_email="Anonymous"):
                     emergency_type=emergency_type,
                     user_name=user_name,
                     phone_number=phone_number,
-                    location=selected_location if selected_location else ""
+                    location=str(selected_location) if selected_location else ""
                 )
                 
                 if success:

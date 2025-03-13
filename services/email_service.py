@@ -214,26 +214,12 @@ Chat History:
                         </div>
                         
                         <div class="chat-history">
-                            <h2>Conversation History</h2>
-            """
-            
-            # Add each message to the HTML with appropriate styling
-            for msg in chat_history:
-                role = msg['role'].title()
-                content = msg['content'].replace('\n', '<br>')  # Convert newlines to HTML breaks
-                message_class = "user-message" if role.lower() == "user" else "assistant-message"
-                html += f"""
-                            <div class="message {message_class}">
-                                <strong>{role}</strong>
-                                {content}
-                            </div>
-                """
-            
-            # Close the HTML structure
-            html += f"""
-                            <div class="timestamp">
-                                Sent on {current_time}
-                            </div>
+                            <h2>Chat History</h2>
+                            {self._format_chat_history(chat_history)}
+                        </div>
+                        
+                        <div class="timestamp">
+                            Sent on {current_time}
                         </div>
                     </div>
                 </div>
@@ -241,25 +227,42 @@ Chat History:
             </html>
             """
             
-            # First add plain text part
+            # Record the MIME types
             part1 = MIMEText(plain_text, 'plain')
-            # Then add html part
             part2 = MIMEText(html, 'html')
-            
+
             # Attach parts into message container
-            # According to RFC 2046, the last part of a multipart message is best and preferred
             message.attach(part1)
             message.attach(part2)
-            
+
+            # Send email silently
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.sender_email, self.app_password)
                 server.send_message(message)
-                return True, ""
-            
+                
+            return True, None
         except Exception as e:
-            print(f"Error sending email: {str(e)}")  # For debugging
-            return False, ""
+            return False, str(e)
+
+    def _format_chat_history(self, chat_history):
+        """Format chat history as HTML."""
+        html = ""
+        for msg in chat_history:
+            role = msg['role']
+            content = msg['content']
+            
+            # Determine message class based on role
+            msg_class = "user-message" if role == "user" else "assistant-message"
+            role_title = "You" if role == "user" else "Assistant"
+            
+            html += f"""
+            <div class="message {msg_class}">
+                <strong>{role_title}</strong>
+                {content}
+            </div>
+            """
+        return html
 
 
 # Dictionary mapping emergency types to authority email addresses
