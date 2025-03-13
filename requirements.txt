@@ -16,6 +16,7 @@ speechrecognition>=3.10.0
 pyttsx3>=2.90
 requests>=2.31.0
 streamlit-js-eval>=0.1.5
+pydeck>=0.8.0
 # Firebase authentication dependencies
 firebase-admin>=6.2.0
 streamlit-authenticator>=0.2.3
