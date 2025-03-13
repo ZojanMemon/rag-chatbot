@@ -49,54 +49,40 @@ def get_map_html(current_language: str = "English") -> str:
                 font-weight: 500;
             }}
             .primary {{
-                background-color: #ff4b4b;
+                background-color: #FF4B4B;
                 color: white;
             }}
             .secondary {{
                 background-color: #f0f2f6;
-                color: #0f1629;
-            }}
-            .location-preview {{
-                margin-top: 10px;
-                padding: 10px;
-                background-color: #f8f9fa;
-                border-radius: 4px;
-                font-size: 14px;
-            }}
-            .leaflet-control-geocoder {{
-                margin-top: 10px !important;
-            }}
-            .leaflet-control-geocoder-form input {{
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                font-size: 14px;
+                color: #262730;
             }}
             .hidden {{
                 display: none;
+            }}
+            #preview {{
+                margin-top: 10px;
+                padding: 10px;
+                background-color: #f0f2f6;
+                border-radius: 4px;
+                font-size: 14px;
             }}
         </style>
     </head>
     <body>
         <div id="map"></div>
+        <div id="preview" style="min-height: 20px;"></div>
         <div class="controls">
-            <button onclick="detectLocation()" class="secondary">
-                📍 {auto_detect_text}
-            </button>
-            <button onclick="confirmLocation()" class="primary hidden" id="confirm-btn">
-                ✓ {confirm_text}
-            </button>
+            <button class="secondary" onclick="detectLocation()">{auto_detect_text}</button>
+            <button id="confirm-btn" class="primary hidden" onclick="confirmLocation()">{confirm_text}</button>
         </div>
-        <div id="preview" class="location-preview"></div>
 
         <script>
         let map;
         let marker;
-        let selectedLocation = null;
+        let selectedLocation;
+        let confirmedLocation;
 
         function initMap() {{
-            // Center of Pakistan
             const defaultLocation = [30.3753, 69.3451];
 
             // Initialize map
@@ -162,6 +148,7 @@ def get_map_html(current_language: str = "English") -> str:
 
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
+            confirmedLocation = null;
             // Use Nominatim for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                 .then(response => response.json())
@@ -173,7 +160,7 @@ def get_map_html(current_language: str = "English") -> str:
                         // Clear any existing confirmation
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: address
+                            value: null
                         }}, '*');
                     }}
                 }});
@@ -186,14 +173,15 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(data => {{
                         if (data.display_name) {{
                             const address = data.display_name;
-                            // Update UI
-                            document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                            document.getElementById('confirm-btn').classList.add('hidden');
-                            // Send back confirmed location
+                            confirmedLocation = address;
+                            // Update Streamlit with confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
                                 value: address
                             }}, '*');
+                            // Update UI
+                            document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                            document.getElementById('confirm-btn').classList.add('hidden');
                         }}
                     }});
             }}
@@ -201,6 +189,16 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
+
+        // If there's a location in session state, show it as confirmed
+        if (window.parent.streamlitPythonGetSessionState) {{
+            const location = window.parent.streamlitPythonGetSessionState('selected_location');
+            if (location) {{
+                confirmedLocation = location;
+                document.getElementById('preview').innerHTML = `✅ ${{location}}`;
+                document.getElementById('confirm-btn').classList.add('hidden');
+            }}
+        }}
         </script>
     </body>
     </html>
@@ -208,20 +206,26 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
+    # Initialize session state for location if not present
+    if 'selected_location' not in st.session_state:
+        st.session_state.selected_location = None
+
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
-    # Print debug info
-    print(f"Component value: {component_value}")
-    print(f"Component type: {type(component_value)}")
+    # Handle location selection
+    if component_value is not None:
+        # Store the raw address string (without emojis) in session state
+        if isinstance(component_value, str):
+            if component_value.startswith("✅ "):
+                clean_address = component_value[2:].strip()
+            elif component_value.startswith("📍 "):
+                clean_address = component_value[2:].strip()
+            else:
+                clean_address = component_value
+                
+            st.session_state.selected_location = clean_address
+            return clean_address
     
-    # Return the location directly
-    if isinstance(component_value, str):
-        # If it's a string, return it directly
-        return component_value.replace('✅ ', '').replace('📍 ', '')
-    elif isinstance(component_value, dict) and 'address' in component_value:
-        # If it's a dict with address, return the address
-        return component_value['address']
-    else:
-        # Otherwise return None
-        return None
+    # Return the stored clean address if available
+    return st.session_state.selected_location
