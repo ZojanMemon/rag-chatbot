@@ -81,9 +81,6 @@ def get_map_html(current_language: str = "English") -> str:
             <button onclick="detectLocation()" class="secondary">
                 📍 {auto_detect_text}
             </button>
-            <button onclick="confirmLocation()" class="primary">
-                ✓ {confirm_text}
-            </button>
         </div>
         <div id="preview" class="location-preview"></div>
 
@@ -164,30 +161,15 @@ def get_map_html(current_language: str = "English") -> str:
                 .then(response => response.json())
                 .then(data => {{
                     if (data.display_name) {{
-                        document.getElementById('preview').innerHTML = `📍 ${{data.display_name}}`;
+                        const address = data.display_name;
+                        document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         // Update Streamlit immediately
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: data.display_name
+                            value: address
                         }}, '*');
                     }}
                 }});
-        }}
-
-        function confirmLocation() {{
-            if (selectedLocation) {{
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.display_name) {{
-                            // Update Streamlit
-                            window.parent.postMessage({{
-                                type: 'streamlit:setComponentValue',
-                                value: data.display_name
-                            }}, '*');
-                        }}
-                    }});
-            }}
         }}
 
         // Initialize the map
@@ -209,7 +191,6 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     # Handle location selection
     if component_value is not None:
         st.session_state.selected_location = component_value
-        st.success(f"📍 {component_value}")
         return component_value
     
     return st.session_state.get('selected_location')

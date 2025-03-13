@@ -19,18 +19,21 @@ def show_email_ui(messages, user_email="Anonymous"):
         share_button_text = "📤 شیئر کریں"
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
+        select_location_text = "براہ کرم مقام منتخب کریں"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
         share_button_text = "📤 شيئر ڪريو"
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
+        select_location_text = "مهرباني ڪري مڪان چونڊيو"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
         share_button_text = "📤 Share"
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
+        select_location_text = "Please select a location"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -100,6 +103,12 @@ def show_email_ui(messages, user_email="Anonymous"):
         st.markdown(f"#### {location_label}")
         selected_location = show_location_picker(current_language)
         
+        # Show location preview if available
+        if selected_location:
+            st.success(f"📍 {selected_location}")
+        else:
+            st.info(select_location_text)
+        
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
                              "ايمرجنسي جو قسم" if current_language == "Sindhi" else 
@@ -131,6 +140,11 @@ def show_email_ui(messages, user_email="Anonymous"):
             if st.button(share_button_text, type="primary", use_container_width=True):
                 # Get location from session state
                 location = st.session_state.get('selected_location', '')
+                
+                # Validate location
+                if not location:
+                    st.error(select_location_text)
+                    return
                 
                 email_service = EmailService()
                 success, _ = email_service.send_email(
