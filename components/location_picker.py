@@ -1,7 +1,8 @@
 """Location picker component with interactive map and auto-detection."""
 import streamlit as st
 import requests
-import pydeck as pdk
+import folium
+from streamlit_folium import st_folium
 from streamlit_js_eval import get_geolocation
 
 def get_address_from_coords(lat, lng):
@@ -42,7 +43,7 @@ def show_location_picker(current_language: str = "English") -> str:
             'address': '',
             'lat': 30.3753,  # Default to Pakistan's center
             'lng': 69.3451,
-            'zoom': 4
+            'zoom': 5
         }
 
     # Container for location input
@@ -53,13 +54,10 @@ def show_location_picker(current_language: str = "English") -> str:
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            location = st.text_input(location_label, 
-                                   value=st.session_state.location_data['address'],
-                                   key="location_input")
-            
-            # Update address in session state when manually entered
-            if location != st.session_state.location_data['address']:
-                st.session_state.location_data['address'] = location
+            st.text_input(location_label, 
+                         value=st.session_state.location_data['address'],
+                         key="location_input",
+                         disabled=True)
         
         with col2:
             if st.button(auto_detect_label, key="detect_location"):
@@ -78,59 +76,46 @@ def show_location_picker(current_language: str = "English") -> str:
                         })
                         st.experimental_rerun()
 
-        # Show interactive map with pydeck
+        # Show interactive map
         st.caption(map_help)
         
-        # Create the map layer
-        layer = pdk.Layer(
-            "ScatterplotLayer",
-            [{
-                "position": [
-                    st.session_state.location_data['lng'],
-                    st.session_state.location_data['lat']
-                ]
-            }],
-            get_position="position",
-            get_radius=1000,
-            get_fill_color=[255, 0, 0, 140],
-            pickable=True
+        # Create a folium map
+        m = folium.Map(
+            location=[st.session_state.location_data['lat'], 
+                     st.session_state.location_data['lng']],
+            zoom_start=st.session_state.location_data['zoom'],
+            dragging=True,
+            scrollWheelZoom=True
         )
 
-        # Create the map view
-        view_state = pdk.ViewState(
-            longitude=st.session_state.location_data['lng'],
-            latitude=st.session_state.location_data['lat'],
-            zoom=st.session_state.location_data['zoom']
+        # Add a marker for current location
+        folium.Marker(
+            [st.session_state.location_data['lat'], 
+             st.session_state.location_data['lng']],
+            popup="Selected Location",
+            icon=folium.Icon(color='red', icon='info-sign')
+        ).add_to(m)
+
+        # Display the map
+        map_data = st_folium(
+            m,
+            height=300,
+            width="100%",
+            returned_objects=["last_clicked"]
         )
 
-        # Create the map with click handler
-        deck = pdk.Deck(
-            layers=[layer],
-            initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/streets-v11",
-            tooltip={"text": "Click anywhere to select location"},
-            height=300
-        )
-
-        # Show the map
-        map_event = st.pydeck_chart(deck)
-        
         # Handle map clicks
-        if map_event:
-            try:
-                clicked = map_event['object']['position']
-                if clicked:
-                    lng, lat = clicked
-                    address = get_address_from_coords(lat, lng)
-                    
-                    st.session_state.location_data.update({
-                        'lat': lat,
-                        'lng': lng,
-                        'address': address,
-                        'zoom': 13
-                    })
-                    st.experimental_rerun()
-            except Exception:
-                pass
+        if map_data["last_clicked"]:
+            lat = map_data["last_clicked"]["lat"]
+            lng = map_data["last_clicked"]["lng"]
+            address = get_address_from_coords(lat, lng)
+            
+            st.session_state.location_data.update({
+                'lat': lat,
+                'lng': lng,
+                'address': address,
+                'zoom': 13
+            })
+            st.experimental_rerun()
 
     return st.session_state.location_data['address']
