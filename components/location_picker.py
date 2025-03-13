@@ -172,6 +172,11 @@ def get_map_html(current_language: str = "English") -> str:
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
+                        // Clear any existing confirmation
+                        window.parent.postMessage({{
+                            type: 'streamlit:setComponentValue',
+                            value: null
+                        }}, '*');
                     }}
                 }});
         }}
@@ -184,7 +189,7 @@ def get_map_html(current_language: str = "English") -> str:
                         if (data.display_name) {{
                             const address = data.display_name;
                             confirmedLocation = address;
-                            // Update Streamlit
+                            // Update Streamlit with confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
                                 value: address
@@ -224,8 +229,7 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     component_value = html(get_map_html(current_language), height=500)
     
     # Handle location selection
-    if component_value is not None and isinstance(component_value, str):
+    if component_value is not None:
         st.session_state.selected_location = component_value
-        return component_value
     
-    return st.session_state.get('selected_location')
+    return st.session_state.selected_location
