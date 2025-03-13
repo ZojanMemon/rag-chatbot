@@ -104,22 +104,31 @@ def show_email_ui(messages, user_email="Anonymous"):
         
         # Create a container for the location picker
         location_container = st.container()
+        
+        # Store the user's selected location in a session state variable
+        if 'user_location' not in st.session_state:
+            st.session_state.user_location = ""
+            
+        # Show the location picker
         with location_container:
-            # Use a separate container for the location picker to avoid the component being passed directly
             selected_location = show_location_picker(current_language)
             
-            # Store the location in session state as a string
-            if selected_location is not None and isinstance(selected_location, str):
-                if selected_location.startswith("✅ "):
-                    # Remove the emoji prefix if present
-                    clean_location = selected_location[2:].strip()
-                    st.session_state.clean_location = clean_location
-                elif selected_location.startswith("📍 "):
-                    # Remove the emoji prefix if present
-                    clean_location = selected_location[2:].strip()
-                    st.session_state.clean_location = clean_location
-                else:
-                    st.session_state.clean_location = selected_location
+            # If a location is selected, store it in session state
+            if selected_location is not None:
+                if isinstance(selected_location, str):
+                    # Clean the location text (remove emoji prefixes)
+                    if selected_location.startswith("✅ "):
+                        clean_location = selected_location[2:].strip()
+                    elif selected_location.startswith("📍 "):
+                        clean_location = selected_location[2:].strip()
+                    else:
+                        clean_location = selected_location
+                        
+                    # Store the clean location in session state
+                    st.session_state.user_location = clean_location
+                    
+                    # Display the clean location text (for debugging)
+                    st.write(f"Selected location: {clean_location}")
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -150,8 +159,11 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
-                # Get the clean location from session state
-                location = st.session_state.get("clean_location", "")
+                # Get the location from session state
+                location = st.session_state.user_location
+                
+                # Display the location being sent (for debugging)
+                st.write(f"Sending location: {location}")
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
@@ -168,9 +180,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                 if success:
                     st.success(success_message.format(emergency_labels[emergency_type]))
                     # Clear location after successful send
-                    if 'selected_location' in st.session_state:
-                        del st.session_state.selected_location
-                    if 'clean_location' in st.session_state:
-                        del st.session_state.clean_location
+                    st.session_state.user_location = ""
                 else:
                     st.error(error_message)
