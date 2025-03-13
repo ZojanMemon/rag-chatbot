@@ -88,8 +88,10 @@ def get_map_html(current_language: str = "English") -> str:
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                     margin: 0;
-                    width: 93%;
+                    width: 100%;
                     justify-content: center;
+                    flex-wrap: wrap;
+
                 }}
                 button {{
                     flex: 1;
