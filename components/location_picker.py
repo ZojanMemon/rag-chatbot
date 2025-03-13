@@ -171,6 +171,14 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
+
+        // If there's a location in session state, show it
+        if (window.parent.streamlitPythonGetSessionState) {{
+            const location = window.parent.streamlitPythonGetSessionState('selected_location');
+            if (location) {{
+                document.getElementById('preview').innerHTML = `📍 ${{location}}`;
+            }}
+        }}
         </script>
     </body>
     </html>
@@ -178,6 +186,10 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
+    # Initialize session state for location if not present
+    if 'selected_location' not in st.session_state:
+        st.session_state.selected_location = None
+
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
@@ -185,4 +197,4 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     if component_value is not None and isinstance(component_value, str):
         st.session_state.selected_location = component_value
     
-    return st.session_state.get('selected_location')
+    return st.session_state.selected_location

@@ -9,6 +9,10 @@ def show_email_ui(messages, user_email="Anonymous"):
     if len(messages) < 2:
         return
 
+    # Initialize session state for location if not present
+    if 'selected_location' not in st.session_state:
+        st.session_state.selected_location = None
+
     # Get current language from session state
     current_language = st.session_state.get("output_language", "English")
     
@@ -106,6 +110,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Show location preview if available
         if selected_location:
             st.success(f"📍 {selected_location}")
+            st.session_state.selected_location = selected_location
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -137,7 +142,7 @@ def show_email_ui(messages, user_email="Anonymous"):
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
                 # Get location from session state
-                location = st.session_state.get('selected_location', '')
+                location = st.session_state.get('selected_location')
                 
                 # Validate location
                 if not location:
