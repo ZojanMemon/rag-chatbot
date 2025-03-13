@@ -109,7 +109,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         
         # Show location preview if available
         if selected_location:
-            st.success(f"📍 {selected_location}")
+            st.success(f"✅ {selected_location}")
             st.session_state.selected_location = selected_location
         
         # Emergency type selection
@@ -147,23 +147,22 @@ def show_email_ui(messages, user_email="Anonymous"):
                 # Validate location
                 if not location:
                     st.error(select_location_text)
-                    return
-                
-                email_service = EmailService()
-                success, _ = email_service.send_email(
-                    recipient_email=emergency_types[emergency_type],
-                    chat_history=messages,
-                    user_email=user_email,
-                    emergency_type=emergency_type,
-                    user_name=user_name,
-                    phone_number=phone_number,
-                    location=location
-                )
-                
-                if success:
-                    st.success(success_message.format(emergency_labels[emergency_type]))
-                    # Clear location after successful send
-                    if 'selected_location' in st.session_state:
-                        del st.session_state.selected_location
                 else:
-                    st.error(error_message)
+                    email_service = EmailService()
+                    success, _ = email_service.send_email(
+                        recipient_email=emergency_types[emergency_type],
+                        chat_history=messages,
+                        user_email=user_email,
+                        emergency_type=emergency_type,
+                        user_name=user_name,
+                        phone_number=phone_number,
+                        location=location
+                    )
+                    
+                    if success:
+                        st.success(success_message.format(emergency_labels[emergency_type]))
+                        # Clear location after successful send
+                        if 'selected_location' in st.session_state:
+                            del st.session_state.selected_location
+                    else:
+                        st.error(error_message)

@@ -163,6 +163,7 @@ def get_map_html(current_language: str = "English") -> str:
 
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
+            confirmedLocation = null;
             // Use Nominatim for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                 .then(response => response.json())
@@ -225,5 +226,6 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     # Handle location selection
     if component_value is not None and isinstance(component_value, str):
         st.session_state.selected_location = component_value
+        return component_value
     
-    return st.session_state.selected_location
+    return st.session_state.get('selected_location')
