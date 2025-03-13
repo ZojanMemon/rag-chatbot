@@ -175,7 +175,11 @@ def get_map_html(current_language: str = "English") -> str:
                         // Clear any existing confirmation
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: null
+                            value: {{
+                                confirmed: false,
+                                address: address,
+                                latlng: latlng
+                            }}
                         }}, '*');
                     }}
                 }});
@@ -192,7 +196,11 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update Streamlit with confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: address
+                                value: {{
+                                    confirmed: true,
+                                    address: address,
+                                    latlng: selectedLocation
+                                }}
                             }}, '*');
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
@@ -208,9 +216,9 @@ def get_map_html(current_language: str = "English") -> str:
         // If there's a location in session state, show it as confirmed
         if (window.parent.streamlitPythonGetSessionState) {{
             const location = window.parent.streamlitPythonGetSessionState('selected_location');
-            if (location) {{
-                confirmedLocation = location;
-                document.getElementById('preview').innerHTML = `✅ ${{location}}`;
+            if (location && location.confirmed) {{
+                confirmedLocation = location.address;
+                document.getElementById('preview').innerHTML = `✅ ${{location.address}}`;
                 document.getElementById('confirm-btn').classList.add('hidden');
             }}
         }}
@@ -230,6 +238,16 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     
     # Handle location selection
     if component_value is not None:
-        st.session_state.selected_location = component_value
+        # Extract address from component value
+        if isinstance(component_value, dict) and component_value.get('confirmed'):
+            st.session_state.selected_location = component_value
+            return component_value['address']
+        else:
+            st.session_state.selected_location = None
+            return None
     
-    return st.session_state.selected_location
+    # Return address from session state if exists
+    if st.session_state.selected_location and st.session_state.selected_location.get('confirmed'):
+        return st.session_state.selected_location['address']
+    
+    return None
