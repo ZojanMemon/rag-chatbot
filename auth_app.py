@@ -27,24 +27,10 @@ if "output_language" not in st.session_state:
 
 def main():
     """Main application function with authentication."""
-    st.title("Disaster Management Assistant 🆘")
-    
     # Handle authentication
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        # Show welcome message for non-authenticated users
-        st.markdown("""
-        ## Welcome to the Disaster Management Assistant
-        
-        Please log in or create an account to access the chatbot and save your chat history.
-        
-        This assistant can help you with:
-        - Emergency preparedness
-        - Disaster response procedures
-        - Safety protocols
-        - And more...
-        """)
         return
     
     # User is authenticated
