@@ -133,6 +133,14 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
+                # Get location from session state if available
+                location = None
+                if 'selected_location' in st.session_state and st.session_state.selected_location:
+                    if isinstance(st.session_state.selected_location, dict):
+                        location = st.session_state.selected_location.get('address', '')
+                    else:
+                        location = st.session_state.selected_location
+                
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
                 success, _ = email_service.send_email(
@@ -142,7 +150,7 @@ def show_email_ui(messages, user_email="Anonymous"):
                     emergency_type=emergency_type,
                     user_name=user_name,
                     phone_number=phone_number,
-                    location=str(selected_location) if selected_location else ""
+                    location=location or ""
                 )
                 
                 if success:
