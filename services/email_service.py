@@ -139,12 +139,13 @@ class EmailService:
                     margin: 12px 0;
                     display: flex;
                     align-items: flex-start;
+                    gap: 24px;
                 }}
                 
                 .label {{
                     font-weight: 600;
                     color: #495057;
-                    width: 100px;
+                    width: 120px;
                     flex-shrink: 0;
                     padding-top: 2px;
                 }}
@@ -152,6 +153,7 @@ class EmailService:
                 .value {{
                     color: #212529;
                     flex: 1;
+                    padding-top: 2px;
                 }}
                 
                 .chat-history {{
