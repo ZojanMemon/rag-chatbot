@@ -31,7 +31,7 @@ def get_map_html(current_language: str = "English") -> str:
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
             #map {{
-                height: 300px;
+                height: 400px;
                 width: 100%;
                 margin-bottom: 10px;
                 border-radius: 8px;
@@ -40,10 +40,7 @@ def get_map_html(current_language: str = "English") -> str:
                 margin-top: 10px;
                 display: flex;
                 gap: 10px;
-                position: sticky;
-                bottom: 0;
-                background: white;
-                padding: 10px 0;
+                position: relative;
                 z-index: 1000;
             }}
             button {{
@@ -52,7 +49,7 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 500;
-                width: 100%;
+                white-space: nowrap;
             }}
             .primary {{
                 background-color: #FF4B4B;
@@ -66,47 +63,44 @@ def get_map_html(current_language: str = "English") -> str:
                 display: none;
             }}
             #preview {{
+                margin-top: 10px;
                 padding: 10px;
                 background-color: #f0f2f6;
                 border-radius: 4px;
                 font-size: 14px;
-                max-height: 80px;
-                overflow-y: auto;
                 word-break: break-word;
-                min-height: 0;
-                display: none;
             }}
-            #preview:not(:empty) {{
-                display: block;
-                margin: 10px 0;
-            }}
-            @media (max-width: 480px) {{
+            
+            /* Mobile-specific styles */
+            @media screen and (max-width: 768px) {{
                 #map {{
-                    height: 250px;
-                    margin-bottom: 5px;
+                    height: 300px;  /* Slightly smaller map on mobile */
+                }}
+                #preview {{
+                    max-height: 80px;
+                    overflow-y: auto;
+                    -webkit-overflow-scrolling: touch;
                 }}
                 .controls {{
-                    flex-direction: column;
-                    gap: 8px;
-                    position: fixed;
-                    bottom: 0;
-                    left: 0;
-                    right: 0;
+                    position: sticky;
+                    bottom: 10px;
+                    background: white;
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                    margin: 0;
+                    width: 100%;
+                    justify-content: center;
                 }}
                 button {{
-                    margin: 0;
-                }}
-                #preview:not(:empty) {{
-                    margin-bottom: 80px;
+                    flex: 1;
+                    max-width: 200px;
                 }}
             }}
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <div id="preview"></div>
+        <div id="preview" style="min-height: 20px;"></div>
         <div class="controls">
             <button class="secondary" onclick="detectLocation()">{auto_detect_text}</button>
             <button id="confirm-btn" class="primary hidden" onclick="confirmLocation()">{confirm_text}</button>
@@ -227,7 +221,7 @@ def get_map_html(current_language: str = "English") -> str:
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
     # Display the map component
-    html(get_map_html(current_language), height=600)
+    html(get_map_html(current_language), height=500)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
@@ -238,8 +232,10 @@ def show_location_picker(current_language: str = "English") -> None:
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state["confirmed_location"] = f"✅ {address}"
-                st.rerun()
+                st.session_state.confirmed_address = address
+                st.success(f"Location confirmed: {address}")
+            else:
+                st.error("Please enter an address")
     
     # Return the confirmed address from session state
-    return st.session_state.get("confirmed_location", "")
+    return st.session_state.get("confirmed_address", "")
