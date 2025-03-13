@@ -19,21 +19,21 @@ def show_email_ui(messages, user_email="Anonymous"):
         share_button_text = "📤 شیئر کریں"
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
-        select_location_text = "براہ کرم مقام منتخب کریں"
+        location_required = "براہ کرم مقام کی تصدیق کریں"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
         share_button_text = "📤 شيئر ڪريو"
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
-        select_location_text = "مهرباني ڪري مڪان چونڊيو"
+        location_required = "مهرباني ڪري مڪان جي تصديق ڪريو"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
         share_button_text = "📤 Share"
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
-        select_location_text = "Please select a location"
+        location_required = "Please confirm your location"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -133,19 +133,23 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
-                # Send the email with the location
-                email_service = EmailService()
-                success, _ = email_service.send_email(
-                    recipient_email=emergency_types[emergency_type],
-                    chat_history=messages,
-                    user_email=user_email,
-                    emergency_type=emergency_type,
-                    user_name=user_name,
-                    phone_number=phone_number,
-                    location=location
-                )
-                
-                if success:
-                    st.success(success_message.format(emergency_labels[emergency_type]))
+                # Check if location is confirmed
+                if not location:
+                    st.error(location_required)
                 else:
-                    st.error(error_message)
+                    # Send the email with the confirmed location
+                    email_service = EmailService()
+                    success, _ = email_service.send_email(
+                        recipient_email=emergency_types[emergency_type],
+                        chat_history=messages,
+                        user_email=user_email,
+                        emergency_type=emergency_type,
+                        user_name=user_name,
+                        phone_number=phone_number,
+                        location=location
+                    )
+                    
+                    if success:
+                        st.success(success_message.format(emergency_labels[emergency_type]))
+                    else:
+                        st.error(error_message)

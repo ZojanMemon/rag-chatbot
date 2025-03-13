@@ -173,7 +173,10 @@ def get_map_html(current_language: str = "English") -> str:
                         // Clear any existing confirmation
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: null
+                            value: {{
+                                type: 'select_location',
+                                address: address
+                            }}
                         }}, '*');
                     }}
                 }});
@@ -189,10 +192,13 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            // Send back just the address
+                            // Send back confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: address
+                                value: {{
+                                    type: 'confirm_location',
+                                    address: address
+                                }}
                             }}, '*');
                         }}
                     }});
@@ -208,6 +214,22 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
+    # Initialize session state for location if not present
+    if 'selected_location' not in st.session_state:
+        st.session_state.selected_location = None
+    if 'confirmed_location' not in st.session_state:
+        st.session_state.confirmed_location = None
+
     # Show map component
-    location = html(get_map_html(current_language), height=500)
-    return location
+    component_value = html(get_map_html(current_language), height=500)
+    
+    # Handle location updates
+    if component_value is not None and isinstance(component_value, dict):
+        if component_value.get('type') == 'select_location':
+            st.session_state.selected_location = component_value['address']
+            st.session_state.confirmed_location = None
+        elif component_value.get('type') == 'confirm_location':
+            st.session_state.confirmed_location = component_value['address']
+    
+    # Return the confirmed location
+    return st.session_state.confirmed_location
