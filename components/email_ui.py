@@ -1,6 +1,7 @@
 """Email sharing component for the chatbot."""
 import streamlit as st
 from services.email_service import EmailService
+from components.location_picker import show_location_picker
 
 def show_email_ui(messages, user_email="Anonymous"):
     """Display the email sharing interface."""
@@ -56,7 +57,6 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "رابطہ کی معلومات"
             name_label = "آپ کا نام"
             phone_label = "فون نمبر"
-            location_label = "مقام"
         elif current_language == "Sindhi":
             emergency_labels = {
                 "Flood": "ٻوڏ",
@@ -68,7 +68,6 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "رابطي جي معلومات"
             name_label = "توهان جو نالو"
             phone_label = "فون نمبر"
-            location_label = "مڪان"
         else:  # English
             emergency_labels = {
                 "Flood": "Flood",
@@ -80,7 +79,6 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "Contact Information"
             name_label = "Your Name"
             phone_label = "Phone Number"
-            location_label = "Location"
         
         # Create display options with translated labels but keep keys the same
         display_options = [emergency_labels[key] for key in emergency_types.keys()]
@@ -92,9 +90,11 @@ def show_email_ui(messages, user_email="Anonymous"):
         col1, col2 = st.columns(2)
         with col1:
             user_name = st.text_input(name_label, key="user_name_input")
-            location = st.text_input(location_label, key="user_location_input")
         with col2:
             phone_number = st.text_input(phone_label, key="user_phone_input")
+        
+        # Location picker with auto-detection
+        location = show_location_picker(current_language)
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
