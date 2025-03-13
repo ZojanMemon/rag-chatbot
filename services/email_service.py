@@ -32,17 +32,16 @@ class EmailService:
             # Current time for the email
             current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
             
-            # Ensure location is a string
-            if location is None:
+            # Ensure location is a valid string
+            if not location or location == "":
                 location_text = "Not provided"
-            elif not isinstance(location, str):
-                # Try to convert to string if it's not already
-                try:
-                    location_text = str(location)
-                except:
-                    location_text = "Not provided"
             else:
-                location_text = location
+                # Make sure it's a string and remove any emoji prefixes
+                location_text = str(location)
+                if location_text.startswith("✅ "):
+                    location_text = location_text[2:].strip()
+                elif location_text.startswith("📍 "):
+                    location_text = location_text[2:].strip()
             
             # Create plain text version as fallback
             plain_text = f"""

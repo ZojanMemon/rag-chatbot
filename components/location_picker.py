@@ -177,7 +177,7 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update Streamlit with confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: address
+                                value: `✅ ${{address}}`
                             }}, '*');
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
@@ -192,7 +192,7 @@ def get_map_html(current_language: str = "English") -> str:
 
         // If there's a location in session state, show it as confirmed
         if (window.parent.streamlitPythonGetSessionState) {{
-            const location = window.parent.streamlitPythonGetSessionState('selected_location');
+            const location = window.parent.streamlitPythonGetSessionState('confirmed_address');
             if (location) {{
                 confirmedLocation = location;
                 document.getElementById('preview').innerHTML = `✅ ${{location}}`;
@@ -207,25 +207,11 @@ def get_map_html(current_language: str = "English") -> str:
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
     # Initialize session state for location if not present
-    if 'selected_location' not in st.session_state:
-        st.session_state.selected_location = None
+    if 'confirmed_address' not in st.session_state:
+        st.session_state.confirmed_address = None
 
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
-    # Handle location selection
-    if component_value is not None:
-        # Store the raw address string (without emojis) in session state
-        if isinstance(component_value, str):
-            if component_value.startswith("✅ "):
-                clean_address = component_value[2:].strip()
-            elif component_value.startswith("📍 "):
-                clean_address = component_value[2:].strip()
-            else:
-                clean_address = component_value
-                
-            st.session_state.selected_location = clean_address
-            return clean_address
-    
-    # Return the stored clean address if available
-    return st.session_state.selected_location
+    # Return the raw component value (which may include emoji prefixes)
+    return component_value
