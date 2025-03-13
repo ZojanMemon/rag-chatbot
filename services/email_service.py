@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import streamlit as st
 from datetime import datetime
+import json
 
 
 class EmailService:
@@ -32,6 +33,16 @@ class EmailService:
             # Current time for the email
             current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
             
+            # DEBUG: Create debug information
+            debug_info = {
+                "original_location": repr(location),
+                "location_type": type(location).__name__,
+                "is_empty": location == "",
+                "is_none": location is None,
+                "length": len(str(location)) if location else 0
+            }
+            debug_str = json.dumps(debug_info, indent=2)
+            
             # Ensure location is a valid string
             if not location or location == "":
                 location_text = "Not provided"
@@ -55,6 +66,9 @@ Contact Information:
 - Email: {user_email}
 - Phone: {phone_number or 'Not provided'}
 - Location: {location_text}
+
+DEBUG INFO:
+{debug_str}
 
 Chat History:
 """
@@ -195,6 +209,17 @@ Chat History:
                         padding-top: 16px;
                         border-top: 1px solid #e9ecef;
                     }}
+                    
+                    .debug-info {{
+                        margin-top: 20px;
+                        padding: 10px;
+                        background-color: #f8d7da;
+                        border: 1px solid #f5c6cb;
+                        border-radius: 4px;
+                        font-family: monospace;
+                        white-space: pre-wrap;
+                        font-size: 12px;
+                    }}
                 </style>
             </head>
             <body>
@@ -222,6 +247,11 @@ Chat History:
                                 <span class="label">Location:</span>
                                 <span class="value">{location_text}</span>
                             </div>
+                        </div>
+                        
+                        <div class="debug-info">
+                            <h3>DEBUG INFO:</h3>
+                            <pre>{debug_str}</pre>
                         </div>
                         
                         <div class="chat-history">

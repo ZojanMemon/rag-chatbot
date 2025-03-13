@@ -182,6 +182,16 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
+                            
+                            // Also try to directly set the session state
+                            try {{
+                                if (window.parent.streamlitPythonSetSessionState) {{
+                                    window.parent.streamlitPythonSetSessionState('confirmed_address', address);
+                                    console.log("Directly set session state to:", address);
+                                }}
+                            }} catch(e) {{
+                                console.error("Error setting session state:", e);
+                            }}
                         }}
                     }});
             }}
@@ -208,10 +218,26 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
     # Initialize session state for location if not present
     if 'confirmed_address' not in st.session_state:
-        st.session_state.confirmed_address = None
+        st.session_state.confirmed_address = ""
+    
+    # Debug the current session state
+    st.write("DEBUG - Before map: confirmed_address =", repr(st.session_state.confirmed_address))
 
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
+    
+    # Debug the component value
+    st.write("DEBUG - Component returned:", repr(component_value))
+    
+    # If we got a value from the component, update the session state
+    if component_value and isinstance(component_value, str):
+        # Check if it's a confirmed location (starts with ✅)
+        if component_value.startswith("✅ "):
+            # Extract the address (remove the ✅ prefix)
+            clean_address = component_value[2:].strip()
+            # Store in session state
+            st.session_state.confirmed_address = clean_address
+            st.write("DEBUG - Updated confirmed_address =", repr(clean_address))
     
     # Return the raw component value (which may include emoji prefixes)
     return component_value
