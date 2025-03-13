@@ -66,7 +66,6 @@ def get_map_html(current_language: str = "English") -> str:
                 display: none;
             }}
             #preview {{
-                margin: 10px 0;
                 padding: 10px;
                 background-color: #f0f2f6;
                 border-radius: 4px;
@@ -74,10 +73,17 @@ def get_map_html(current_language: str = "English") -> str:
                 max-height: 80px;
                 overflow-y: auto;
                 word-break: break-word;
+                min-height: 0;
+                display: none;
+            }}
+            #preview:not(:empty) {{
+                display: block;
+                margin: 10px 0;
             }}
             @media (max-width: 480px) {{
                 #map {{
                     height: 250px;
+                    margin-bottom: 5px;
                 }}
                 .controls {{
                     flex-direction: column;
@@ -92,15 +98,15 @@ def get_map_html(current_language: str = "English") -> str:
                 button {{
                     margin: 0;
                 }}
-                #preview {{
-                    margin-bottom: 100px;
+                #preview:not(:empty) {{
+                    margin-bottom: 80px;
                 }}
             }}
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <div id="preview" style="min-height: 20px;"></div>
+        <div id="preview"></div>
         <div class="controls">
             <button class="secondary" onclick="detectLocation()">{auto_detect_text}</button>
             <button id="confirm-btn" class="primary hidden" onclick="confirmLocation()">{confirm_text}</button>
