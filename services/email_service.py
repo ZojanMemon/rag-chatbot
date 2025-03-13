@@ -39,7 +39,8 @@ Type: {emergency_type}
 
 Contact Information:
 - Name: {user_name or 'Not provided'}
-- Email: {user_email}
+- Account Email: {user_email}
+- Contact Email: {recipient_email}
 - Phone: {phone_number or 'Not provided'}
 - Location: {location or 'Not provided'}
 
@@ -198,8 +199,12 @@ Chat History:
                                 <span class="value">{user_name or 'Not provided'}</span>
                             </div>
                             <div class="info-item">
-                                <span class="label">Email:</span>
+                                <span class="label">Account:</span>
                                 <span class="value">{user_email}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Contact:</span>
+                                <span class="value">{recipient_email}</span>
                             </div>
                             <div class="info-item">
                                 <span class="label">Phone:</span>
