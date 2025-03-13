@@ -173,10 +173,7 @@ def get_map_html(current_language: str = "English") -> str:
                         // Clear any existing confirmation
                         window.parent.postMessage({{
                             type: 'streamlit:setComponentValue',
-                            value: {{
-                                type: 'select_location',
-                                address: address
-                            }}
+                            value: address
                         }}, '*');
                     }}
                 }});
@@ -195,10 +192,7 @@ def get_map_html(current_language: str = "English") -> str:
                             // Send back confirmed location
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: {{
-                                    type: 'confirm_location',
-                                    address: address
-                                }}
+                                value: address
                             }}, '*');
                         }}
                     }});
@@ -214,22 +208,20 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for location if not present
-    if 'selected_location' not in st.session_state:
-        st.session_state.selected_location = None
-    if 'confirmed_location' not in st.session_state:
-        st.session_state.confirmed_location = None
-
     # Show map component
     component_value = html(get_map_html(current_language), height=500)
     
-    # Handle location updates
-    if component_value is not None and isinstance(component_value, dict):
-        if component_value.get('type') == 'select_location':
-            st.session_state.selected_location = component_value['address']
-            st.session_state.confirmed_location = None
-        elif component_value.get('type') == 'confirm_location':
-            st.session_state.confirmed_location = component_value['address']
+    # Print debug info
+    print(f"Component value: {component_value}")
+    print(f"Component type: {type(component_value)}")
     
-    # Return the confirmed location
-    return st.session_state.confirmed_location
+    # Return the location directly
+    if isinstance(component_value, str):
+        # If it's a string, return it directly
+        return component_value.replace('✅ ', '').replace('📍 ', '')
+    elif isinstance(component_value, dict) and 'address' in component_value:
+        # If it's a dict with address, return the address
+        return component_value['address']
+    else:
+        # Otherwise return None
+        return None
