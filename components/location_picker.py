@@ -105,32 +105,28 @@ def show_location_picker(current_language: str = "English") -> str:
         )
 
         # Create the deck
-        deck = pdk.Deck(
+        r = pdk.Deck(
             layers=[layer],
             initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/light-v9",
-            tooltip={"text": "Click anywhere to select location"}
+            map_style=pdk.map_styles.ROAD,
+            tooltip={"text": "Click anywhere to select location"},
+            height=400
         )
 
         # Show the map and get click events
-        map_data = st.pydeck_chart(
-            deck,
-            use_container_width=True
-        )
+        st.pydeck_chart(r)
 
         # Handle map clicks
-        if map_data:
+        if st._get_last_map_click() is not None:
             try:
-                clicked = map_data.get('object', {}).get('position', [])
-                if clicked and len(clicked) == 2:
-                    lng, lat = clicked
-                    address = get_address_from_coords(lat, lng)
-                    if address:
-                        st.session_state.location_address = address
-                        st.session_state.location_lat = lat
-                        st.session_state.location_lng = lng
-                        st.session_state.location_zoom = 13
-                        st.rerun()
+                lng, lat = st._get_last_map_click()
+                address = get_address_from_coords(lat, lng)
+                if address:
+                    st.session_state.location_address = address
+                    st.session_state.location_lat = lat
+                    st.session_state.location_lng = lng
+                    st.session_state.location_zoom = 13
+                    st.rerun()
             except Exception:
                 pass
 
