@@ -24,7 +24,9 @@ class EmailService:
             # Create message container - the correct MIME type is multipart/alternative.
             message = MIMEMultipart('alternative')
             message['Subject'] = f"🚨 Emergency Assistance Required: {emergency_type}"
-            message['From'] = self.sender_email
+            # Use the authenticated user's email as the Reply-To address
+            message['From'] = f"Disaster Management Assistant <{self.sender_email}>"
+            message['Reply-To'] = user_email
             message['To'] = recipient_email
             
             # Current time for the email
@@ -39,8 +41,7 @@ Type: {emergency_type}
 
 Contact Information:
 - Name: {user_name or 'Not provided'}
-- Account Email: {user_email}
-- Contact Email: {recipient_email}
+- Email: {user_email}
 - Phone: {phone_number or 'Not provided'}
 - Location: {location or 'Not provided'}
 
@@ -199,12 +200,8 @@ Chat History:
                                 <span class="value">{user_name or 'Not provided'}</span>
                             </div>
                             <div class="info-item">
-                                <span class="label">Account:</span>
+                                <span class="label">Email:</span>
                                 <span class="value">{user_email}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Contact:</span>
-                                <span class="value">{recipient_email}</span>
                             </div>
                             <div class="info-item">
                                 <span class="label">Phone:</span>
