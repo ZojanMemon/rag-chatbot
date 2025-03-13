@@ -9,15 +9,12 @@ def get_map_html(current_language: str = "English") -> str:
     # Translations
     if current_language == "Urdu":
         search_placeholder = "مقام تلاش کریں..."
-        confirm_text = "اس مقام کی تصدیق کریں"
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
-        confirm_text = "هن مڪان جي تصديق ڪريو"
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
     else:  # English
         search_placeholder = "Search for a location..."
-        confirm_text = "Confirm Location"
         auto_detect_text = "Detect Current Location"
 
     return f"""
@@ -185,11 +182,14 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     if 'selected_location' not in st.session_state:
         st.session_state.selected_location = None
 
-    # Show map component with location preview
-    component_value = html(get_map_html(current_language), height=500)
+    # Create a container for the map
+    map_container = st.empty()
+    
+    # Show map component
+    component_value = map_container.html(get_map_html(current_language), height=500)
     
     # Handle location selection
-    if component_value is not None:
+    if component_value is not None and isinstance(component_value, str):
         st.session_state.selected_location = component_value
         return component_value
     
