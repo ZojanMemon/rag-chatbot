@@ -57,6 +57,7 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "رابطہ کی معلومات"
             name_label = "آپ کا نام"
             phone_label = "فون نمبر"
+            location_label = "مقام"
         elif current_language == "Sindhi":
             emergency_labels = {
                 "Flood": "ٻوڏ",
@@ -68,6 +69,7 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "رابطي جي معلومات"
             name_label = "توهان جو نالو"
             phone_label = "فون نمبر"
+            location_label = "مڪان"
         else:  # English
             emergency_labels = {
                 "Flood": "Flood",
@@ -79,6 +81,7 @@ def show_email_ui(messages, user_email="Anonymous"):
             user_info_title = "Contact Information"
             name_label = "Your Name"
             phone_label = "Phone Number"
+            location_label = "Location"
         
         # Create display options with translated labels but keep keys the same
         display_options = [emergency_labels[key] for key in emergency_types.keys()]
@@ -93,7 +96,8 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             phone_number = st.text_input(phone_label, key="user_phone_input")
         
-        # Location picker with auto-detection
+        # Location picker
+        st.markdown(f"#### {location_label}")
         location = show_location_picker(current_language)
         
         # Emergency type selection
