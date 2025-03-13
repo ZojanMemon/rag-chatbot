@@ -136,13 +136,9 @@ def show_email_ui(messages, user_email="Anonymous"):
                 # Get location from session state if available
                 location = None
                 if 'selected_location' in st.session_state:
-                    location = st.session_state.selected_location
-                    # Extract plain text from location preview
-                    if location and isinstance(location, str):
-                        if location.startswith('✅ '):
-                            location = location[2:].strip()
-                        elif location.startswith('📍 '):
-                            location = location[2:].strip()
+                    location_data = st.session_state.selected_location
+                    if isinstance(location_data, dict) and location_data.get('confirmed'):
+                        location = location_data['address']
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()
