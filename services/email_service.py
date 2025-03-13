@@ -1,12 +1,13 @@
 """
 Email service for sending chat history to authorities.
 """
-import os
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+import streamlit as st
+import os
 import json
 
 class EmailService:
@@ -16,8 +17,14 @@ class EmailService:
         """Initialize the email service with Gmail SMTP settings."""
         self.smtp_server = "smtp.gmail.com"
         self.port = 587
-        self.sender_email = os.environ.get("EMAIL_USER", "themusicking151@gmail.com")
-        self.password = os.environ.get("EMAIL_PASSWORD", "xoqz qqkf wkqm ycgc")
+        # Get credentials from Streamlit secrets
+        self.sender_email = st.secrets.get("GMAIL_ADDRESS")
+        self.password = st.secrets.get("GMAIL_APP_PASSWORD")
+        if not self.sender_email or not self.password:
+            # Fallback to environment variables for development
+            import os
+            self.sender_email = os.environ.get("EMAIL_USER", "themusicking151@gmail.com")
+            self.password = os.environ.get("EMAIL_PASSWORD", "xoqz qqkf wkqm ycgc")
 
     def format_chat_history(self, messages):
         """Format chat history for email."""
@@ -118,8 +125,9 @@ class EmailService:
             # Create message
             message = MIMEMultipart("alternative")
             message["Subject"] = f"Emergency Assistance Request: {emergency_type}"
-            message["From"] = self.sender_email
+            message["From"] = f"Disaster Management Assistant <{self.sender_email}>"
             message["To"] = recipient_email
+            message["Reply-To"] = user_email
             
             # Create HTML content
             html_content = self.create_email_content(
