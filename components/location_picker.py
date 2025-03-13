@@ -81,6 +81,7 @@ def get_map_html(current_language: str = "English") -> str:
         let marker;
         let selectedLocation;
         let confirmedLocation;
+        let currentAddress = "";
 
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
@@ -122,6 +123,23 @@ def get_map_html(current_language: str = "English") -> str:
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
+            
+            // Check if we have a previously saved location in localStorage
+            try {{
+                const savedAddress = localStorage.getItem('confirmedAddress');
+                if (savedAddress) {{
+                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                    
+                    // Send message to parent to update the address field
+                    window.parent.postMessage({{
+                        type: 'updateAddressField',
+                        address: savedAddress,
+                        confirmed: true
+                    }}, '*');
+                }}
+            }} catch(e) {{
+                console.error("Error checking localStorage:", e);
+            }}
         }}
 
         function updateMarker(latlng) {{
@@ -155,8 +173,20 @@ def get_map_html(current_language: str = "English") -> str:
                 .then(data => {{
                     if (data.display_name) {{
                         const address = data.display_name;
+                        currentAddress = address;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
+                        
+                        // Update the parent's text field with the address
+                        try {{
+                            window.parent.postMessage({{
+                                type: 'updateAddressField',
+                                address: address,
+                                confirmed: false
+                            }}, '*');
+                        }} catch(e) {{
+                            console.error("Error updating address field:", e);
+                        }}
                     }}
                 }});
         }}
@@ -176,6 +206,17 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
+                            
+                            // Update the parent's text field with the confirmed address
+                            try {{
+                                window.parent.postMessage({{
+                                    type: 'updateAddressField',
+                                    address: address,
+                                    confirmed: true
+                                }}, '*');
+                            }} catch(e) {{
+                                console.error("Error updating address field:", e);
+                            }}
                         }}
                     }});
             }}
@@ -190,14 +231,47 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
+    # Initialize session state for address if not present
+    if "temp_address" not in st.session_state:
+        st.session_state.temp_address = ""
+    
     # Display the map component
     html(get_map_html(current_language), height=500)
+    
+    # Add JavaScript to listen for messages from the iframe
+    st.markdown("""
+    <script>
+    // Listen for messages from the iframe
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'updateAddressField') {
+            // Find the address input field and update its value
+            const addressInput = document.querySelector('input[aria-label="Confirm your address"]');
+            if (addressInput) {
+                addressInput.value = event.data.address;
+                // Trigger an input event to notify Streamlit
+                const inputEvent = new Event('input', { bubbles: true });
+                addressInput.dispatchEvent(inputEvent);
+                
+                // If this is a confirmed address, also update the session state
+                if (event.data.confirmed) {
+                    // We need to use Streamlit's setComponentValue to update session state
+                    // This is done indirectly by triggering a form submission
+                    const confirmButton = document.querySelector('button[data-testid="baseButton-primary"]');
+                    if (confirmButton) {
+                        confirmButton.click();
+                    }
+                }
+            }
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        address = st.text_input("Confirm your address", key="manual_address_input")
+        address = st.text_input("Confirm your address", key="manual_address_input", value=st.session_state.temp_address)
     
     with col2:
         if st.button("Confirm Address", type="primary"):
