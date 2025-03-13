@@ -121,54 +121,35 @@ class EmailService:
                 }}
                 
                 .info-box {{
-                    background-color: #ffffff;
+                    background-color: #f8f9fa;
                     border: 1px solid #e9ecef;
-                    border-radius: 12px;
-                    padding: 24px;
-                    margin-bottom: 32px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    border-radius: 6px;
+                    padding: 20px;
+                    margin-bottom: 24px;
                 }}
                 
                 .info-box h2 {{
                     color: #2c3e50;
-                    font-size: 20px;
-                    margin-bottom: 20px;
+                    font-size: 18px;
+                    margin-bottom: 16px;
                     font-weight: 600;
-                    border-bottom: 2px solid #f8f9fa;
-                    padding-bottom: 12px;
-                }}
-                
-                .info-grid {{
-                    display: grid;
-                    grid-template-columns: 120px 1fr;
-                    gap: 16px;
                 }}
                 
                 .info-item {{
-                    display: contents;
+                    margin: 12px 0;
+                    display: flex;
+                    align-items: baseline;
                 }}
                 
                 .label {{
-                    font-weight: 500;
-                    color: #6c757d;
-                    padding: 8px 12px;
-                    background-color: #f8f9fa;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    font-weight: 600;
+                    color: #495057;
+                    width: 100px;
+                    flex-shrink: 0;
                 }}
                 
                 .value {{
-                    color: #2c3e50;
-                    padding: 8px 0;
-                    font-size: 15px;
-                    line-height: 1.5;
-                }}
-                
-                .value.highlight {{
-                    font-weight: 500;
-                    color: #1a73e8;
+                    color: #212529;
                 }}
                 
                 .chat-history {{
@@ -229,23 +210,21 @@ class EmailService:
                 <div class="content">
                     <div class="info-box">
                         <h2>Contact Information</h2>
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <span class="label">Name</span>
-                                <span class="value">{user_name or 'Not provided'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Email</span>
-                                <span class="value highlight">{user_email}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Phone</span>
-                                <span class="value">{phone_number or 'Not provided'}</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label">Location</span>
-                                <span class="value">{clean_location}</span>
-                            </div>
+                        <div class="info-item">
+                            <span class="label">Name:</span>
+                            <span class="value">{user_name or 'Not provided'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Email:</span>
+                            <span class="value">{user_email}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Phone:</span>
+                            <span class="value">{phone_number or 'Not provided'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Location:</span>
+                            <span class="value">{clean_location}</span>
                         </div>
                     </div>
                     
