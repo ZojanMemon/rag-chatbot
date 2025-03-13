@@ -108,6 +108,10 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Show the location picker
         with location_container:
             selected_location = show_location_picker(current_language)
+            
+            # Display the current location in session state (for debugging)
+            if st.session_state.get("selected_location"):
+                st.success(f"✅ Location confirmed: {st.session_state.get('selected_location')}")
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 

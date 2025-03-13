@@ -32,15 +32,17 @@ class EmailService:
             # Current time for the email
             current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
             
-            # Clean location string
-            location_text = 'Not provided'
-            if location and isinstance(location, str):
-                location_text = location.strip()
-                # Remove any emoji prefixes
-                if location_text.startswith('✅ '):
-                    location_text = location_text[2:].strip()
-                elif location_text.startswith('📍 '):
-                    location_text = location_text[2:].strip()
+            # Ensure location is a string
+            if location is None:
+                location_text = "Not provided"
+            elif not isinstance(location, str):
+                # Try to convert to string if it's not already
+                try:
+                    location_text = str(location)
+                except:
+                    location_text = "Not provided"
+            else:
+                location_text = location
             
             # Create plain text version as fallback
             plain_text = f"""
@@ -237,21 +239,20 @@ Chat History:
             </html>
             """
             
-            # Turn these into plain/html MIMEText objects
+            # Record the MIME types
             part1 = MIMEText(plain_text, 'plain')
             part2 = MIMEText(html, 'html')
 
-            # Add HTML/plain-text parts to MIMEMultipart message
-            # The email client will try to render the last part first
+            # Attach parts into message container
             message.attach(part1)
             message.attach(part2)
 
-            # Create SMTP session
+            # Send email silently
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.sender_email, self.app_password)
                 server.send_message(message)
-            
+                
             return True, None
         except Exception as e:
             return False, str(e)
@@ -260,27 +261,31 @@ Chat History:
         """Format chat history as HTML."""
         html = ""
         for msg in chat_history:
-            role = msg['role']
-            content = msg['content']
+            role = msg["role"]
+            content = msg["content"]
             
-            # Determine message class based on role
-            msg_class = "user-message" if role == "user" else "assistant-message"
-            role_title = "You" if role == "user" else "Assistant"
-            
-            html += f"""
-            <div class="message {msg_class}">
-                <strong>{role_title}</strong>
-                {content}
-            </div>
-            """
+            if role == "user":
+                html += f"""
+                <div class="message user-message">
+                    <strong>You</strong>
+                    {content}
+                </div>
+                """
+            elif role == "assistant":
+                html += f"""
+                <div class="message assistant-message">
+                    <strong>Assistant</strong>
+                    {content}
+                </div>
+                """
         return html
 
 
 # Dictionary mapping emergency types to authority email addresses
 EMERGENCY_AUTHORITIES = {
     "Flood": "flood.authority@example.com",
-    "Earthquake": "earthquake.response@example.com",
-    "Fire": "fire.department@example.com",
-    "Medical": "medical.emergency@example.com",
-    "General": "general.emergency@example.com"
+    "Earthquake": "earthquake.authority@example.com",
+    "Fire": "fire.authority@example.com",
+    "Medical": "medical.authority@example.com",
+    "General": "general.authority@example.com"
 }
