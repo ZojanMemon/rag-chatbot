@@ -137,34 +137,28 @@ class EmailService:
                 
                 .info-item {{
                     margin: 12px 0;
-                    display: flex;
+                    display: grid;
+                    grid-template-columns: 120px 1fr;
                     align-items: flex-start;
-                    gap: 24px;
                 }}
                 
                 .label {{
                     font-weight: 600;
                     color: #495057;
-                    width: 120px;
-                    flex-shrink: 0;
                     padding-top: 2px;
                 }}
                 
                 .value {{
                     color: #212529;
-                    flex: 1;
                     padding-top: 2px;
-                    margin-left: 60px !important;
+                    padding-left: 40px;
                 }}
-                
-                /* Ensure margin persists in Gmail */
-                [class~="value"] {{
-                    margin-left: 60px !important;
-                }}
-                
-                /* Target specifically the location value */
-                .info-item:last-child .value {{
-                    margin-left: 60px !important;
+
+                /* Additional specificity for email clients */
+                [class~="value"],
+                .info-item .value,
+                .info-box .value {{
+                    padding-left: 40px !important;
                 }}
                 
                 .chat-history {{
