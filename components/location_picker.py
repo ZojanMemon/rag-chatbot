@@ -165,6 +165,15 @@ def get_map_html(current_language: str = "English") -> str:
                 .then(data => {{
                     if (data.display_name) {{
                         document.getElementById('preview').innerHTML = `📍 ${{data.display_name}}`;
+                        // Send to Streamlit
+                        window.parent.postMessage({{
+                            type: 'streamlit:setComponentValue',
+                            value: {{
+                                address: data.display_name,
+                                lat: latlng[0],
+                                lng: latlng[1]
+                            }}
+                        }}, '*');
                     }}
                 }});
         }}
@@ -175,9 +184,10 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(response => response.json())
                     .then(data => {{
                         if (data.display_name) {{
+                            // Send to Streamlit
                             window.parent.postMessage({{
-                                type: 'streamlit:setLocation',
-                                location: {{
+                                type: 'streamlit:setComponentValue',
+                                value: {{
                                     address: data.display_name,
                                     lat: selectedLocation[0],
                                     lng: selectedLocation[1]
@@ -197,31 +207,18 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> Optional[str]:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state
+    # Initialize session state for location
     if 'selected_location' not in st.session_state:
         st.session_state.selected_location = None
 
-    # Translations
-    if current_language == "Urdu":
-        title = "📍 مقام منتخب کریں"
-        selected_text = "منتخب کردہ مقام"
-    elif current_language == "Sindhi":
-        title = "📍 مڪان چونڊيو"
-        selected_text = "چونڊيل مڪان"
-    else:  # English
-        title = "📍 Select Location"
-        selected_text = "Selected Location"
-
-    st.markdown(f"#### {title}")
-
     # Show map component
-    html(get_map_html(current_language), height=500)
-
-    # Handle location selection from the map
-    if 'SELECTED_LOCATION' in st.session_state:
-        location_data = st.session_state.SELECTED_LOCATION
-        if isinstance(location_data, dict):
-            st.session_state.selected_location = location_data.get('address')
-            st.success(f"📍 {location_data.get('address')}")
-
+    component_value = html(get_map_html(current_language), height=500)
+    
+    # Handle location selection
+    if component_value is not None:
+        location_data = component_value
+        if isinstance(location_data, dict) and 'address' in location_data:
+            st.session_state.selected_location = location_data['address']
+            return location_data['address']
+    
     return st.session_state.get('selected_location')

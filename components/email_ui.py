@@ -12,10 +12,6 @@ def show_email_ui(messages, user_email="Anonymous"):
     # Get current language from session state
     current_language = st.session_state.get("output_language", "English")
     
-    # Initialize session state for location
-    if 'SELECTED_LOCATION' not in st.session_state:
-        st.session_state.SELECTED_LOCATION = None
-    
     # Email sharing section with language-specific labels
     if current_language == "Urdu":
         expander_title = "📧 حکام کے ساتھ شیئر کریں"
@@ -102,14 +98,9 @@ def show_email_ui(messages, user_email="Anonymous"):
         
         # Location picker
         st.markdown(f"#### {location_label}")
-        location = show_location_picker(current_language)
-        
-        # Get selected location from session state
-        selected_location = None
-        if 'SELECTED_LOCATION' in st.session_state:
-            location_data = st.session_state.SELECTED_LOCATION
-            if isinstance(location_data, dict):
-                selected_location = location_data.get('address')
+        selected_location = show_location_picker(current_language)
+        if selected_location:
+            st.success(f"📍 {selected_location}")
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -154,6 +145,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                 if success:
                     st.success(success_message.format(emergency_labels[emergency_type]))
                     # Clear location after successful send
-                    st.session_state.SELECTED_LOCATION = None
+                    st.session_state.selected_location = None
                 else:
                     st.error(error_message)
