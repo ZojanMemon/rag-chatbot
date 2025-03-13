@@ -165,6 +165,15 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
         .welcome-text {
             animation: fadeIn 0.8s ease-out;
         }
+        
+        /* Remove default Streamlit padding */
+        .main > div {
+            padding-top: 0 !important;
+        }
+        
+        .stApp > header {
+            display: none !important;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -172,7 +181,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
         st.markdown("""
-            <div class="welcome-text">
+            <div class="welcome-text" style="margin-top: 2rem;">
                 <h1 style='text-align: center; margin-bottom: 0.5rem; color: #3498db; font-size: 2.5rem; font-weight: 700;'>
                     🚨 Welcome to the Disaster Management Assistant
                 </h1>
