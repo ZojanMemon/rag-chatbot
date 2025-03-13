@@ -182,11 +182,8 @@ def show_location_picker(current_language: str = "English") -> Optional[str]:
     if 'selected_location' not in st.session_state:
         st.session_state.selected_location = None
 
-    # Create a container for the map
-    map_container = st.empty()
-    
     # Show map component
-    component_value = map_container.html(get_map_html(current_language), height=500)
+    component_value = html(get_map_html(current_language), height=500)
     
     # Handle location selection
     if component_value is not None and isinstance(component_value, str):
