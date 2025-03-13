@@ -31,7 +31,7 @@ def get_map_html(current_language: str = "English") -> str:
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
             #map {{
-                height: 400px;
+                height: 300px;
                 width: 100%;
                 margin-bottom: 10px;
                 border-radius: 8px;
@@ -40,6 +40,11 @@ def get_map_html(current_language: str = "English") -> str:
                 margin-top: 10px;
                 display: flex;
                 gap: 10px;
+                position: sticky;
+                bottom: 0;
+                background: white;
+                padding: 10px 0;
+                z-index: 1000;
             }}
             button {{
                 padding: 8px 16px;
@@ -47,6 +52,7 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 500;
+                width: 100%;
             }}
             .primary {{
                 background-color: #FF4B4B;
@@ -60,11 +66,35 @@ def get_map_html(current_language: str = "English") -> str:
                 display: none;
             }}
             #preview {{
-                margin-top: 10px;
+                margin: 10px 0;
                 padding: 10px;
                 background-color: #f0f2f6;
                 border-radius: 4px;
                 font-size: 14px;
+                max-height: 80px;
+                overflow-y: auto;
+                word-break: break-word;
+            }}
+            @media (max-width: 480px) {{
+                #map {{
+                    height: 250px;
+                }}
+                .controls {{
+                    flex-direction: column;
+                    gap: 8px;
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    padding: 10px;
+                    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                }}
+                button {{
+                    margin: 0;
+                }}
+                #preview {{
+                    margin-bottom: 100px;
+                }}
             }}
         </style>
     </head>
@@ -81,7 +111,6 @@ def get_map_html(current_language: str = "English") -> str:
         let marker;
         let selectedLocation;
         let confirmedLocation;
-        let currentAddress = "";
 
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
@@ -123,23 +152,6 @@ def get_map_html(current_language: str = "English") -> str:
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
-            
-            // Check if we have a previously saved location in localStorage
-            try {{
-                const savedAddress = localStorage.getItem('confirmedAddress');
-                if (savedAddress) {{
-                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-                    
-                    // Send message to parent to update the address field
-                    window.parent.postMessage({{
-                        type: 'updateAddressField',
-                        address: savedAddress,
-                        confirmed: true
-                    }}, '*');
-                }}
-            }} catch(e) {{
-                console.error("Error checking localStorage:", e);
-            }}
         }}
 
         function updateMarker(latlng) {{
@@ -173,20 +185,8 @@ def get_map_html(current_language: str = "English") -> str:
                 .then(data => {{
                     if (data.display_name) {{
                         const address = data.display_name;
-                        currentAddress = address;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
-                        
-                        // Update the parent's text field with the address
-                        try {{
-                            window.parent.postMessage({{
-                                type: 'updateAddressField',
-                                address: address,
-                                confirmed: false
-                            }}, '*');
-                        }} catch(e) {{
-                            console.error("Error updating address field:", e);
-                        }}
                     }}
                 }});
         }}
@@ -206,17 +206,6 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Update the parent's text field with the confirmed address
-                            try {{
-                                window.parent.postMessage({{
-                                    type: 'updateAddressField',
-                                    address: address,
-                                    confirmed: true
-                                }}, '*');
-                            }} catch(e) {{
-                                console.error("Error updating address field:", e);
-                            }}
                         }}
                     }});
             }}
@@ -231,55 +220,20 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for address if not present
-    if "temp_address" not in st.session_state:
-        st.session_state.temp_address = ""
-    
     # Display the map component
-    html(get_map_html(current_language), height=500)
-    
-    # Add JavaScript to listen for messages from the iframe
-    st.markdown("""
-    <script>
-    // Listen for messages from the iframe
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'updateAddressField') {
-            // Find the address input field and update its value
-            const addressInput = document.querySelector('input[aria-label="Confirm your address"]');
-            if (addressInput) {
-                addressInput.value = event.data.address;
-                // Trigger an input event to notify Streamlit
-                const inputEvent = new Event('input', { bubbles: true });
-                addressInput.dispatchEvent(inputEvent);
-                
-                // If this is a confirmed address, also update the session state
-                if (event.data.confirmed) {
-                    // We need to use Streamlit's setComponentValue to update session state
-                    // This is done indirectly by triggering a form submission
-                    const confirmButton = document.querySelector('button[data-testid="baseButton-primary"]');
-                    if (confirmButton) {
-                        confirmButton.click();
-                    }
-                }
-            }
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
+    html(get_map_html(current_language), height=600)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        address = st.text_input("Confirm your address", key="manual_address_input", value=st.session_state.temp_address)
+        address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state.confirmed_address = address
-                st.success(f"Location confirmed: {address}")
-            else:
-                st.error("Please enter an address")
+                st.session_state["confirmed_location"] = f"✅ {address}"
+                st.rerun()
     
     # Return the confirmed address from session state
-    return st.session_state.get("confirmed_address", "")
+    return st.session_state.get("confirmed_location", "")
