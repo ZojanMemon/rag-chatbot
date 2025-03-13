@@ -154,6 +154,17 @@ class EmailService:
                     color: #212529;
                     flex: 1;
                     padding-top: 2px;
+                    margin-left: 60px !important;
+                }}
+                
+                /* Ensure margin persists in Gmail */
+                [class~="value"] {{
+                    margin-left: 60px !important;
+                }}
+                
+                /* Target specifically the location value */
+                .info-item:last-child .value {{
+                    margin-left: 60px !important;
                 }}
                 
                 .chat-history {{
