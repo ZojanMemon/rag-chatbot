@@ -28,17 +28,26 @@ class EmailService:
 
     def format_chat_history(self, messages):
         """Format chat history for email."""
-        formatted_history = []
-        for message in messages:
-            role = message.get("role", "")
-            content = message.get("content", "")
+        html = ""
+        for msg in messages:
+            role = msg.get("role", "")
+            content = msg.get("content", "")
             
             if role == "user":
-                formatted_history.append(f"<p><strong>User:</strong> {content}</p>")
+                html += f"""
+                <div class="message user-message">
+                    <strong>You</strong>
+                    {content}
+                </div>
+                """
             elif role == "assistant":
-                formatted_history.append(f"<p><strong>Assistant:</strong> {content}</p>")
-        
-        return "".join(formatted_history)
+                html += f"""
+                <div class="message assistant-message">
+                    <strong>Assistant</strong>
+                    {content}
+                </div>
+                """
+        return html
 
     def create_email_content(self, chat_history, emergency_type, user_name, phone_number, location, user_email):
         """Create the email content with chat history and user details."""
@@ -54,64 +63,180 @@ class EmailService:
                 clean_location = location
         
         # Current date and time
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_time = datetime.now().strftime("%B %d, %Y at %I:%M %p")
         
         # HTML content
         html = f"""
+        <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
+                /* Reset styles */
+                * {{
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }}
+                
                 body {{
-                    font-family: Arial, sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                     line-height: 1.6;
-                    color: #333;
-                    max-width: 800px;
+                    color: #333333;
+                    background-color: #f5f5f5;
+                    margin: 0;
+                    padding: 0;
+                }}
+                
+                .email-wrapper {{
+                    max-width: 600px;
                     margin: 0 auto;
-                    padding: 20px;
+                    background-color: #ffffff;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 }}
+                
                 .header {{
-                    background-color: #f8f9fa;
-                    padding: 15px;
-                    border-radius: 5px;
-                    margin-bottom: 20px;
-                    border-left: 5px solid #ff4b4b;
+                    background-color: #dc3545;
+                    color: white;
+                    padding: 24px;
+                    text-align: center;
                 }}
+                
+                .header h1 {{
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }}
+                
+                .header p {{
+                    margin: 8px 0 0 0;
+                    opacity: 0.9;
+                }}
+                
+                .content {{
+                    padding: 24px;
+                }}
+                
+                .info-box {{
+                    background-color: #f8f9fa;
+                    border: 1px solid #e9ecef;
+                    border-radius: 6px;
+                    padding: 20px;
+                    margin-bottom: 24px;
+                }}
+                
+                .info-box h2 {{
+                    color: #2c3e50;
+                    font-size: 18px;
+                    margin-bottom: 16px;
+                    font-weight: 600;
+                }}
+                
+                .info-item {{
+                    margin: 12px 0;
+                    display: flex;
+                    align-items: baseline;
+                }}
+                
+                .label {{
+                    font-weight: 600;
+                    color: #495057;
+                    width: 100px;
+                    flex-shrink: 0;
+                }}
+                
+                .value {{
+                    color: #212529;
+                }}
+                
                 .chat-history {{
-                    background-color: #f8f9fa;
-                    padding: 15px;
-                    border-radius: 5px;
-                    margin-top: 20px;
+                    border-top: 2px solid #e9ecef;
+                    padding-top: 24px;
+                    margin-top: 24px;
                 }}
-                .user-info {{
-                    margin-bottom: 20px;
+                
+                .chat-history h2 {{
+                    color: #2c3e50;
+                    font-size: 18px;
+                    margin-bottom: 16px;
+                    font-weight: 600;
                 }}
-                .user-info p {{
-                    margin: 5px 0;
+                
+                .message {{
+                    margin: 16px 0;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    position: relative;
                 }}
-                h2 {{
-                    color: #ff4b4b;
-                    border-bottom: 1px solid #eee;
-                    padding-bottom: 10px;
+                
+                .user-message {{
+                    background-color: #e3f2fd;
+                    border: 1px solid #bbdefb;
+                    margin-left: 16px;
+                }}
+                
+                .assistant-message {{
+                    background-color: #f5f5f5;
+                    border: 1px solid #e0e0e0;
+                    margin-right: 16px;
+                }}
+                
+                .message strong {{
+                    color: #1976d2;
+                    display: block;
+                    margin-bottom: 4px;
+                    font-size: 14px;
+                }}
+                
+                .timestamp {{
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 14px;
+                    margin-top: 24px;
+                    padding-top: 16px;
+                    border-top: 1px solid #e9ecef;
                 }}
             </style>
         </head>
         <body>
-            <div class="header">
-                <h2>Emergency Assistance Request: {emergency_type}</h2>
-                <p>This conversation was shared on {current_time}</p>
-            </div>
-            
-            <div class="user-info">
-                <h3>User Information</h3>
-                <p><strong>Name:</strong> {user_name or "Not provided"}</p>
-                <p><strong>Phone:</strong> {phone_number or "Not provided"}</p>
-                <p><strong>Email:</strong> {user_email}</p>
-                <p><strong>Location:</strong> {clean_location}</p>
-            </div>
-            
-            <div class="chat-history">
-                <h3>Chat History</h3>
-                {formatted_history}
+            <div class="email-wrapper">
+                <div class="header">
+                    <h1>🚨 Emergency Assistance Required</h1>
+                    <p>Type: {emergency_type}</p>
+                </div>
+                <div class="content">
+                    <div class="info-box">
+                        <h2>Contact Information</h2>
+                        <div class="info-item">
+                            <span class="label">Name:</span>
+                            <span class="value">{user_name or 'Not provided'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Email:</span>
+                            <span class="value">{user_email}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Phone:</span>
+                            <span class="value">{phone_number or 'Not provided'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="label">Location:</span>
+                            <span class="value">{clean_location}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-history">
+                        <h2>Chat History</h2>
+                        {formatted_history}
+                    </div>
+                    
+                    <div class="timestamp">
+                        Sent on {current_time}
+                    </div>
+                </div>
             </div>
         </body>
         </html>
@@ -124,7 +249,7 @@ class EmailService:
         try:
             # Create message
             message = MIMEMultipart("alternative")
-            message["Subject"] = f"Emergency Assistance Request: {emergency_type}"
+            message["Subject"] = f"🚨 Emergency Assistance Required: {emergency_type}"
             message["From"] = f"Disaster Management Assistant <{self.sender_email}>"
             message["To"] = recipient_email
             message["Reply-To"] = user_email
@@ -139,9 +264,29 @@ class EmailService:
                 user_email
             )
             
-            # Attach HTML content
-            html_part = MIMEText(html_content, "html")
-            message.attach(html_part)
+            # Create plain text version as fallback
+            plain_text = f"""
+Emergency Assistance Request
+---------------------------
+Time: {datetime.now().strftime("%B %d, %Y at %I:%M %p")}
+Type: {emergency_type}
+
+Contact Information:
+- Name: {user_name or 'Not provided'}
+- Email: {user_email}
+- Phone: {phone_number or 'Not provided'}
+- Location: {location or 'Not provided'}
+
+Chat History:
+"""
+            for msg in chat_history:
+                plain_text += f"\n{msg['role'].title()}: {msg['content']}\n"
+            
+            # Attach parts into message container
+            part1 = MIMEText(plain_text, 'plain')
+            part2 = MIMEText(html_content, 'html')
+            message.attach(part1)
+            message.attach(part2)
             
             # Create a secure SSL context
             context = ssl.create_default_context()
