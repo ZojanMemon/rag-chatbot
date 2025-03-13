@@ -138,7 +138,7 @@ class EmailService:
                 .info-item {{
                     margin: 12px 0;
                     display: flex;
-                    align-items: baseline;
+                    align-items: flex-start;
                 }}
                 
                 .label {{
@@ -146,10 +146,12 @@ class EmailService:
                     color: #495057;
                     width: 100px;
                     flex-shrink: 0;
+                    padding-top: 2px;
                 }}
                 
                 .value {{
                     color: #212529;
+                    flex: 1;
                 }}
                 
                 .chat-history {{
@@ -211,19 +213,19 @@ class EmailService:
                     <div class="info-box">
                         <h2>Contact Information</h2>
                         <div class="info-item">
-                            <span class="label">Name:</span>
+                            <span class="label">Name</span>
                             <span class="value">{user_name or 'Not provided'}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Email:</span>
+                            <span class="label">Email</span>
                             <span class="value">{user_email}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Phone:</span>
+                            <span class="label">Phone</span>
                             <span class="value">{phone_number or 'Not provided'}</span>
                         </div>
                         <div class="info-item">
-                            <span class="label">Location:</span>
+                            <span class="label">Location</span>
                             <span class="value">{clean_location}</span>
                         </div>
                     </div>
