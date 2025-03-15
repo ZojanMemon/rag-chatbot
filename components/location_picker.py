@@ -88,8 +88,10 @@ def get_map_html(current_language: str = "English") -> str:
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                     margin: 0;
-                    width: 100%;
+                    width: 94%;
                     justify-content: center;
+                    flex-wrap: wrap;
+
                 }}
                 button {{
                     flex: 1;
@@ -206,15 +208,12 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Update the Streamlit text input with more specific selector
-                            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
-                            if (addressInput) {{
-                                addressInput.value = address;
-                                // Trigger input event to ensure Streamlit recognizes the change
-                                const event = new Event('input', {{ bubbles: true }});
-                                addressInput.dispatchEvent(event);
-                            }}
+
+                            // Send confirmed address to Streamlit
+                            window.parent.postMessage({{
+                                type: 'streamlit:setComponentValue',
+                                address: address
+                            }}, '*');
                         }}
                     }});
             }}
@@ -223,15 +222,17 @@ def get_map_html(current_language: str = "English") -> str:
         // Initialize the map
         initMap();
 
-        // Check if there's a previously confirmed address and update the text input
+        // Check for previously confirmed address
         const savedAddress = localStorage.getItem('confirmedAddress');
         if (savedAddress) {{
-            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
-            if (addressInput) {{
-                addressInput.value = savedAddress;
-                const event = new Event('input', {{ bubbles: true }});
-                addressInput.dispatchEvent(event);
-            }}
+            document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+            document.getElementById('confirm-btn').classList.add('hidden');
+            
+            // Send saved address to Streamlit
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                address: savedAddress
+            }}, '*');
         }}
         </script>
     </body>
@@ -240,22 +241,31 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Display the map component
-    html(get_map_html(current_language), height=500)
+    # Create a unique key for the component
+    component_key = "map_location_picker"
+    
+    # Display the map component and get its value
+    confirmed_address = html(get_map_html(current_language), height=500, key=component_key)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        address = st.text_input("Confirm your address", key="manual_address_input")
+        # Auto-fill the address if we got one from the map component
+        address = st.text_input(
+            "Confirm your address",
+            value=confirmed_address if confirmed_address else "",
+            key="manual_address_input"
+        )
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state.confirmed_address = address
-                st.success(f"Location confirmed: {address}")
+                # Store in session state
+                st.session_state['confirmed_address'] = address
+                st.success("✅ Location confirmed!")
             else:
                 st.error("Please enter an address")
     
-    # Return the confirmed address from session state
-    return st.session_state.get("confirmed_address", "")
+    # Return the confirmed address if available
+    return st.session_state.get('confirmed_address', None)
