@@ -209,11 +209,14 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
 
-                            // Send confirmed address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'streamlit:setComponentValue',
-                                value: address
-                            }}, '*');
+                            // Update manual input via Streamlit
+                            const manualInput = document.querySelector('input[aria-label="Confirm your address"]');
+                            if (manualInput) {{
+                                manualInput.value = address;
+                                // Trigger input event to update Streamlit
+                                const event = new Event('input', {{ bubbles: true }});
+                                manualInput.dispatchEvent(event);
+                            }}
                         }}
                     }});
             }}
@@ -228,11 +231,14 @@ def get_map_html(current_language: str = "English") -> str:
             document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
             document.getElementById('confirm-btn').classList.add('hidden');
             
-            // Send saved address to Streamlit
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                value: savedAddress
-            }}, '*');
+            // Update manual input with saved address
+            const manualInput = document.querySelector('input[aria-label="Confirm your address"]');
+            if (manualInput) {{
+                manualInput.value = savedAddress;
+                // Trigger input event to update Streamlit
+                const event = new Event('input', {{ bubbles: true }});
+                manualInput.dispatchEvent(event);
+            }}
         }}
         </script>
     </body>
@@ -241,20 +247,18 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Create a unique key for the component
-    component_key = "map_location_picker"
-    
-    # Display the map component and get its value
-    map_component = html(get_map_html(current_language), height=500, key=component_key)
+    # Display the map component
+    html(get_map_html(current_language), height=500)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Auto-fill the address if we got one from the map component
+        # Get address from session state if available
+        saved_address = st.session_state.get('confirmed_address', '')
         address = st.text_input(
             "Confirm your address",
-            value=map_component if isinstance(map_component, str) else "",
+            value=saved_address,
             key="manual_address_input"
         )
     
