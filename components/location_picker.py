@@ -209,11 +209,17 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
                             
-                            // Update the Streamlit text input
-                            window.parent.document.querySelector('[data-testid="stTextInput"] input').value = address;
-                            // Trigger input event to ensure Streamlit recognizes the change
-                            const event = new Event('input', {{ bubbles: true }});
-                            window.parent.document.querySelector('[data-testid="stTextInput"] input').dispatchEvent(event);
+                            // Update the Streamlit text input using the specific key
+                            const inputs = window.parent.document.querySelectorAll('[data-testid="stTextInput"] input');
+                            const addressInput = Array.from(inputs).find(input => 
+                                input.parentElement.parentElement.textContent.includes('Confirm your address')
+                            );
+                            if (addressInput) {{
+                                addressInput.value = address;
+                                // Trigger input event to ensure Streamlit recognizes the change
+                                const event = new Event('input', {{ bubbles: true }});
+                                addressInput.dispatchEvent(event);
+                            }}
                         }}
                     }});
             }}
@@ -225,9 +231,15 @@ def get_map_html(current_language: str = "English") -> str:
         // Check if there's a previously confirmed address and update the text input
         const savedAddress = localStorage.getItem('confirmedAddress');
         if (savedAddress) {{
-            window.parent.document.querySelector('[data-testid="stTextInput"] input').value = savedAddress;
-            const event = new Event('input', {{ bubbles: true }});
-            window.parent.document.querySelector('[data-testid="stTextInput"] input').dispatchEvent(event);
+            const inputs = window.parent.document.querySelectorAll('[data-testid="stTextInput"] input');
+            const addressInput = Array.from(inputs).find(input => 
+                input.parentElement.parentElement.textContent.includes('Confirm your address')
+            );
+            if (addressInput) {{
+                addressInput.value = savedAddress;
+                const event = new Event('input', {{ bubbles: true }});
+                addressInput.dispatchEvent(event);
+            }}
         }}
         </script>
     </body>
