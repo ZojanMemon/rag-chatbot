@@ -40,6 +40,7 @@ def get_map_html(current_language: str = "English") -> str:
                 margin-top: 10px;
                 display: flex;
                 gap: 10px;
+                align-items: center;
             }}
             button {{
                 padding: 8px 16px;
@@ -47,6 +48,10 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 500;
+                transition: all 0.2s ease;
+            }}
+            button:hover {{
+                opacity: 0.9;
             }}
             .primary {{
                 background-color: #FF4B4B;
@@ -57,7 +62,7 @@ def get_map_html(current_language: str = "English") -> str:
                 color: #262730;
             }}
             .hidden {{
-                display: none;
+                display: none !important;
             }}
             #preview {{
                 margin-top: 10px;
@@ -65,6 +70,18 @@ def get_map_html(current_language: str = "English") -> str:
                 background-color: #f0f2f6;
                 border-radius: 4px;
                 font-size: 14px;
+                min-height: 42px;
+            }}
+            .leaflet-marker-icon {{
+                filter: hue-rotate(340deg);
+            }}
+            .custom-marker {{
+                background-color: #FF4B4B;
+                border: 2px solid white;
+                border-radius: 50%;
+                width: 12px;
+                height: 12px;
+                box-shadow: 0 0 4px rgba(0,0,0,0.3);
             }}
         </style>
     </head>
@@ -73,7 +90,7 @@ def get_map_html(current_language: str = "English") -> str:
         <div id="preview" style="min-height: 20px;"></div>
         <div class="controls">
             <button class="secondary" onclick="detectLocation()">{auto_detect_text}</button>
-            <button id="confirm-btn" class="primary hidden" onclick="confirmLocation()">{confirm_text}</button>
+            <button id="confirm-btn" class="primary" onclick="confirmLocation()">{confirm_text}</button>
         </div>
 
         <script>
@@ -91,7 +108,7 @@ def get_map_html(current_language: str = "English") -> str:
             // Add OpenStreetMap tiles
             L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                 maxZoom: 19,
-                attribution: '© OpenStreetMap contributors'
+                attribution: ' OpenStreetMap contributors'
             }}).addTo(map);
 
             // Add search control
@@ -107,9 +124,17 @@ def get_map_html(current_language: str = "English") -> str:
                 map.setView(location, 17);
             }});
 
-            // Add marker
+            // Create custom marker icon
+            const markerIcon = L.divIcon({{
+                className: 'custom-marker',
+                iconSize: [12, 12],
+                iconAnchor: [6, 6]
+            }});
+
+            // Add marker with custom icon
             marker = L.marker(defaultLocation, {{
-                draggable: true
+                draggable: true,
+                icon: markerIcon
             }}).addTo(map);
 
             // Handle marker drag
@@ -122,6 +147,9 @@ def get_map_html(current_language: str = "English") -> str:
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
+
+            // Initially hide the confirm button
+            document.getElementById('confirm-btn').classList.add('hidden');
         }}
 
         function updateMarker(latlng) {{
@@ -149,15 +177,23 @@ def get_map_html(current_language: str = "English") -> str:
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
             confirmedLocation = null;
+            // Show loading state
+            document.getElementById('preview').innerHTML = ' Loading address...';
+            document.getElementById('confirm-btn').classList.add('hidden');
+            
             // Use Nominatim for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                 .then(response => response.json())
                 .then(data => {{
                     if (data.display_name) {{
                         const address = data.display_name;
-                        document.getElementById('preview').innerHTML = `📍 ${{address}}`;
+                        document.getElementById('preview').innerHTML = ` ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
                     }}
+                }})
+                .catch(error => {{
+                    document.getElementById('preview').innerHTML = ' Error loading address';
+                    document.getElementById('confirm-btn').classList.add('hidden');
                 }});
         }}
 
@@ -170,11 +206,14 @@ def get_map_html(current_language: str = "English") -> str:
                             const address = data.display_name;
                             confirmedLocation = address;
                             
-                            // Store the address in localStorage
-                            localStorage.setItem('confirmedAddress', address);
+                            // Store the address in session state via Streamlit
+                            window.parent.postMessage({{
+                                type: 'streamlit:setComponentValue',
+                                value: ` ${{address}}`
+                            }}, '*');
                             
                             // Update UI
-                            document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                            document.getElementById('preview').innerHTML = ` ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
                         }}
                     }});
@@ -200,12 +239,7 @@ def show_location_picker(current_language: str = "English") -> None:
         address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
-        if st.button("Confirm Address", type="primary"):
+        if st.button("Save Address", type="primary"):
             if address:
-                st.session_state.confirmed_address = address
-                st.success(f"Location confirmed: {address}")
-            else:
-                st.error("Please enter an address")
-    
-    # Return the confirmed address from session state
-    return st.session_state.get("confirmed_address", "")
+                st.session_state['confirmed_location'] = f" {address}"
+                st.success("Address saved successfully!")
