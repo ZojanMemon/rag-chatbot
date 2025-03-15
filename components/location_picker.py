@@ -97,7 +97,7 @@ def get_map_html(current_language: str = "English") -> str:
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <script>
-            var map, marker, selectedLocation;
+            var map, marker, selectedLocation, currentAddress;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             
             // Initialize map when DOM is fully loaded
@@ -146,11 +146,9 @@ def get_map_html(current_language: str = "English") -> str:
                 var savedAddress = localStorage.getItem('confirmedAddress');
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-                    // Also update Streamlit with the saved address
-                    window.parent.postMessage({{
-                        type: 'streamlit:setComponentValue',
-                        value: {{ confirmedAddress: savedAddress }}
-                    }}, '*');
+                    
+                    // Send to Streamlit
+                    sendToStreamlit(savedAddress);
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -208,20 +206,27 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(response => response.json())
                     .then(data => {{
                         if (data.display_name) {{
-                            var address = data.display_name;
-                            document.getElementById('preview').innerHTML = `📍 ${{address}}`;
-                            
-                            // Send the selected address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'selectedAddress',
-                                address: address
-                            }}, '*');
+                            currentAddress = data.display_name;
+                            document.getElementById('preview').innerHTML = `📍 ${{currentAddress}}`;
                         }}
                     }})
                     .catch(error => {{
                         console.error("Error in reverse geocoding:", error);
                         document.getElementById('preview').innerHTML = "Error loading address.";
                     }});
+            }}
+            
+            function sendToStreamlit(address) {{
+                // Use Streamlit's component communication API
+                if (window.Streamlit) {{
+                    window.Streamlit.setComponentValue(address);
+                }} else {{
+                    // Fallback method
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: address
+                    }}, '*');
+                }}
             }}
             
             function confirmLocation() {{
@@ -241,11 +246,8 @@ def get_map_html(current_language: str = "English") -> str:
                                 // Update UI
                                 document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                                 
-                                // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'streamlit:setComponentValue',
-                                    value: {{ confirmedAddress: address }}
-                                }}, '*');
+                                // Send to Streamlit
+                                sendToStreamlit(address);
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
@@ -278,23 +280,17 @@ def show_location_picker(current_language: str = "English") -> str:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Simple implementation without complex component callbacks
-    map_html = get_map_html(current_language)
-    html(map_html, height=550)
+    # Create a component with a key
+    component_key = "map_component"
     
-    # Add a simple form for manual address confirmation
-    with st.form(key="location_form"):
-        # Pre-fill with any address from the map if available
-        address = st.text_input(
-            "Confirm your location",
-            value=st.session_state.get("confirmed_address", ""),
-            key="manual_address_input"
-        )
-        
-        # Submit button
-        submit = st.form_submit_button("Confirm Address")
-        if submit and address:
-            st.session_state.confirmed_address = address
+    # Display the map component
+    address = html(get_map_html(current_language), height=550, key=component_key)
+    
+    # If the component returns a value, update the session state
+    if address:
+        st.session_state.confirmed_address = address
+        # Show success message
+        st.success(f"✅ Location confirmed: {address}")
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
