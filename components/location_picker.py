@@ -84,7 +84,7 @@ def get_map_html(current_language: str = "English") -> str:
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script>
-            var map, marker, selectedLocation;
+            var map, marker, selectedLocation, currentAddress;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             
             // Initialize map
@@ -105,24 +105,37 @@ def get_map_html(current_language: str = "English") -> str:
                 marker.on('dragend', function(e) {{
                     var pos = e.target.getLatLng();
                     selectedLocation = [pos.lat, pos.lng];
-                    updatePreview();
+                    getAddressFromCoordinates(selectedLocation);
                 }});
                 
                 // Handle map click
                 map.on('click', function(e) {{
                     marker.setLatLng(e.latlng);
                     selectedLocation = [e.latlng.lat, e.latlng.lng];
-                    updatePreview();
+                    getAddressFromCoordinates(selectedLocation);
                 }});
                 
-                // Update preview initially
-                updatePreview();
+                // Get initial address
+                getAddressFromCoordinates(defaultLocation);
             }}
             
-            // Update preview with coordinates
-            function updatePreview() {{
-                document.getElementById('preview').innerHTML = 
-                    `📍 Latitude: ${{selectedLocation[0].toFixed(6)}}, Longitude: ${{selectedLocation[1].toFixed(6)}}`;
+            // Get address from coordinates using Nominatim
+            function getAddressFromCoordinates(latlng) {{
+                document.getElementById('preview').innerHTML = "{loading_text}";
+                
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.display_name) {{
+                            currentAddress = data.display_name;
+                            document.getElementById('preview').innerHTML = `📍 ${{currentAddress}}`;
+                        }} else {{
+                            document.getElementById('preview').innerHTML = `📍 Latitude: ${{latlng[0].toFixed(6)}}, Longitude: ${{latlng[1].toFixed(6)}}`;
+                        }}
+                    }})
+                    .catch(error => {{
+                        document.getElementById('preview').innerHTML = `📍 Latitude: ${{latlng[0].toFixed(6)}}, Longitude: ${{latlng[1].toFixed(6)}}`;
+                    }});
             }}
             
             // Detect current location
@@ -137,7 +150,7 @@ def get_map_html(current_language: str = "English") -> str:
                             map.setView(pos, 15);
                             marker.setLatLng(pos);
                             selectedLocation = pos;
-                            updatePreview();
+                            getAddressFromCoordinates(selectedLocation);
                             
                             document.getElementById('detect-btn').disabled = false;
                             document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
@@ -161,14 +174,19 @@ def get_map_html(current_language: str = "English") -> str:
             // Confirm location
             function confirmLocation() {{
                 if (selectedLocation) {{
-                    var locationString = `Latitude: ${{selectedLocation[0].toFixed(6)}}, Longitude: ${{selectedLocation[1].toFixed(6)}}`;
-                    document.getElementById('preview').innerHTML = `✅ ${{locationString}}`;
+                    // Get the current address from the preview
+                    var addressToConfirm = document.getElementById('preview').innerText;
+                    if (addressToConfirm.startsWith('📍 ')) {{
+                        addressToConfirm = addressToConfirm.substring(2); // Remove the 📍 emoji
+                    }}
+                    
+                    document.getElementById('preview').innerHTML = `✅ ${{addressToConfirm}}`;
                     
                     // Try to get the parent window to set a value
                     try {{
                         window.parent.postMessage({{
                             type: 'location',
-                            value: locationString
+                            value: addressToConfirm
                         }}, '*');
                     }} catch (e) {{
                         console.error("Error posting message:", e);

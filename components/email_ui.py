@@ -141,27 +141,30 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             
-            # Create a share button
-            if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
-                if location:
-                    # Show a spinner while sending email
-                    with st.spinner("Sending..."):
-                        email_service = EmailService()
-                        success, error = email_service.send_email(
-                            recipient_email=emergency_types[emergency_type],
-                            chat_history=messages,
-                            user_email=user_email,
-                            emergency_type=emergency_type,
-                            user_name=user_name,
-                            phone_number=phone_number,
-                            location=location
-                        )
-                        
-                        if success:
-                            st.success(success_message.format(emergency_labels[emergency_type]))
-                            # Clear location after successful send
-                            st.session_state.confirmed_address = ""
-                        else:
-                            st.error(f"{error_message}: {error}")
-                else:
+            # Create a share button - always enabled
+            if st.button(share_button_text, type="primary", use_container_width=True):
+                # If no location is set, show a warning but proceed
+                if not location:
                     st.warning(no_location_warning)
+                    # Set a default location if none is provided
+                    location = "No location provided"
+                
+                # Show a spinner while sending email
+                with st.spinner("Sending..."):
+                    email_service = EmailService()
+                    success, error = email_service.send_email(
+                        recipient_email=emergency_types[emergency_type],
+                        chat_history=messages,
+                        user_email=user_email,
+                        emergency_type=emergency_type,
+                        user_name=user_name,
+                        phone_number=phone_number,
+                        location=location
+                    )
+                    
+                    if success:
+                        st.success(success_message.format(emergency_labels[emergency_type]))
+                        # Clear location after successful send
+                        st.session_state.confirmed_address = ""
+                    else:
+                        st.error(f"{error_message}: {error}")
