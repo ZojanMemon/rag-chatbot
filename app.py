@@ -450,7 +450,6 @@ def main():
             border: none !important;
         }
 
-        /* Selectbox options */
         .stSelectbox > div > div > div {
             background-color: #252525 !important;
             color: #e0e0e0 !important;
@@ -530,6 +529,32 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
+    # Add custom CSS for responsive heading
+    st.markdown("""
+    <style>
+        /* Clean, minimal heading style */
+        .main-heading {
+            font-size: 24px !important;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
+            margin: 1rem 0 !important;
+            padding: 0 !important;
+            color: #262730 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+        
+        /* Mobile responsiveness */
+        @media screen and (max-width: 480px) {
+            .main-heading {
+                font-size: 20px !important;
+                margin: 0.75rem 0 !important;
+            }
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
     # Display main heading
     st.markdown("<h1 class='main-heading'>🚨 Welcome to the Disaster Management Assistant</h1>", unsafe_allow_html=True)
 
@@ -537,9 +562,13 @@ def main():
     is_authenticated, user = auth_page()
     
     if not is_authenticated:
-        st.error("⚠️ Authentication Required")
-        st.info("Please log in or sign up to access the Disaster Management Assistant.")
-        st.stop()
+        st.markdown("""
+        <div style="text-align: center; padding: 20px;">
+        <h2></h2>
+        <p></p>
+        </div>
+        """, unsafe_allow_html=True)
+        return
     
     # User is authenticated
     user_id = user['uid']
