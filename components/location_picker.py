@@ -189,22 +189,6 @@ def get_map_html(current_language: str = "English") -> str:
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
-
-                        // Automatically click the confirm button
-                        const confirmBtn = document.querySelector('button[kind="primary"]');
-                        if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
-                            // First update the input field
-                            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
-                            if (manualInput) {{
-                                manualInput.value = address;
-                                // Trigger input event
-                                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                                // Wait for Streamlit to process the input
-                                setTimeout(() => {{
-                                    confirmBtn.click();
-                                }}, 100);
-                            }}
-                        }}
                     }}
                 }});
         }}
@@ -224,22 +208,6 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-
-                            // Automatically click the confirm button
-                            const confirmBtn = document.querySelector('button[kind="primary"]');
-                            if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
-                                // First update the input field
-                                const manualInput = document.querySelector('input[data-testid="stTextInput"]');
-                                if (manualInput) {{
-                                    manualInput.value = address;
-                                    // Trigger input event
-                                    manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                                    // Wait for Streamlit to process the input
-                                    setTimeout(() => {{
-                                        confirmBtn.click();
-                                    }}, 100);
-                                }}
-                            }}
                         }}
                     }});
             }}
@@ -247,24 +215,6 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
-
-        // Check for previously confirmed address
-        const savedAddress = localStorage.getItem('confirmedAddress');
-        if (savedAddress) {{
-            document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-            document.getElementById('confirm-btn').classList.add('hidden');
-            
-            // Automatically fill and confirm the address
-            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
-            const confirmBtn = document.querySelector('button[kind="primary"]');
-            if (manualInput && confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
-                manualInput.value = savedAddress;
-                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
-                setTimeout(() => {{
-                    confirmBtn.click();
-                }}, 100);
-            }}
-        }}
         </script>
     </body>
     </html>
@@ -279,22 +229,15 @@ def show_location_picker(current_language: str = "English") -> None:
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Get address from session state if available
-        saved_address = st.session_state.get('confirmed_address', '')
-        address = st.text_input(
-            "Confirm your address",
-            value=saved_address,
-            key="manual_address_input"
-        )
+        address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                # Store in session state
-                st.session_state['confirmed_address'] = address
-                st.success("✅ Location confirmed!")
+                st.session_state.confirmed_address = address
+                st.success(f"Location confirmed: {address}")
             else:
                 st.error("Please enter an address")
     
-    # Return the confirmed address if available
-    return st.session_state.get('confirmed_address', None)
+    # Return the confirmed address from session state
+    return st.session_state.get("confirmed_address", "")
