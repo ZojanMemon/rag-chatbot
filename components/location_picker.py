@@ -1,10 +1,11 @@
 """Location picker component with OpenStreetMap integration."""
 import streamlit as st
 import requests
+import json
 from typing import Optional, Tuple
 from streamlit.components.v1 import html
 
-def get_map_html(current_language: str = "English") -> str:
+def get_map_html(current_language: str = "English", key: str = "location_picker") -> str:
     """Generate HTML for OpenStreetMap component with search."""
     # Translations
     if current_language == "Urdu":
@@ -108,6 +109,7 @@ def get_map_html(current_language: str = "English") -> str:
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             var isDragging = false;
             var debounceTimer;
+            var componentKey = "{key}";
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -183,10 +185,7 @@ def get_map_html(current_language: str = "English") -> str:
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
-                    window.parent.postMessage({{
-                        type: 'confirmedAddress',
-                        address: savedAddress
-                    }}, '*');
+                    updateStreamlit(savedAddress, false);
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -262,16 +261,25 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
                             // Send the selected address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'selectedAddress',
-                                address: address
-                            }}, '*');
+                            updateStreamlit(address, false);
                         }}
                     }})
                     .catch(error => {{
                         console.error("Error in reverse geocoding:", error);
                         document.getElementById('preview').innerHTML = "Error loading address.";
                     }});
+            }}
+            
+            function updateStreamlit(address, isConfirmed) {{
+                // Send to Streamlit using the component communication API
+                window.parent.postMessage({{
+                    type: "streamlit:setComponentValue",
+                    value: {{
+                        address: address,
+                        isConfirmed: isConfirmed,
+                        key: componentKey
+                    }}
+                }}, "*");
             }}
             
             function confirmLocation() {{
@@ -292,20 +300,7 @@ def get_map_html(current_language: str = "English") -> str:
                                 document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                                 
                                 // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'confirmedAddress',
-                                    address: address
-                                }}, '*');
-                                
-                                // Also update the manual input field if it exists
-                                try {{
-                                    window.parent.document.querySelector('[data-testid="stText"] + div [data-testid="stFormSubmitButton"] ~ div input').value = address;
-                                    // Trigger an input event to make Streamlit recognize the change
-                                    const event = new Event('input', {{ bubbles: true }});
-                                    window.parent.document.querySelector('[data-testid="stText"] + div [data-testid="stFormSubmitButton"] ~ div input').dispatchEvent(event);
-                                }} catch (e) {{
-                                    console.log("Could not update input field automatically:", e);
-                                }}
+                                updateStreamlit(address, true);
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
@@ -338,43 +333,28 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Create a container for JavaScript communication
-    placeholder = st.empty()
-    
-    # Handle component -> Streamlit communication
-    components_js = """
-    <script>
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'confirmedAddress') {
-            // Send to Streamlit
-            const data = {
-                address: event.data.address,
-                isConfirmed: true
-            };
-            window.parent.postMessage({
-                type: "streamlit:setComponentValue",
-                value: data
-            }, "*");
-        }
-    });
-    </script>
-    """
-    html(components_js, height=0)
+    # Generate a unique key for this instance
+    component_key = "location_picker"
     
     # Display the map component with increased height
-    component_value = html(get_map_html(current_language), height=550)
+    component_value = html(get_map_html(current_language, component_key), height=550, key=component_key)
     
     # Process any returned data from the component
     if component_value and isinstance(component_value, dict):
-        if component_value.get('isConfirmed') and component_value.get('address'):
-            st.session_state.confirmed_address = component_value['address']
+        if component_value.get('address'):
+            # Store the selected address in session state
+            st.session_state.selected_address = component_value['address']
+            
+            # If confirmed, update the confirmed address
+            if component_value.get('isConfirmed'):
+                st.session_state.confirmed_address = component_value['address']
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Pre-fill with confirmed address if available
-        default_value = st.session_state.confirmed_address if st.session_state.confirmed_address else ""
+        # Pre-fill with selected or confirmed address if available
+        default_value = st.session_state.get('selected_address', st.session_state.confirmed_address)
         address = st.text_input(
             "Confirm your address", 
             value=default_value,
