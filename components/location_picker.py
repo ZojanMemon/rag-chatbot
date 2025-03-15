@@ -66,6 +66,23 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 font-size: 14px;
             }}
+            /* Style for the search control */
+            .leaflet-control-geocoder {{
+                clear: both;
+                margin: 10px !important;
+                max-width: 300px !important;
+            }}
+            .leaflet-control-geocoder-form input {{
+                padding: 8px 12px !important;
+                border: 1px solid #ccc !important;
+                border-radius: 4px !important;
+                width: 100% !important;
+                font-size: 14px !important;
+            }}
+            /* Style for the location marker */
+            .leaflet-marker-icon {{
+                filter: hue-rotate(340deg);
+            }}
         </style>
     </head>
     <body>
@@ -93,7 +110,15 @@ def get_map_html(current_language: str = "English") -> str:
                 const geocoder = L.Control.geocoder({{
                     defaultMarkGeocode: false,
                     placeholder: "{search_placeholder}",
-                    collapsed: false
+                    collapsed: false,
+                    position: 'topleft',
+                    geocoder: L.Control.Geocoder.nominatim({{
+                        geocodingQueryParams: {{
+                            countrycodes: 'pk',
+                            viewbox: '60.8742,37.0974,77.8401,23.6345',
+                            bounded: 1
+                        }}
+                    }})
                 }}).addTo(map);
 
                 geocoder.on('markgeocode', function(e) {{
@@ -102,8 +127,19 @@ def get_map_html(current_language: str = "English") -> str:
                     map.setView(location, 17);
                 }});
 
+                const markerIcon = L.icon({{
+                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                }});
+
                 marker = L.marker([30.3753, 69.3451], {{
-                    draggable: true
+                    draggable: true,
+                    icon: markerIcon
                 }}).addTo(map);
 
                 marker.on('dragend', function(e) {{
@@ -114,6 +150,12 @@ def get_map_html(current_language: str = "English") -> str:
                 map.on('click', function(e) {{
                     updateMarker([e.latlng.lat, e.latlng.lng]);
                 }});
+
+                // Try to restore previous location
+                const savedAddress = localStorage.getItem('confirmedAddress');
+                if (savedAddress) {{
+                    document.getElementById('preview').innerHTML = `📍 ${{savedAddress}}`;
+                }}
             }}
 
             function updateMarker(latlng) {{
@@ -174,7 +216,7 @@ def get_map_html(current_language: str = "English") -> str:
                                 
                                 window.parent.postMessage({{
                                     type: 'streamlit:setComponentValue',
-                                    value: address
+                                    value: `✅ ${{address}}`
                                 }}, '*');
                             }}
                         }});
