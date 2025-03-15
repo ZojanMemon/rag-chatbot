@@ -209,16 +209,13 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
                             
-                            // Update the Streamlit text input by key
-                            const inputs = window.parent.document.querySelectorAll('[data-testid="stTextInput"] input');
-                            for (const input of inputs) {{
-                                if (input.getAttribute('aria-label') === 'Confirm your address') {{
-                                    input.value = address;
-                                    // Trigger input event to ensure Streamlit recognizes the change
-                                    const event = new Event('input', {{ bubbles: true }});
-                                    input.dispatchEvent(event);
-                                    break;
-                                }}
+                            // Update the Streamlit text input with more specific selector
+                            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
+                            if (addressInput) {{
+                                addressInput.value = address;
+                                // Trigger input event to ensure Streamlit recognizes the change
+                                const event = new Event('input', {{ bubbles: true }});
+                                addressInput.dispatchEvent(event);
                             }}
                         }}
                     }});
@@ -231,14 +228,11 @@ def get_map_html(current_language: str = "English") -> str:
         // Check if there's a previously confirmed address and update the text input
         const savedAddress = localStorage.getItem('confirmedAddress');
         if (savedAddress) {{
-            const inputs = window.parent.document.querySelectorAll('[data-testid="stTextInput"] input');
-            for (const input of inputs) {{
-                if (input.getAttribute('aria-label') === 'Confirm your address') {{
-                    input.value = savedAddress;
-                    const event = new Event('input', {{ bubbles: true }});
-                    input.dispatchEvent(event);
-                    break;
-                }}
+            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
+            if (addressInput) {{
+                addressInput.value = savedAddress;
+                const event = new Event('input', {{ bubbles: true }});
+                addressInput.dispatchEvent(event);
             }}
         }}
         </script>
@@ -255,7 +249,6 @@ def show_location_picker(current_language: str = "English") -> None:
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Label is important as it's used by JavaScript to find this input
         address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
