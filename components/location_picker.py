@@ -29,23 +29,17 @@ def get_map_html(current_language: str = "English") -> str:
         <title>Location Picker</title>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
             body {{
                 margin: 0;
                 padding: 0;
                 font-family: Arial, sans-serif;
             }}
-            #map-container {{
-                position: relative;
+            #map {{
                 height: 400px;
                 width: 100%;
-            }}
-            #map {{
-                height: 100%;
-                width: 100%;
                 border-radius: 8px;
+                z-index: 0;
             }}
             .controls {{
                 margin-top: 10px;
@@ -75,37 +69,43 @@ def get_map_html(current_language: str = "English") -> str:
                 font-size: 14px;
                 min-height: 20px;
             }}
-            /* Fix for marker icon */
-            .leaflet-marker-icon {{
-                width: 25px !important;
-                height: 41px !important;
+            .leaflet-control-geocoder {{
+                clear: both;
+                margin-top: 10px;
+                width: 100%;
+                max-width: none;
+                border-radius: 4px;
+                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            }}
+            .leaflet-control-geocoder-form input {{
+                width: 100%;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                font-size: 14px;
             }}
         </style>
     </head>
     <body>
-        <div id="map-container">
-            <div id="map"></div>
-        </div>
+        <div id="map"></div>
         <div id="preview"></div>
         <div class="controls">
             <button class="secondary" id="detect-btn" onclick="detectLocation()">{auto_detect_text}</button>
             <button class="primary" id="confirm-btn" onclick="confirmLocation()">{confirm_text}</button>
         </div>
 
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <script>
-            // Initialize variables
             var map, marker, selectedLocation;
+            var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             
-            // Initialize map when the page loads
-            window.onload = function() {{
-                initMap();
-            }};
+            // Initialize map when DOM is fully loaded
+            document.addEventListener('DOMContentLoaded', function() {{
+                initializeMap();
+            }});
             
-            function initMap() {{
-                // Default location (center of Pakistan)
-                var defaultLocation = [30.3753, 69.3451];
-                selectedLocation = defaultLocation; // Initialize with default location
-                
+            function initializeMap() {{
                 // Create map
                 map = L.map('map').setView(defaultLocation, 5);
                 
@@ -114,16 +114,9 @@ def get_map_html(current_language: str = "English") -> str:
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }}).addTo(map);
                 
-                // Create custom icon for marker
-                var markerIcon = L.icon({{
-                    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-                    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-                    iconSize: [25, 41],
-                    iconAnchor: [12, 41],
-                    popupAnchor: [1, -34],
-                    shadowSize: [41, 41]
-                }});
+                // Create marker
+                marker = L.marker(defaultLocation, {{ draggable: true }}).addTo(map);
+                selectedLocation = defaultLocation;
                 
                 // Add geocoder control
                 var geocoder = L.Control.geocoder({{
@@ -137,12 +130,6 @@ def get_map_html(current_language: str = "English") -> str:
                     updateMarker([location.lat, location.lng]);
                     map.setView([location.lat, location.lng], 15);
                 }});
-                
-                // Add marker with custom icon
-                marker = L.marker(defaultLocation, {{
-                    draggable: true,
-                    icon: markerIcon
-                }}).addTo(map);
                 
                 // Handle marker drag
                 marker.on('dragend', function(e) {{
@@ -164,14 +151,15 @@ def get_map_html(current_language: str = "English") -> str:
                         type: 'confirmedAddress',
                         address: savedAddress
                     }}, '*');
+                }} else {{
+                    // Get initial address for the default location
+                    updateLocationPreview(defaultLocation);
                 }}
                 
                 // Force map to resize after a delay
                 setTimeout(function() {{
                     map.invalidateSize();
-                    // Get initial address for the default location
-                    updateLocationPreview(defaultLocation);
-                }}, 200);
+                }}, 300);
             }}
             
             function updateMarker(latlng) {{
@@ -202,7 +190,7 @@ def get_map_html(current_language: str = "English") -> str:
                         }},
                         {{
                             enableHighAccuracy: true,
-                            timeout: 5000,
+                            timeout: 10000,
                             maximumAge: 0
                         }}
                     );
@@ -273,6 +261,11 @@ def get_map_html(current_language: str = "English") -> str:
                 }} else {{
                     alert('Please select a location first.');
                 }}
+            }}
+            
+            // Initialize map immediately as a fallback
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {{
+                setTimeout(initializeMap, 1);
             }}
         </script>
     </body>
