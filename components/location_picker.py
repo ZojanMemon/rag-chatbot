@@ -157,6 +157,9 @@ def get_map_html(current_language: str = "English") -> str:
                     
                     // Update Streamlit input field
                     updateStreamlitInputField(savedAddress);
+                    
+                    // Update Streamlit session state directly
+                    updateStreamlitSessionState(savedAddress);
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -251,6 +254,9 @@ def get_map_html(current_language: str = "English") -> str:
                         address: selectedAddress
                     }}, '*');
                     
+                    // Update Streamlit session state directly
+                    updateStreamlitSessionState(selectedAddress);
+                    
                     // Update Streamlit input field and trigger confirmation
                     updateStreamlitInputField(selectedAddress, true);
                     
@@ -270,6 +276,14 @@ def get_map_html(current_language: str = "English") -> str:
                 }}, '*');
             }}
             
+            function updateStreamlitSessionState(address) {{
+                // Send message to update Streamlit session state directly
+                window.parent.postMessage({{
+                    type: 'streamlit:setComponentValue',
+                    value: address
+                }}, '*');
+            }}
+            
             // Initialize map immediately as a fallback
             if (document.readyState === 'complete' || document.readyState === 'interactive') {{
                 setTimeout(initializeMap, 1);
@@ -279,8 +293,12 @@ def get_map_html(current_language: str = "English") -> str:
     </html>
     """
 
-def show_location_picker(current_language: str = "English") -> None:
-    """Show location picker with OpenStreetMap integration."""
+def show_location_picker(current_language: str = "English") -> str:
+    """Show location picker with OpenStreetMap integration.
+    
+    Returns:
+        str: The confirmed address
+    """
     # Initialize session state for confirmed address if not exists
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
@@ -317,13 +335,25 @@ def show_location_picker(current_language: str = "English") -> None:
                     }
                 }
             }
+            
+            // Direct update to session state
+            if (event.data.type === 'confirmedAddress') {
+                // Use Streamlit's setComponentValue to update session state
+                if (window.parent && window.parent.Streamlit) {
+                    window.parent.Streamlit.setComponentValue(event.data.address);
+                }
+            }
         });
         </script>
         """
         html(components_js, height=0)
         
         # Display the map
-        html(get_map_html(current_language), height=550)
+        map_component = html(get_map_html(current_language), height=550, key="location_map")
+        
+        # Update session state if the component returns a value
+        if map_component:
+            st.session_state.confirmed_address = map_component
     
     # Add a separate button to manually confirm the location
     with input_container:
