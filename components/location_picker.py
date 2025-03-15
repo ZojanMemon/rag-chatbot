@@ -99,6 +99,7 @@ def get_map_html(current_language: str = "English") -> str:
         <script>
             var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
+            var currentAddress = "";
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -146,6 +147,8 @@ def get_map_html(current_language: str = "English") -> str:
                 var savedAddress = localStorage.getItem('confirmedAddress');
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                    currentAddress = savedAddress;
+                    
                     // Also update Streamlit with the saved address
                     window.parent.postMessage({{
                         type: 'streamlit:setComponentValue',
@@ -209,13 +212,8 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(data => {{
                         if (data.display_name) {{
                             var address = data.display_name;
+                            currentAddress = address;
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
-                            
-                            // Send the selected address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'selectedAddress',
-                                address: address
-                            }}, '*');
                         }}
                     }})
                     .catch(error => {{
@@ -229,35 +227,76 @@ def get_map_html(current_language: str = "English") -> str:
                     document.getElementById('confirm-btn').disabled = true;
                     document.getElementById('confirm-btn').innerHTML = "Confirming...";
                     
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                        .then(response => response.json())
-                        .then(data => {{
-                            if (data.display_name) {{
-                                var address = data.display_name;
-                                
-                                // Store the address in localStorage
-                                localStorage.setItem('confirmedAddress', address);
-                                
-                                // Update UI
-                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                                
-                                // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'streamlit:setComponentValue',
-                                    value: {{ confirmedAddress: address }}
-                                }}, '*');
+                    if (currentAddress) {{
+                        // Store the address in localStorage
+                        localStorage.setItem('confirmedAddress', currentAddress);
+                        
+                        // Update UI
+                        document.getElementById('preview').innerHTML = `✅ ${{currentAddress}}`;
+                        
+                        // Send the confirmed address to Streamlit
+                        window.parent.postMessage({{
+                            type: 'streamlit:setComponentValue',
+                            value: {{ confirmedAddress: currentAddress }}
+                        }}, '*');
+                        
+                        // Update the manual input field in the form
+                        try {{
+                            // Find the form input field by key and update its value
+                            const event = new CustomEvent('streamlit:setManualAddress', {{ 
+                                detail: {{ address: currentAddress }}
+                            }});
+                            window.parent.document.dispatchEvent(event);
+                        }} catch (e) {{
+                            console.error("Error updating form:", e);
+                        }}
+                        
+                        document.getElementById('confirm-btn').disabled = false;
+                        document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                    }} else {{
+                        // If we don't have an address yet, try to get it
+                        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
+                            .then(response => response.json())
+                            .then(data => {{
+                                if (data.display_name) {{
+                                    var address = data.display_name;
+                                    currentAddress = address;
+                                    
+                                    // Store the address in localStorage
+                                    localStorage.setItem('confirmedAddress', address);
+                                    
+                                    // Update UI
+                                    document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                                    
+                                    // Send the confirmed address to Streamlit
+                                    window.parent.postMessage({{
+                                        type: 'streamlit:setComponentValue',
+                                        value: {{ confirmedAddress: address }}
+                                    }}, '*');
+                                    
+                                    // Update the manual input field in the form
+                                    try {{
+                                        // Find the form input field by key and update its value
+                                        const event = new CustomEvent('streamlit:setManualAddress', {{ 
+                                            detail: {{ address: address }}
+                                        }});
+                                        window.parent.document.dispatchEvent(event);
+                                    }} catch (e) {{
+                                        console.error("Error updating form:", e);
+                                    }}
+                                }}
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                            }}
-                        }})
-                        .catch(error => {{
-                            console.error("Error confirming location:", error);
-                            document.getElementById('preview').innerHTML = "Error confirming location.";
-                            
-                            document.getElementById('confirm-btn').disabled = false;
-                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                        }});
+                            }})
+                            .catch(error => {{
+                                console.error("Error confirming location:", error);
+                                document.getElementById('preview').innerHTML = "Error confirming location.";
+                                
+                                document.getElementById('confirm-btn').disabled = false;
+                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                            }});
+                    }}
                 }} else {{
                     alert('Please select a location first.');
                 }}
@@ -277,6 +316,36 @@ def show_location_picker(current_language: str = "English") -> str:
     # Initialize session state for confirmed address if not exists
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
+    
+    # Add a JavaScript listener for the custom event
+    st.markdown("""
+    <script>
+    // Listen for the custom event from the map component
+    document.addEventListener('streamlit:setManualAddress', function(event) {
+        // Get all inputs on the page
+        const inputs = document.querySelectorAll('input');
+        
+        // Find the input with data-testid containing "manual_address_input"
+        for (let input of inputs) {
+            if (input.getAttribute('data-testid') && 
+                input.getAttribute('data-testid').includes('manual_address_input')) {
+                // Set the value
+                input.value = event.detail.address;
+                
+                // Trigger an input event to notify Streamlit
+                const inputEvent = new Event('input', { bubbles: true });
+                input.dispatchEvent(inputEvent);
+                
+                // Also trigger a change event
+                const changeEvent = new Event('change', { bubbles: true });
+                input.dispatchEvent(changeEvent);
+                
+                break;
+            }
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
     
     # Simple implementation without complex component callbacks
     map_html = get_map_html(current_language)
