@@ -1,11 +1,10 @@
 """Location picker component with OpenStreetMap integration."""
 import streamlit as st
 import requests
-import json
 from typing import Optional, Tuple
 from streamlit.components.v1 import html
 
-def get_map_html(current_language: str = "English", key: str = "location_picker") -> str:
+def get_map_html(current_language: str = "English") -> str:
     """Generate HTML for OpenStreetMap component with search."""
     # Translations
     if current_language == "Urdu":
@@ -109,7 +108,6 @@ def get_map_html(current_language: str = "English", key: str = "location_picker"
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             var isDragging = false;
             var debounceTimer;
-            var componentKey = "{key}";
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -185,7 +183,10 @@ def get_map_html(current_language: str = "English", key: str = "location_picker"
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
-                    updateStreamlit(savedAddress, false);
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: savedAddress
+                    }}, '*');
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -261,25 +262,16 @@ def get_map_html(current_language: str = "English", key: str = "location_picker"
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
                             // Send the selected address to Streamlit
-                            updateStreamlit(address, false);
+                            window.parent.postMessage({{
+                                type: 'streamlit:setComponentValue',
+                                value: address
+                            }}, '*');
                         }}
                     }})
                     .catch(error => {{
                         console.error("Error in reverse geocoding:", error);
                         document.getElementById('preview').innerHTML = "Error loading address.";
                     }});
-            }}
-            
-            function updateStreamlit(address, isConfirmed) {{
-                // Send to Streamlit using the component communication API
-                window.parent.postMessage({{
-                    type: "streamlit:setComponentValue",
-                    value: {{
-                        address: address,
-                        isConfirmed: isConfirmed,
-                        key: componentKey
-                    }}
-                }}, "*");
             }}
             
             function confirmLocation() {{
@@ -300,7 +292,10 @@ def get_map_html(current_language: str = "English", key: str = "location_picker"
                                 document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                                 
                                 // Send the confirmed address to Streamlit
-                                updateStreamlit(address, true);
+                                window.parent.postMessage({{
+                                    type: 'streamlit:setComponentValue',
+                                    value: address
+                                }}, '*');
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
@@ -333,22 +328,15 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Generate a unique key for this instance
-    component_key = "location_picker"
-    
     # Display the map component with increased height
-    component_value = html(get_map_html(current_language, component_key), height=550, key=component_key)
+    map_html = get_map_html(current_language)
+    result = html(map_html, height=550)
     
     # Process any returned data from the component
-    if component_value and isinstance(component_value, dict):
-        if component_value.get('address'):
-            # Store the selected address in session state
-            st.session_state.selected_address = component_value['address']
-            
-            # If confirmed, update the confirmed address
-            if component_value.get('isConfirmed'):
-                st.session_state.confirmed_address = component_value['address']
-    
+    if result:
+        # Store the address in session state
+        st.session_state.selected_address = result
+        
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
