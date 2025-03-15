@@ -450,6 +450,7 @@ def main():
             border: none !important;
         }
 
+        /* Selectbox options */
         .stSelectbox > div > div > div {
             background-color: #252525 !important;
             color: #e0e0e0 !important;
@@ -527,32 +528,6 @@ def main():
             }
         }
         </style>
-    """, unsafe_allow_html=True)
-
-    # Add custom CSS for responsive heading
-    st.markdown("""
-    <style>
-        /* Clean, minimal heading style */
-        .main-heading {
-            font-size: 24px !important;
-            font-weight: 600 !important;
-            line-height: 1.3 !important;
-            margin: 1rem 0 !important;
-            padding: 0 !important;
-            color: #262730 !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-        }
-        
-        /* Mobile responsiveness */
-        @media screen and (max-width: 480px) {
-            .main-heading {
-                font-size: 20px !important;
-                margin: 0.75rem 0 !important;
-            }
-        }
-    </style>
     """, unsafe_allow_html=True)
 
     # Display main heading
