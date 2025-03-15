@@ -297,6 +297,16 @@ def get_map_html(current_language: str = "English") -> str:
                                     address: address
                                 }}, '*');
                                 
+                                // Also update the manual input field if it exists
+                                try {{
+                                    window.parent.document.querySelector('[data-testid="stText"] + div [data-testid="stFormSubmitButton"] ~ div input').value = address;
+                                    // Trigger an input event to make Streamlit recognize the change
+                                    const event = new Event('input', {{ bubbles: true }});
+                                    window.parent.document.querySelector('[data-testid="stText"] + div [data-testid="stFormSubmitButton"] ~ div input').dispatchEvent(event);
+                                }} catch (e) {{
+                                    console.log("Could not update input field automatically:", e);
+                                }}
+                                
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
                             }}
@@ -328,16 +338,46 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
+    # Create a container for JavaScript communication
+    placeholder = st.empty()
+    
+    # Handle component -> Streamlit communication
+    components_js = """
+    <script>
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'confirmedAddress') {
+            // Send to Streamlit
+            const data = {
+                address: event.data.address,
+                isConfirmed: true
+            };
+            window.parent.postMessage({
+                type: "streamlit:setComponentValue",
+                value: data
+            }, "*");
+        }
+    });
+    </script>
+    """
+    html(components_js, height=0)
+    
     # Display the map component with increased height
-    html(get_map_html(current_language), height=550)
+    component_value = html(get_map_html(current_language), height=550)
+    
+    # Process any returned data from the component
+    if component_value and isinstance(component_value, dict):
+        if component_value.get('isConfirmed') and component_value.get('address'):
+            st.session_state.confirmed_address = component_value['address']
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Pre-fill with any address from the map if available
+        # Pre-fill with confirmed address if available
+        default_value = st.session_state.confirmed_address if st.session_state.confirmed_address else ""
         address = st.text_input(
             "Confirm your address", 
+            value=default_value,
             key="manual_address_input",
             help="Enter your address or use the map above to select a location"
         )
@@ -353,7 +393,7 @@ def show_location_picker(current_language: str = "English") -> None:
                 st.error("Please enter an address")
     
     # Display the confirmed address if available
-    if st.session_state.confirmed_address:
+    if st.session_state.confirmed_address and st.session_state.confirmed_address != default_value:
         st.info(f"📍 Confirmed location: {st.session_state.confirmed_address}")
     
     # Return the confirmed address from session state
