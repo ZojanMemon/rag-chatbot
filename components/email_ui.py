@@ -110,8 +110,8 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Location picker
         st.markdown(f"#### {location_label}")
         
-        # Show the location picker
-        show_location_picker(current_language)
+        # Show the location picker and get the confirmed address
+        confirmed_location = show_location_picker(current_language)
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
