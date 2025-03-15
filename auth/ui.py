@@ -148,6 +148,7 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
             backdrop-filter: blur(10px);
             margin: 1rem 0 !important;
             padding: 1rem !important;
+            display: none !important;
         }
         
         /* Heading styles */
