@@ -298,7 +298,6 @@ def show_location_picker(current_language: str = "English") -> None:
         if st.button("Confirm Address", type="primary"):
             if address:
                 st.session_state.confirmed_address = address
-                st.success(f"✅ Location confirmed: {address}")
             else:
                 st.error("Please enter an address")
     
