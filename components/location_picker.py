@@ -1,6 +1,5 @@
 """Location picker component with OpenStreetMap integration."""
 import streamlit as st
-import json
 from streamlit.components.v1 import html
 
 def get_map_html(current_language: str = "English") -> str:
@@ -21,7 +20,7 @@ def get_map_html(current_language: str = "English") -> str:
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
-        confirm_text = "Confirm Location"
+        confirm_text = "Confirm This Location"
         loading_text = "Loading..."
         error_text = "Error"
 
@@ -33,7 +32,6 @@ def get_map_html(current_language: str = "English") -> str:
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Location Picker</title>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-        <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
         <style>
             body {{
                 margin: 0;
@@ -74,21 +72,6 @@ def get_map_html(current_language: str = "English") -> str:
                 font-size: 14px;
                 min-height: 20px;
             }}
-            .leaflet-control-geocoder {{
-                clear: both;
-                margin-top: 10px;
-                width: 100%;
-                max-width: none;
-                border-radius: 4px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            }}
-            .leaflet-control-geocoder-form input {{
-                width: 100%;
-                padding: 8px;
-                border-radius: 4px;
-                border: 1px solid #ccc;
-                font-size: 14px;
-            }}
         </style>
     </head>
     <body>
@@ -100,80 +83,49 @@ def get_map_html(current_language: str = "English") -> str:
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <script>
-            // Variables
-            var map, marker, selectedLocation, currentAddress;
+            var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             
-            // Function to send data to Streamlit
-            function sendToStreamlit(data) {{
-                // Create a custom event
-                const event = new CustomEvent("streamlit:locationUpdate", {{
-                    detail: {{ data: data }}
+            // Initialize map
+            function initMap() {{
+                // Create map
+                map = L.map('map').setView(defaultLocation, 5);
+                
+                // Add tile layer
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }}).addTo(map);
+                
+                // Create marker
+                marker = L.marker(defaultLocation, {{ draggable: true }}).addTo(map);
+                selectedLocation = defaultLocation;
+                
+                // Handle marker drag
+                marker.on('dragend', function(e) {{
+                    var pos = e.target.getLatLng();
+                    selectedLocation = [pos.lat, pos.lng];
+                    updatePreview();
                 }});
                 
-                // Dispatch the event
-                window.dispatchEvent(event);
+                // Handle map click
+                map.on('click', function(e) {{
+                    marker.setLatLng(e.latlng);
+                    selectedLocation = [e.latlng.lat, e.latlng.lng];
+                    updatePreview();
+                }});
+                
+                // Update preview initially
+                updatePreview();
             }}
             
-            // Initialize map
-            function initializeMap() {{
-                try {{
-                    // Create map
-                    map = L.map('map').setView(defaultLocation, 5);
-                    
-                    // Add tile layer
-                    L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    }}).addTo(map);
-                    
-                    // Create marker
-                    marker = L.marker(defaultLocation, {{ draggable: true }}).addTo(map);
-                    selectedLocation = defaultLocation;
-                    
-                    // Add geocoder control
-                    var geocoder = L.Control.geocoder({{
-                        defaultMarkGeocode: false,
-                        placeholder: '{search_placeholder}',
-                        collapsed: false
-                    }}).addTo(map);
-                    
-                    geocoder.on('markgeocode', function(e) {{
-                        var location = e.geocode.center;
-                        updateMarker([location.lat, location.lng]);
-                        map.setView([location.lat, location.lng], 15);
-                    }});
-                    
-                    // Handle marker drag
-                    marker.on('dragend', function(e) {{
-                        var pos = e.target.getLatLng();
-                        updateLocationPreview([pos.lat, pos.lng]);
-                    }});
-                    
-                    // Handle map click
-                    map.on('click', function(e) {{
-                        updateMarker([e.latlng.lat, e.latlng.lng]);
-                    }});
-                    
-                    // Get initial address for the default location
-                    updateLocationPreview(defaultLocation);
-                    
-                    // Force map to resize after a delay
-                    setTimeout(function() {{
-                        map.invalidateSize();
-                    }}, 300);
-                }} catch (error) {{
-                    console.error("Error initializing map:", error);
-                    document.getElementById('preview').innerHTML = "{error_text}: " + error.message;
-                }}
+            // Update preview with coordinates
+            function updatePreview() {{
+                document.getElementById('preview').innerHTML = 
+                    `📍 Latitude: ${{selectedLocation[0].toFixed(6)}}, Longitude: ${{selectedLocation[1].toFixed(6)}}`;
             }}
             
-            function updateMarker(latlng) {{
-                marker.setLatLng(latlng);
-                updateLocationPreview(latlng);
-            }}
-            
+            // Detect current location
             function detectLocation() {{
                 if (navigator.geolocation) {{
                     document.getElementById('detect-btn').disabled = true;
@@ -183,15 +135,15 @@ def get_map_html(current_language: str = "English") -> str:
                         function(position) {{
                             var pos = [position.coords.latitude, position.coords.longitude];
                             map.setView(pos, 15);
-                            updateMarker(pos);
+                            marker.setLatLng(pos);
+                            selectedLocation = pos;
+                            updatePreview();
                             
                             document.getElementById('detect-btn').disabled = false;
                             document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
                         }},
                         function(error) {{
-                            console.error("Geolocation error:", error);
                             document.getElementById('preview').innerHTML = "{error_text}: " + error.message;
-                            
                             document.getElementById('detect-btn').disabled = false;
                             document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
                         }},
@@ -202,69 +154,30 @@ def get_map_html(current_language: str = "English") -> str:
                         }}
                     );
                 }} else {{
-                    document.getElementById('preview').innerHTML = "{error_text}: Geolocation is not supported by your browser.";
+                    document.getElementById('preview').innerHTML = "{error_text}: Geolocation not supported";
                 }}
             }}
             
-            function updateLocationPreview(latlng) {{
-                selectedLocation = latlng;
-                document.getElementById('preview').innerHTML = "{loading_text}";
-                
-                // Use Nominatim for reverse geocoding
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.display_name) {{
-                            currentAddress = data.display_name;
-                            document.getElementById('preview').innerHTML = `📍 ${{currentAddress}}`;
-                        }}
-                    }})
-                    .catch(error => {{
-                        console.error("Error in reverse geocoding:", error);
-                        document.getElementById('preview').innerHTML = "{error_text}: " + error.message;
-                    }});
-            }}
-            
+            // Confirm location
             function confirmLocation() {{
                 if (selectedLocation) {{
-                    document.getElementById('confirm-btn').disabled = true;
-                    document.getElementById('confirm-btn').innerHTML = "{loading_text}";
+                    var locationString = `Latitude: ${{selectedLocation[0].toFixed(6)}}, Longitude: ${{selectedLocation[1].toFixed(6)}}`;
+                    document.getElementById('preview').innerHTML = `✅ ${{locationString}}`;
                     
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                        .then(response => response.json())
-                        .then(data => {{
-                            if (data.display_name) {{
-                                var address = data.display_name;
-                                
-                                // Update UI
-                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                                
-                                // Send to Streamlit
-                                sendToStreamlit(address);
-                                
-                                document.getElementById('confirm-btn').disabled = false;
-                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                            }}
-                        }})
-                        .catch(error => {{
-                            console.error("Error confirming location:", error);
-                            document.getElementById('preview').innerHTML = "{error_text}: " + error.message;
-                            
-                            document.getElementById('confirm-btn').disabled = false;
-                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                        }});
-                }} else {{
-                    document.getElementById('preview').innerHTML = "{error_text}: Please select a location first.";
+                    // Try to get the parent window to set a value
+                    try {{
+                        window.parent.postMessage({{
+                            type: 'location',
+                            value: locationString
+                        }}, '*');
+                    }} catch (e) {{
+                        console.error("Error posting message:", e);
+                    }}
                 }}
             }}
             
-            // Initialize map when DOM is fully loaded
-            document.addEventListener('DOMContentLoaded', initializeMap);
-            
-            // Initialize map immediately as a fallback
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {{
-                setTimeout(initializeMap, 1);
-            }}
+            // Initialize map when page loads
+            window.onload = initMap;
         </script>
     </body>
     </html>
@@ -276,33 +189,28 @@ def show_location_picker(current_language: str = "English") -> str:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Create a unique key for the component
-    component_key = "location_picker"
+    # Display the map
+    st.markdown("### Select your location on the map")
+    html(get_map_html(current_language), height=550)
     
-    # Create a container for the map
-    map_container = st.container()
-    
-    # Create a container for the confirmation status
-    status_container = st.container()
-    
-    # Display the map in the container
-    with map_container:
-        # Display the map
-        result = html(get_map_html(current_language), height=550, key=component_key)
+    # Manual input form
+    with st.form("location_form"):
+        location = st.text_input(
+            "Or enter location manually",
+            value=st.session_state.get("confirmed_address", "")
+        )
         
-        # If we got a result from the component, update the session state
-        if result:
-            st.session_state.confirmed_address = result
+        submit = st.form_submit_button("Confirm Location")
+        
+        if submit and location:
+            st.session_state.confirmed_address = location
+            st.success(f"✅ Location confirmed: {location}")
     
-    # Display the confirmation status if we have an address
-    with status_container:
-        if st.session_state.confirmed_address:
-            st.success(f"✅ Location confirmed: {st.session_state.confirmed_address}")
-            
-            # Add a button to clear the location
-            if st.button("Clear Location"):
-                st.session_state.confirmed_address = ""
-                st.experimental_rerun()
+    # Add a button to clear the location if one is set
+    if st.session_state.confirmed_address:
+        if st.button("Clear Location"):
+            st.session_state.confirmed_address = ""
+            st.experimental_rerun()
     
     # Return the confirmed address
-    return st.session_state.confirmed_address
+    return st.session_state.get("confirmed_address", "")

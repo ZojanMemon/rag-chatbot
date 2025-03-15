@@ -103,15 +103,14 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             phone_number = st.text_input(phone_label, key="user_phone_input")
         
-        # Initialize session state for confirmed address if not present
-        if "confirmed_address" not in st.session_state:
-            st.session_state.confirmed_address = ""
-            
-        # Location picker
+        # Location section
         st.markdown(f"#### {location_label}")
         
-        # Show the location picker and get the confirmed address
-        confirmed_location = show_location_picker(current_language)
+        # Show the location picker
+        show_location_picker(current_language)
+        
+        # Get location from session state
+        location = st.session_state.get("confirmed_address", "")
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -141,9 +140,6 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
-            
-            # Get the confirmed address from session state
-            location = st.session_state.get("confirmed_address", "")
             
             # Create a share button
             if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
