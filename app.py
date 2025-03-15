@@ -553,7 +553,7 @@ def main():
         /* Extra small devices */
         @media screen and (max-width: 480px) {
             .main-heading {
-                font-size: 1.5rem;
+                font-size: 32px !important;
                 margin-bottom: 0.75rem;
             }
         }
