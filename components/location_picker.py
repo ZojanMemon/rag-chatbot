@@ -282,6 +282,15 @@ def get_map_html(current_language: str = "English") -> str:
                     type: 'streamlit:setComponentValue',
                     value: address
                 }}, '*');
+                
+                // Also try to directly update the session state
+                try {{
+                    if (window.parent.Streamlit) {{
+                        window.parent.Streamlit.setComponentValue(address);
+                    }}
+                }} catch (e) {{
+                    console.error("Error updating Streamlit session state:", e);
+                }}
             }}
             
             // Initialize map immediately as a fallback
@@ -338,9 +347,16 @@ def show_location_picker(current_language: str = "English") -> str:
             
             // Direct update to session state
             if (event.data.type === 'confirmedAddress') {
-                // Use Streamlit's setComponentValue to update session state
-                if (window.parent && window.parent.Streamlit) {
-                    window.parent.Streamlit.setComponentValue(event.data.address);
+                // Store in localStorage for persistence
+                localStorage.setItem('streamlit:confirmed_address', event.data.address);
+                
+                // Try to directly update Streamlit session state
+                try {
+                    if (window.parent && window.parent.Streamlit) {
+                        window.parent.Streamlit.setComponentValue(event.data.address);
+                    }
+                } catch (e) {
+                    console.error("Error updating Streamlit:", e);
                 }
             }
         });
@@ -349,11 +365,14 @@ def show_location_picker(current_language: str = "English") -> str:
         html(components_js, height=0)
         
         # Display the map
-        map_component = html(get_map_html(current_language), height=550, key="location_map")
+        html(get_map_html(current_language), height=550)
         
-        # Update session state if the component returns a value
-        if map_component:
-            st.session_state.confirmed_address = map_component
+        # Create a hidden component to store the address
+        address_value = st.empty()
+        
+        # Add a callback to update session state when the address changes
+        if address_value:
+            st.session_state.confirmed_address = address_value
     
     # Add a separate button to manually confirm the location
     with input_container:
