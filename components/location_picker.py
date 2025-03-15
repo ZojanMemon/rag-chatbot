@@ -183,10 +183,7 @@ def get_map_html(current_language: str = "English") -> str:
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
-                    window.parent.postMessage({{
-                        type: 'selectedAddress',
-                        address: savedAddress
-                    }}, '*');
+                    saveAddressToStreamlit(savedAddress);
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -249,6 +246,28 @@ def get_map_html(current_language: str = "English") -> str:
                     }});
             }}
             
+            function saveAddressToStreamlit(address) {{
+                // Save to localStorage for persistence between page reloads
+                localStorage.setItem('selectedAddress', address);
+                
+                // Create a form to submit the address to Streamlit
+                var form = document.createElement('form');
+                form.style.display = 'none';
+                form.method = 'POST';
+                form.action = window.location.href;
+                
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'map_selected_address';
+                input.value = address;
+                
+                form.appendChild(input);
+                document.body.appendChild(form);
+                
+                // Submit the form
+                form.submit();
+            }}
+            
             function updateLocationPreview(latlng) {{
                 selectedLocation = latlng;
                 document.getElementById('preview').innerHTML = "Loading address...";
@@ -261,11 +280,8 @@ def get_map_html(current_language: str = "English") -> str:
                             var address = data.display_name;
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
-                            // Send the selected address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'selectedAddress',
-                                address: address
-                            }}, '*');
+                            // Save the address to localStorage
+                            localStorage.setItem('selectedAddress', address);
                         }}
                     }})
                     .catch(error => {{
@@ -291,11 +307,8 @@ def get_map_html(current_language: str = "English") -> str:
                                 // Update UI
                                 document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                                 
-                                // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'confirmedAddress',
-                                    address: address
-                                }}, '*');
+                                // Save to Streamlit
+                                saveAddressToStreamlit(address);
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
@@ -331,27 +344,16 @@ def show_location_picker(current_language: str = "English") -> None:
     if "selected_address" not in st.session_state:
         st.session_state.selected_address = ""
     
-    if "address_from_map" not in st.session_state:
-        st.session_state.address_from_map = ""
-        
-    # Create a container for the map
-    map_container = st.container()
-    
-    # Create a callback to handle messages from the map component
-    def handle_map_message(msg):
-        if msg:
-            st.session_state.address_from_map = msg
-            return msg
-        return ""
+    # Check for address from form submission
+    if st.experimental_get_query_params().get("map_selected_address"):
+        address = st.experimental_get_query_params().get("map_selected_address")[0]
+        st.session_state.selected_address = address
     
     # Display the map component
+    map_container = st.container()
     with map_container:
         map_html = get_map_html(current_language)
-        result = html(map_html, height=550, key="map_component", on_message=handle_map_message)
-    
-    # If we received a message from the map, update the selected address
-    if st.session_state.address_from_map:
-        st.session_state.selected_address = st.session_state.address_from_map
+        html(map_html, height=550)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
