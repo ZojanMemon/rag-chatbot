@@ -74,7 +74,7 @@ def get_map_html(current_language: str = "English") -> str:
             /* Mobile-specific styles */
             @media screen and (max-width: 768px) {{
                 #map {{
-                    height: 300px;
+                    height: 300px;  /* Slightly smaller map on mobile */
                 }}
                 #preview {{
                     max-height: 80px;
@@ -88,8 +88,10 @@ def get_map_html(current_language: str = "English") -> str:
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                     margin: 0;
-                    width: 100%;
+                    width: 94%;
                     justify-content: center;
+                    flex-wrap: wrap;
+
                 }}
                 button {{
                     flex: 1;
@@ -112,24 +114,19 @@ def get_map_html(current_language: str = "English") -> str:
         let selectedLocation;
         let confirmedLocation;
 
-        // Function to communicate with Streamlit
-        function sendToStreamlit(data) {{
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                data: data
-            }}, '*');
-        }}
-
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
 
+            // Initialize map
             map = L.map('map').setView(defaultLocation, 6);
 
+            // Add OpenStreetMap tiles
             L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
             }}).addTo(map);
 
+            // Add search control
             const geocoder = L.Control.geocoder({{
                 defaultMarkGeocode: false,
                 placeholder: "{search_placeholder}",
@@ -142,15 +139,18 @@ def get_map_html(current_language: str = "English") -> str:
                 map.setView(location, 17);
             }});
 
+            // Add marker
             marker = L.marker(defaultLocation, {{
                 draggable: true
             }}).addTo(map);
 
+            // Handle marker drag
             marker.on('dragend', function(e) {{
                 const pos = e.target.getLatLng();
                 updateLocationPreview([pos.lat, pos.lng]);
             }});
 
+            // Handle map click
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
@@ -181,6 +181,7 @@ def get_map_html(current_language: str = "English") -> str:
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
             confirmedLocation = null;
+            // Use Nominatim for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                 .then(response => response.json())
                 .then(data => {{
@@ -188,6 +189,22 @@ def get_map_html(current_language: str = "English") -> str:
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
+
+                        // Automatically click the confirm button
+                        const confirmBtn = document.querySelector('button[kind="primary"]');
+                        if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
+                            // First update the input field
+                            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+                            if (manualInput) {{
+                                manualInput.value = address;
+                                // Trigger input event
+                                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                // Wait for Streamlit to process the input
+                                setTimeout(() => {{
+                                    confirmBtn.click();
+                                }}, 100);
+                            }}
+                        }}
                     }}
                 }});
         }}
@@ -201,15 +218,28 @@ def get_map_html(current_language: str = "English") -> str:
                             const address = data.display_name;
                             confirmedLocation = address;
                             
+                            // Store the address in localStorage
+                            localStorage.setItem('confirmedAddress', address);
+                            
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Send to Streamlit
-                            sendToStreamlit({{
-                                address: address,
-                                confirmed: true
-                            }});
+
+                            // Automatically click the confirm button
+                            const confirmBtn = document.querySelector('button[kind="primary"]');
+                            if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
+                                // First update the input field
+                                const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+                                if (manualInput) {{
+                                    manualInput.value = address;
+                                    // Trigger input event
+                                    manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                    // Wait for Streamlit to process the input
+                                    setTimeout(() => {{
+                                        confirmBtn.click();
+                                    }}, 100);
+                                }}
+                            }}
                         }}
                     }});
             }}
@@ -218,15 +248,22 @@ def get_map_html(current_language: str = "English") -> str:
         // Initialize the map
         initMap();
 
-        // Check for saved address on load
+        // Check for previously confirmed address
         const savedAddress = localStorage.getItem('confirmedAddress');
         if (savedAddress) {{
             document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-            confirmedLocation = savedAddress;
-            sendToStreamlit({{
-                address: savedAddress,
-                confirmed: true
-            }});
+            document.getElementById('confirm-btn').classList.add('hidden');
+            
+            // Automatically fill and confirm the address
+            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+            const confirmBtn = document.querySelector('button[kind="primary"]');
+            if (manualInput && confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
+                manualInput.value = savedAddress;
+                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                setTimeout(() => {{
+                    confirmBtn.click();
+                }}, 100);
+            }}
         }}
         </script>
     </body>
@@ -235,35 +272,29 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for location if not exists
-    if 'confirmed_location' not in st.session_state:
-        st.session_state.confirmed_location = None
-    
-    # Display the map component with custom height and handle return value
-    map_value = html(get_map_html(current_language), height=500, key="map_component")
-    
-    # If we received a value from the component
-    if map_value and isinstance(map_value, dict):
-        if map_value.get('confirmed') and map_value.get('address'):
-            st.session_state.confirmed_location = map_value['address']
+    # Display the map component
+    html(get_map_html(current_language), height=500)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Pre-fill the address input with confirmed location
+        # Get address from session state if available
+        saved_address = st.session_state.get('confirmed_address', '')
         address = st.text_input(
             "Confirm your address",
-            value=st.session_state.confirmed_location if st.session_state.confirmed_location else "",
+            value=saved_address,
             key="manual_address_input"
         )
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state.confirmed_location = address
-                st.success("✅ Location confirmed!")
+                # Store in session state
+                st.session_state['confirmed_address'] = address
+                st.success("✅")  # Minimal success indicator
             else:
                 st.error("Please enter an address")
     
-    return st.session_state.confirmed_location
+    # Return the confirmed address if available
+    return st.session_state.get('confirmed_address', None)
