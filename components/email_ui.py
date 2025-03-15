@@ -22,7 +22,6 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
         select_location_text = "براہ کرم مقام منتخب کریں"
         no_location_warning = "براہ کرم پہلے مقام منتخب کریں"
-        location_confirmed = "✅ مقام کی تصدیق کر دی گئی"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
@@ -31,7 +30,6 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
         select_location_text = "مهرباني ڪري مڪان چونڊيو"
         no_location_warning = "مهرباني ڪري پهريان مڪان چونڊيو"
-        location_confirmed = "✅ مڪان جي تصديق ٿي وئي"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
@@ -40,7 +38,6 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ Could not share the conversation"
         select_location_text = "Please select a location"
         no_location_warning = "Please select a location first"
-        location_confirmed = "✅ Location confirmed"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -114,12 +111,8 @@ def show_email_ui(messages, user_email="Anonymous"):
         st.markdown(f"#### {location_label}")
         
         # Show the location picker
-        address = show_location_picker(current_language)
+        show_location_picker(current_language)
         
-        # Show success message if location is confirmed
-        if address:
-            st.success(location_confirmed)
-            
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
                              "ايمرجنسي جو قسم" if current_language == "Sindhi" else 
@@ -172,7 +165,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                             st.success(success_message.format(emergency_labels[emergency_type]))
                             # Clear location after successful send
                             st.session_state.confirmed_address = ""
-                            st.session_state.location_value = {}
                         else:
                             st.error(f"{error_message}: {error}")
                 else:
