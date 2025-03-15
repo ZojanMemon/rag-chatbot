@@ -75,6 +75,11 @@ def get_map_html(current_language: str = "English") -> str:
                 font-size: 14px;
                 min-height: 20px;
             }}
+            /* Fix for marker icon */
+            .leaflet-marker-icon {{
+                width: 25px !important;
+                height: 41px !important;
+            }}
         </style>
     </head>
     <body>
@@ -99,6 +104,7 @@ def get_map_html(current_language: str = "English") -> str:
             function initMap() {{
                 // Default location (center of Pakistan)
                 var defaultLocation = [30.3753, 69.3451];
+                selectedLocation = defaultLocation; // Initialize with default location
                 
                 // Create map
                 map = L.map('map').setView(defaultLocation, 5);
@@ -107,6 +113,17 @@ def get_map_html(current_language: str = "English") -> str:
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }}).addTo(map);
+                
+                // Create custom icon for marker
+                var markerIcon = L.icon({{
+                    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34],
+                    shadowSize: [41, 41]
+                }});
                 
                 // Add geocoder control
                 var geocoder = L.Control.geocoder({{
@@ -121,9 +138,10 @@ def get_map_html(current_language: str = "English") -> str:
                     map.setView([location.lat, location.lng], 15);
                 }});
                 
-                // Add marker
+                // Add marker with custom icon
                 marker = L.marker(defaultLocation, {{
-                    draggable: true
+                    draggable: true,
+                    icon: markerIcon
                 }}).addTo(map);
                 
                 // Handle marker drag
@@ -141,11 +159,18 @@ def get_map_html(current_language: str = "English") -> str:
                 var savedAddress = localStorage.getItem('confirmedAddress');
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                    // Also update Streamlit with the saved address
+                    window.parent.postMessage({{
+                        type: 'confirmedAddress',
+                        address: savedAddress
+                    }}, '*');
                 }}
                 
                 // Force map to resize after a delay
                 setTimeout(function() {{
                     map.invalidateSize();
+                    // Get initial address for the default location
+                    updateLocationPreview(defaultLocation);
                 }}, 200);
             }}
             
