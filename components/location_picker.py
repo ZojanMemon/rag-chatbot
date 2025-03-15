@@ -112,17 +112,8 @@ def get_map_html(current_language: str = "English") -> str:
         let selectedLocation;
         let confirmedLocation;
 
-        // Function to communicate with Streamlit
-        function sendToStreamlit(data) {{
-            window.parent.postMessage({{
-                type: 'streamlit:setComponentValue',
-                data: data
-            }}, '*');
-        }}
-
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
-
             map = L.map('map').setView(defaultLocation, 6);
 
             L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
@@ -201,15 +192,16 @@ def get_map_html(current_language: str = "English") -> str:
                             const address = data.display_name;
                             confirmedLocation = address;
                             
+                            // Store the address in localStorage and sessionStorage
+                            localStorage.setItem('confirmedAddress', address);
+                            sessionStorage.setItem('confirmedAddress', address);
+                            
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
                             
-                            // Send to Streamlit
-                            sendToStreamlit({{
-                                address: address,
-                                confirmed: true
-                            }});
+                            // Reload the page to update Streamlit
+                            window.location.reload();
                         }}
                     }});
             }}
@@ -217,17 +209,6 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
-
-        // Check for saved address on load
-        const savedAddress = localStorage.getItem('confirmedAddress');
-        if (savedAddress) {{
-            document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-            confirmedLocation = savedAddress;
-            sendToStreamlit({{
-                address: savedAddress,
-                confirmed: true
-            }});
-        }}
         </script>
     </body>
     </html>
@@ -235,35 +216,42 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for location if not exists
-    if 'confirmed_location' not in st.session_state:
-        st.session_state.confirmed_location = None
-    
-    # Display the map component with custom height and handle return value
-    map_value = html(get_map_html(current_language), height=500, key="map_component")
-    
-    # If we received a value from the component
-    if map_value and isinstance(map_value, dict):
-        if map_value.get('confirmed') and map_value.get('address'):
-            st.session_state.confirmed_location = map_value['address']
+    # Display the map component
+    html(get_map_html(current_language), height=500)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Pre-fill the address input with confirmed location
+        # Try to get the confirmed address from session state
+        if 'confirmed_address' not in st.session_state:
+            st.session_state.confirmed_address = ""
+            
+        # Check if there's a new confirmed address from the map
+        if st.session_state.confirmed_address == "":
+            placeholder = st.empty()
+            js_code = """
+            <script>
+                const address = sessionStorage.getItem('confirmedAddress');
+                if (address) {
+                    window.parent.document.querySelector('[data-testid="stTextInput"]').value = address;
+                }
+            </script>
+            """
+            placeholder.markdown(js_code, unsafe_allow_html=True)
+            
         address = st.text_input(
             "Confirm your address",
-            value=st.session_state.confirmed_location if st.session_state.confirmed_location else "",
+            value=st.session_state.confirmed_address,
             key="manual_address_input"
         )
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state.confirmed_location = address
+                st.session_state.confirmed_address = address
                 st.success("✅ Location confirmed!")
             else:
                 st.error("Please enter an address")
     
-    return st.session_state.confirmed_location
+    return st.session_state.get("confirmed_address", "")
