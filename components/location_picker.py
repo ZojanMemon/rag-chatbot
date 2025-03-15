@@ -88,10 +88,8 @@ def get_map_html(current_language: str = "English") -> str:
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                     margin: 0;
-                    width: 94%;
+                    width: 100%;
                     justify-content: center;
-                    flex-wrap: wrap;
-
                 }}
                 button {{
                     flex: 1;
@@ -252,9 +250,12 @@ def show_location_picker(current_language: str = "English") -> None:
         address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
-        if st.button("Confirm Address"):
+        if st.button("Confirm Address", type="primary"):
             if address:
-                st.session_state['confirmed_location'] = address
-                st.success("✅ Location confirmed!")
+                st.session_state.confirmed_address = address
+                st.success(f"Location confirmed: {address}")
             else:
-                st.error("Please enter an address first.")
+                st.error("Please enter an address")
+    
+    # Return the confirmed address from session state
+    return st.session_state.get("confirmed_address", "")
