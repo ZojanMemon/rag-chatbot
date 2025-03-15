@@ -11,17 +11,14 @@ def get_map_html(current_language: str = "English") -> str:
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
         confirm_text = "اس مقام کی تصدیق کریں"
-        dragging_text = "کھینچ رہے ہیں..."
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
         confirm_text = "هن مڪان جي تصديق ڪريو"
-        dragging_text = "ڪشي رهيو آهي..."
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
         confirm_text = "Confirm Location"
-        dragging_text = "Dragging..."
 
     return f"""
     <!DOCTYPE html>
@@ -87,10 +84,6 @@ def get_map_html(current_language: str = "English") -> str:
                 border: 1px solid #ccc;
                 font-size: 14px;
             }}
-            .dragging {{
-                background-color: #FFD700;
-                color: #000;
-            }}
         </style>
     </head>
     <body>
@@ -106,8 +99,6 @@ def get_map_html(current_language: str = "English") -> str:
         <script>
             var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
-            var isDragging = false;
-            var debounceTimer;
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -140,36 +131,9 @@ def get_map_html(current_language: str = "English") -> str:
                     map.setView([location.lat, location.lng], 15);
                 }});
                 
-                // Handle marker drag start
-                marker.on('dragstart', function(e) {{
-                    isDragging = true;
-                    document.getElementById('preview').innerHTML = `📍 {dragging_text}`;
-                    document.getElementById('preview').className = 'dragging';
-                }});
-                
                 // Handle marker drag
-                marker.on('drag', function(e) {{
-                    var pos = e.target.getLatLng();
-                    selectedLocation = [pos.lat, pos.lng];
-                    
-                    // Update coordinates in real-time
-                    document.getElementById('preview').innerHTML = 
-                        `📍 {dragging_text} Lat: ${{pos.lat.toFixed(6)}}, Lng: ${{pos.lng.toFixed(6)}}`;
-                    
-                    // Debounce the reverse geocoding during drag
-                    clearTimeout(debounceTimer);
-                    debounceTimer = setTimeout(function() {{
-                        if (isDragging) {{
-                            updateLocationPreviewDuringDrag([pos.lat, pos.lng]);
-                        }}
-                    }}, 300);
-                }});
-                
-                // Handle marker drag end
                 marker.on('dragend', function(e) {{
                     var pos = e.target.getLatLng();
-                    isDragging = false;
-                    document.getElementById('preview').className = '';
                     updateLocationPreview([pos.lat, pos.lng]);
                 }});
                 
@@ -183,7 +147,10 @@ def get_map_html(current_language: str = "English") -> str:
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
-                    saveAddressToStreamlit(savedAddress);
+                    window.parent.postMessage({{
+                        type: 'confirmedAddress',
+                        address: savedAddress
+                    }}, '*');
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -232,42 +199,6 @@ def get_map_html(current_language: str = "English") -> str:
                 }}
             }}
             
-            function updateLocationPreviewDuringDrag(latlng) {{
-                // Lightweight version of updateLocationPreview for use during dragging
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.display_name && isDragging) {{
-                            document.getElementById('preview').innerHTML = `📍 ${{data.display_name}}`;
-                        }}
-                    }})
-                    .catch(error => {{
-                        console.error("Error in reverse geocoding:", error);
-                    }});
-            }}
-            
-            function saveAddressToStreamlit(address) {{
-                // Save to localStorage for persistence between page reloads
-                localStorage.setItem('selectedAddress', address);
-                
-                // Create a form to submit the address to Streamlit
-                var form = document.createElement('form');
-                form.style.display = 'none';
-                form.method = 'POST';
-                form.action = window.location.href;
-                
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'map_selected_address';
-                input.value = address;
-                
-                form.appendChild(input);
-                document.body.appendChild(form);
-                
-                // Submit the form
-                form.submit();
-            }}
-            
             function updateLocationPreview(latlng) {{
                 selectedLocation = latlng;
                 document.getElementById('preview').innerHTML = "Loading address...";
@@ -280,8 +211,11 @@ def get_map_html(current_language: str = "English") -> str:
                             var address = data.display_name;
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
-                            // Save the address to localStorage
-                            localStorage.setItem('selectedAddress', address);
+                            // Send the selected address to Streamlit
+                            window.parent.postMessage({{
+                                type: 'selectedAddress',
+                                address: address
+                            }}, '*');
                         }}
                     }})
                     .catch(error => {{
@@ -307,8 +241,11 @@ def get_map_html(current_language: str = "English") -> str:
                                 // Update UI
                                 document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                                 
-                                // Save to Streamlit
-                                saveAddressToStreamlit(address);
+                                // Send the confirmed address to Streamlit
+                                window.parent.postMessage({{
+                                    type: 'confirmedAddress',
+                                    address: address
+                                }}, '*');
                                 
                                 document.getElementById('confirm-btn').disabled = false;
                                 document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
@@ -337,33 +274,20 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state variables if they don't exist
+    # Initialize session state for confirmed address if not exists
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    if "selected_address" not in st.session_state:
-        st.session_state.selected_address = ""
-    
-    # Check for address from form submission
-    if st.experimental_get_query_params().get("map_selected_address"):
-        address = st.experimental_get_query_params().get("map_selected_address")[0]
-        st.session_state.selected_address = address
-    
-    # Display the map component
-    map_container = st.container()
-    with map_container:
-        map_html = get_map_html(current_language)
-        html(map_html, height=550)
+    # Display the map component with increased height
+    html(get_map_html(current_language), height=550)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Pre-fill with selected or confirmed address if available
-        default_value = st.session_state.selected_address or st.session_state.confirmed_address
+        # Pre-fill with any address from the map if available
         address = st.text_input(
             "Confirm your address", 
-            value=default_value,
             key="manual_address_input",
             help="Enter your address or use the map above to select a location"
         )
@@ -377,6 +301,10 @@ def show_location_picker(current_language: str = "English") -> None:
                 st.success(f"✅ Location confirmed: {address}")
             else:
                 st.error("Please enter an address")
+    
+    # Display the confirmed address if available
+    if st.session_state.confirmed_address:
+        st.info(f"📍 Confirmed location: {st.session_state.confirmed_address}")
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
