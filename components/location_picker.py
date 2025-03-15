@@ -212,7 +212,7 @@ def get_map_html(current_language: str = "English") -> str:
                             // Send confirmed address to Streamlit
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                address: address
+                                value: address
                             }}, '*');
                         }}
                     }});
@@ -231,7 +231,7 @@ def get_map_html(current_language: str = "English") -> str:
             // Send saved address to Streamlit
             window.parent.postMessage({{
                 type: 'streamlit:setComponentValue',
-                address: savedAddress
+                value: savedAddress
             }}, '*');
         }}
         </script>
@@ -245,7 +245,7 @@ def show_location_picker(current_language: str = "English") -> None:
     component_key = "map_location_picker"
     
     # Display the map component and get its value
-    confirmed_address = html(get_map_html(current_language), height=500, key=component_key)
+    map_component = html(get_map_html(current_language), height=500, key=component_key)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
@@ -254,7 +254,7 @@ def show_location_picker(current_language: str = "English") -> None:
         # Auto-fill the address if we got one from the map component
         address = st.text_input(
             "Confirm your address",
-            value=confirmed_address if confirmed_address else "",
+            value=map_component if isinstance(map_component, str) else "",
             key="manual_address_input"
         )
     
