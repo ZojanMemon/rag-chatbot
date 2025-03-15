@@ -243,8 +243,8 @@ def get_map_html(current_language: str = "English") -> str:
                                 
                                 // Send the confirmed address to Streamlit
                                 window.parent.postMessage({{
-                                    type: 'confirmedAddress',
-                                    address: address
+                                    type: 'streamlit:setComponentValue',
+                                    value: {{ confirmedAddress: address }}
                                 }}, '*');
                                 
                                 document.getElementById('confirm-btn').disabled = false;
@@ -290,38 +290,27 @@ def show_location_picker(current_language: str = "English") -> None:
         # Display the map component with increased height
         html(get_map_html(current_language), height=550, key=f"map_component_{st.session_state.location_picker_key}")
     
-    # Listen for messages from JavaScript using a hidden component
-    components_js = """
-    <script>
-    window.addEventListener('message', function(event) {
-        if (event.data.type === 'confirmedAddress') {
-            // Send to Streamlit
-            const data = {
-                confirmedAddress: event.data.address
-            };
-            window.parent.postMessage({
-                type: "streamlit:setComponentValue",
-                value: data
-            }, "*");
-        }
-    });
-    </script>
-    """
-    
-    # Add a custom component to listen for messages
-    from streamlit.components.v1 import html as raw_html
-    
     # Define a callback for when the component value changes
     def on_address_change(value):
-        if value and "confirmedAddress" in value:
+        if value and isinstance(value, dict) and "confirmedAddress" in value:
+            # Store the confirmed address in session state
             st.session_state.confirmed_address = value["confirmedAddress"]
-            # Increment the key to force a rerender
-            st.session_state.location_picker_key += 1
             # Force a rerun to update the UI
             st.experimental_rerun()
     
-    # Add the listener component
-    raw_html(components_js, height=0, key="location_listener", on_change=on_address_change)
+    # Add a custom component to listen for messages
+    from streamlit.components.v1 import html as raw_html
+    raw_html(
+        """
+        <div id="location-listener"></div>
+        <script>
+        // Empty script to create a component that can receive messages
+        </script>
+        """, 
+        height=0, 
+        key=f"location_listener_{st.session_state.location_picker_key}",
+        on_change=on_address_change
+    )
     
     # Display the confirmed address if available
     if st.session_state.confirmed_address:
