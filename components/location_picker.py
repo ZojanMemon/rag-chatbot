@@ -10,15 +10,18 @@ def get_map_html(current_language: str = "English") -> str:
     if current_language == "Urdu":
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
-        confirm_text = "اس مقام کی تصدیق کریں"
+        copy_text = "پتہ کاپی کریں"
+        copied_text = "کاپی ہو گیا"
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
-        confirm_text = "هن مڪان جي تصديق ڪريو"
+        copy_text = "پتو ڪاپي ڪريو"
+        copied_text = "ڪاپي ٿي ويو"
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
-        confirm_text = "Confirm Location"
+        copy_text = "Copy Address"
+        copied_text = "Copied!"
 
     return f"""
     <!DOCTYPE html>
@@ -52,14 +55,25 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 500;
+                transition: all 0.2s ease;
+            }}
+            button:disabled {{
+                opacity: 0.6;
+                cursor: not-allowed;
             }}
             .primary {{
-                background-color: #FF4B4B;
+                background-color: #0066cc;
                 color: white;
+            }}
+            .primary:hover:not(:disabled) {{
+                background-color: #0052a3;
             }}
             .secondary {{
                 background-color: #f0f2f6;
                 color: #262730;
+            }}
+            .secondary:hover:not(:disabled) {{
+                background-color: #e6e9ef;
             }}
             #preview {{
                 margin-top: 10px;
@@ -68,6 +82,11 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 font-size: 14px;
                 min-height: 20px;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+            }}
+            #preview:hover {{
+                background-color: #e6e9ef;
             }}
             .leaflet-control-geocoder {{
                 clear: both;
@@ -84,21 +103,26 @@ def get_map_html(current_language: str = "English") -> str:
                 border: 1px solid #ccc;
                 font-size: 14px;
             }}
+            .copy-success {{
+                background-color: #e6ffe6 !important;
+            }}
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <div id="preview"></div>
+        <div id="preview" onclick="copyAddress()"></div>
         <div class="controls">
             <button class="secondary" id="detect-btn" onclick="detectLocation()">{auto_detect_text}</button>
-            <button class="primary" id="confirm-btn" onclick="confirmLocation()">{confirm_text}</button>
+            <button class="primary" id="copy-btn" onclick="copyAddress()" disabled>{copy_text}</button>
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <script>
-            var map, marker, selectedLocation;
+            var map, marker, selectedLocation, currentAddress;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
+            var copyButton = document.getElementById('copy-btn');
+            var previewDiv = document.getElementById('preview');
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -141,20 +165,6 @@ def get_map_html(current_language: str = "English") -> str:
                 map.on('click', function(e) {{
                     updateMarker([e.latlng.lat, e.latlng.lng]);
                 }});
-                
-                // Check for previously confirmed location
-                var savedAddress = localStorage.getItem('confirmedAddress');
-                if (savedAddress) {{
-                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-                    // Also update Streamlit with the saved address
-                    window.parent.postMessage({{
-                        type: 'streamlit:setComponentValue',
-                        value: {{ confirmedAddress: savedAddress }}
-                    }}, '*');
-                }} else {{
-                    // Get initial address for the default location
-                    updateLocationPreview(defaultLocation);
-                }}
                 
                 // Force map to resize after a delay
                 setTimeout(function() {{
@@ -201,65 +211,51 @@ def get_map_html(current_language: str = "English") -> str:
             
             function updateLocationPreview(latlng) {{
                 selectedLocation = latlng;
-                document.getElementById('preview').innerHTML = "Loading address...";
+                previewDiv.innerHTML = "Loading address...";
+                copyButton.disabled = true;
                 
                 // Use Nominatim for reverse geocoding
                 fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                     .then(response => response.json())
                     .then(data => {{
                         if (data.display_name) {{
-                            var address = data.display_name;
-                            document.getElementById('preview').innerHTML = `📍 ${{address}}`;
+                            currentAddress = data.display_name;
+                            previewDiv.innerHTML = `📍 ${{currentAddress}}`;
+                            copyButton.disabled = false;
                             
                             // Send the selected address to Streamlit
                             window.parent.postMessage({{
                                 type: 'selectedAddress',
-                                address: address
+                                address: currentAddress
                             }}, '*');
                         }}
                     }})
                     .catch(error => {{
                         console.error("Error in reverse geocoding:", error);
-                        document.getElementById('preview').innerHTML = "Error loading address.";
+                        previewDiv.innerHTML = "Error loading address.";
+                        copyButton.disabled = true;
+                        currentAddress = null;
                     }});
             }}
             
-            function confirmLocation() {{
-                if (selectedLocation) {{
-                    document.getElementById('confirm-btn').disabled = true;
-                    document.getElementById('confirm-btn').innerHTML = "Confirming...";
+            async function copyAddress() {{
+                if (!currentAddress) return;
+                
+                try {{
+                    await navigator.clipboard.writeText(currentAddress);
                     
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                        .then(response => response.json())
-                        .then(data => {{
-                            if (data.display_name) {{
-                                var address = data.display_name;
-                                
-                                // Store the address in localStorage
-                                localStorage.setItem('confirmedAddress', address);
-                                
-                                // Update UI
-                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                                
-                                // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'streamlit:setComponentValue',
-                                    value: {{ confirmedAddress: address }}
-                                }}, '*');
-                                
-                                document.getElementById('confirm-btn').disabled = false;
-                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                            }}
-                        }})
-                        .catch(error => {{
-                            console.error("Error confirming location:", error);
-                            document.getElementById('preview').innerHTML = "Error confirming location.";
-                            
-                            document.getElementById('confirm-btn').disabled = false;
-                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                        }});
-                }} else {{
-                    alert('Please select a location first.');
+                    // Visual feedback
+                    previewDiv.classList.add('copy-success');
+                    copyButton.innerHTML = "{copied_text}";
+                    
+                    // Reset after 1 second
+                    setTimeout(() => {{
+                        previewDiv.classList.remove('copy-success');
+                        copyButton.innerHTML = "{copy_text}";
+                    }}, 1000);
+                    
+                }} catch (err) {{
+                    console.error('Failed to copy text: ', err);
                 }}
             }}
             
