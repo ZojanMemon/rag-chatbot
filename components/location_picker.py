@@ -11,14 +11,17 @@ def get_map_html(current_language: str = "English") -> str:
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
         confirm_text = "اس مقام کی تصدیق کریں"
+        please_select_text = "براہ کرم مقام منتخب کریں"
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
         confirm_text = "هن مڪان جي تصديق ڪريو"
+        please_select_text = "مهرباني ڪري مڪان چونڊيو"
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
         confirm_text = "Confirm Location"
+        please_select_text = "Please select a location"
 
     return f"""
     <!DOCTYPE html>
@@ -88,7 +91,7 @@ def get_map_html(current_language: str = "English") -> str:
     </head>
     <body>
         <div id="map"></div>
-        <div id="preview"></div>
+        <div id="preview">{please_select_text}</div>
         <div class="controls">
             <button class="secondary" id="detect-btn" onclick="detectLocation()">{auto_detect_text}</button>
             <button class="primary" id="confirm-btn" onclick="confirmLocation()">{confirm_text}</button>
@@ -143,31 +146,12 @@ def get_map_html(current_language: str = "English") -> str:
                     updateMarker([e.latlng.lat, e.latlng.lng]);
                 }});
                 
-                // Check for previously confirmed location
-                var savedAddress = localStorage.getItem('confirmedAddress');
-                if (savedAddress) {{
-                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-                    selectedAddress = savedAddress;
-                    
-                    // Also update Streamlit with the saved address
-                    window.parent.postMessage({{
-                        type: 'confirmedAddress',
-                        address: savedAddress
-                    }}, '*');
-                    
-                    // Update Streamlit input field
-                    updateStreamlitInputField(savedAddress);
-                    
-                    // Update Streamlit session state directly
-                    updateStreamlitSessionState(savedAddress);
-                }} else {{
-                    // Get initial address for the default location
-                    updateLocationPreview(defaultLocation);
-                }}
-                
                 // Force map to resize after a delay
                 setTimeout(function() {{
                     map.invalidateSize();
+                    
+                    // Get initial address for the default location
+                    updateLocationPreview(defaultLocation);
                 }}, 300);
             }}
             
@@ -220,15 +204,6 @@ def get_map_html(current_language: str = "English") -> str:
                             var address = data.display_name;
                             selectedAddress = address;
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
-                            
-                            // Send the selected address to Streamlit
-                            window.parent.postMessage({{
-                                type: 'selectedAddress',
-                                address: address
-                            }}, '*');
-                            
-                            // Update Streamlit input field
-                            updateStreamlitInputField(address);
                         }}
                     }})
                     .catch(error => {{
@@ -242,60 +217,29 @@ def get_map_html(current_language: str = "English") -> str:
                     document.getElementById('confirm-btn').disabled = true;
                     document.getElementById('confirm-btn').innerHTML = "Confirming...";
                     
-                    // Store the address in localStorage
-                    localStorage.setItem('confirmedAddress', selectedAddress);
-                    
                     // Update UI
                     document.getElementById('preview').innerHTML = `✅ ${{selectedAddress}}`;
                     
-                    // Send the confirmed address to Streamlit
-                    window.parent.postMessage({{
-                        type: 'confirmedAddress',
-                        address: selectedAddress
-                    }}, '*');
+                    // Use a form to submit the address to Streamlit
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '';
                     
-                    // Update Streamlit session state directly
-                    updateStreamlitSessionState(selectedAddress);
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'address';
+                    input.value = selectedAddress;
+                    form.appendChild(input);
                     
-                    // Update Streamlit input field and trigger confirmation
-                    updateStreamlitInputField(selectedAddress, true);
+                    // Add the form to the document and submit it
+                    document.body.appendChild(form);
+                    form.submit();
                     
                     document.getElementById('confirm-btn').disabled = false;
                     document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
                 }} else {{
                     alert('Please select a location first.');
                 }}
-            }}
-            
-            function updateStreamlitInputField(address, triggerConfirm = false) {{
-                // Send message to Streamlit to update the input field
-                window.parent.postMessage({{
-                    type: 'updateInputField',
-                    address: address,
-                    triggerConfirm: triggerConfirm
-                }}, '*');
-            }}
-            
-            function updateStreamlitSessionState(address) {{
-                // Send message to update Streamlit session state directly
-                window.parent.postMessage({{
-                    type: 'streamlit:setComponentValue',
-                    value: address
-                }}, '*');
-                
-                // Also try to directly update the session state
-                try {{
-                    if (window.parent.Streamlit) {{
-                        window.parent.Streamlit.setComponentValue(address);
-                    }}
-                }} catch (e) {{
-                    console.error("Error updating Streamlit session state:", e);
-                }}
-            }}
-            
-            // Initialize map immediately as a fallback
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {{
-                setTimeout(initializeMap, 1);
             }}
         </script>
     </body>
@@ -320,59 +264,8 @@ def show_location_picker(current_language: str = "English") -> str:
     
     # Display the map component with increased height
     with map_container:
-        # Add JavaScript message handler for communication from the map
-        components_js = """
-        <script>
-        // Listen for messages from the map component
-        window.addEventListener('message', function(event) {
-            if (event.data.type === 'updateInputField') {
-                // Update the input field with the selected address
-                const inputElement = document.querySelector('input[data-testid="stTextInput"]');
-                if (inputElement) {
-                    // Set the value and dispatch events to update Streamlit
-                    inputElement.value = event.data.address;
-                    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
-                    
-                    // If triggerConfirm is true, click the confirm button
-                    if (event.data.triggerConfirm) {
-                        setTimeout(function() {
-                            const confirmButton = document.querySelector('button[data-testid="stButton"]');
-                            if (confirmButton) {
-                                confirmButton.click();
-                            }
-                        }, 100);
-                    }
-                }
-            }
-            
-            // Direct update to session state
-            if (event.data.type === 'confirmedAddress') {
-                // Store in localStorage for persistence
-                localStorage.setItem('streamlit:confirmed_address', event.data.address);
-                
-                // Try to directly update Streamlit session state
-                try {
-                    if (window.parent && window.parent.Streamlit) {
-                        window.parent.Streamlit.setComponentValue(event.data.address);
-                    }
-                } catch (e) {
-                    console.error("Error updating Streamlit:", e);
-                }
-            }
-        });
-        </script>
-        """
-        html(components_js, height=0)
-        
         # Display the map
         html(get_map_html(current_language), height=550)
-        
-        # Create a hidden component to store the address
-        address_value = st.empty()
-        
-        # Add a callback to update session state when the address changes
-        if address_value:
-            st.session_state.confirmed_address = address_value
     
     # Add a separate button to manually confirm the location
     with input_container:
@@ -392,7 +285,7 @@ def show_location_picker(current_language: str = "English") -> str:
             if st.button("Confirm Address", type="primary"):
                 if address:
                     st.session_state.confirmed_address = address
-                    st.success(f"✅ Location confirmed: {address}")
+                    st.success(f"✅ Location confirmed")
                 else:
                     st.error("Please enter an address")
     
