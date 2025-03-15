@@ -11,14 +11,17 @@ def get_map_html(current_language: str = "English") -> str:
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
         confirm_text = "اس مقام کی تصدیق کریں"
+        dragging_text = "کھینچ رہے ہیں..."
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
         confirm_text = "هن مڪان جي تصديق ڪريو"
+        dragging_text = "ڪشي رهيو آهي..."
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
         confirm_text = "Confirm Location"
+        dragging_text = "Dragging..."
 
     return f"""
     <!DOCTYPE html>
@@ -84,6 +87,10 @@ def get_map_html(current_language: str = "English") -> str:
                 border: 1px solid #ccc;
                 font-size: 14px;
             }}
+            .dragging {{
+                background-color: #FFD700;
+                color: #000;
+            }}
         </style>
     </head>
     <body>
@@ -99,6 +106,8 @@ def get_map_html(current_language: str = "English") -> str:
         <script>
             var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
+            var isDragging = false;
+            var debounceTimer;
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -131,18 +140,37 @@ def get_map_html(current_language: str = "English") -> str:
                     map.setView([location.lat, location.lng], 15);
                 }});
                 
-                // Handle marker drag
-                marker.on('dragend', function(e) {{
-                    var pos = e.target.getLatLng();
-                    updateLocationPreview([pos.lat, pos.lng]);
+                // Handle marker drag start
+                marker.on('dragstart', function(e) {{
+                    isDragging = true;
+                    document.getElementById('preview').innerHTML = `📍 {dragging_text}`;
+                    document.getElementById('preview').className = 'dragging';
                 }});
                 
-                // Also update while dragging for real-time feedback
+                // Handle marker drag
                 marker.on('drag', function(e) {{
                     var pos = e.target.getLatLng();
                     selectedLocation = [pos.lat, pos.lng];
-                    // Show temporary coordinates while dragging
-                    document.getElementById('preview').innerHTML = `📍 Lat: ${{pos.lat.toFixed(6)}}, Lng: ${{pos.lng.toFixed(6)}}`;
+                    
+                    // Update coordinates in real-time
+                    document.getElementById('preview').innerHTML = 
+                        `📍 {dragging_text} Lat: ${{pos.lat.toFixed(6)}}, Lng: ${{pos.lng.toFixed(6)}}`;
+                    
+                    // Debounce the reverse geocoding during drag
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(function() {{
+                        if (isDragging) {{
+                            updateLocationPreviewDuringDrag([pos.lat, pos.lng]);
+                        }}
+                    }}, 300);
+                }});
+                
+                // Handle marker drag end
+                marker.on('dragend', function(e) {{
+                    var pos = e.target.getLatLng();
+                    isDragging = false;
+                    document.getElementById('preview').className = '';
+                    updateLocationPreview([pos.lat, pos.lng]);
                 }});
                 
                 // Handle map click
@@ -205,6 +233,20 @@ def get_map_html(current_language: str = "English") -> str:
                 }} else {{
                     alert('Error: Geolocation is not supported by your browser.');
                 }}
+            }}
+            
+            function updateLocationPreviewDuringDrag(latlng) {{
+                // Lightweight version of updateLocationPreview for use during dragging
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.display_name && isDragging) {{
+                            document.getElementById('preview').innerHTML = `📍 ${{data.display_name}}`;
+                        }}
+                    }})
+                    .catch(error => {{
+                        console.error("Error in reverse geocoding:", error);
+                    }});
             }}
             
             function updateLocationPreview(latlng) {{
