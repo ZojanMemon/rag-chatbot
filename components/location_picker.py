@@ -137,6 +137,14 @@ def get_map_html(current_language: str = "English") -> str:
                     updateLocationPreview([pos.lat, pos.lng]);
                 }});
                 
+                // Also update while dragging for real-time feedback
+                marker.on('drag', function(e) {{
+                    var pos = e.target.getLatLng();
+                    selectedLocation = [pos.lat, pos.lng];
+                    // Show temporary coordinates while dragging
+                    document.getElementById('preview').innerHTML = `📍 Lat: ${{pos.lat.toFixed(6)}}, Lng: ${{pos.lng.toFixed(6)}}`;
+                }});
+                
                 // Handle map click
                 map.on('click', function(e) {{
                     updateMarker([e.latlng.lat, e.latlng.lng]);
