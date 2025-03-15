@@ -44,10 +44,10 @@ def get_map_html(current_language: str = "English") -> str:
             .controls {{
                 margin-top: 10px;
                 display: flex;
-                gap: 7px;
+                gap: 10px;
             }}
             button {{
-                padding: 8px 9px;
+                padding: 8px 16px;
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
@@ -99,6 +99,7 @@ def get_map_html(current_language: str = "English") -> str:
         <script>
             var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
+            var selectedAddress = "";
             
             // Initialize map when DOM is fully loaded
             document.addEventListener('DOMContentLoaded', function() {{
@@ -146,11 +147,16 @@ def get_map_html(current_language: str = "English") -> str:
                 var savedAddress = localStorage.getItem('confirmedAddress');
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                    selectedAddress = savedAddress;
+                    
                     // Also update Streamlit with the saved address
                     window.parent.postMessage({{
                         type: 'confirmedAddress',
                         address: savedAddress
                     }}, '*');
+                    
+                    // Update Streamlit input field
+                    updateStreamlitInputField(savedAddress);
                 }} else {{
                     // Get initial address for the default location
                     updateLocationPreview(defaultLocation);
@@ -209,6 +215,7 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(data => {{
                         if (data.display_name) {{
                             var address = data.display_name;
+                            selectedAddress = address;
                             document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
                             // Send the selected address to Streamlit
@@ -216,6 +223,9 @@ def get_map_html(current_language: str = "English") -> str:
                                 type: 'selectedAddress',
                                 address: address
                             }}, '*');
+                            
+                            // Update Streamlit input field
+                            updateStreamlitInputField(address);
                         }}
                     }})
                     .catch(error => {{
@@ -225,42 +235,39 @@ def get_map_html(current_language: str = "English") -> str:
             }}
             
             function confirmLocation() {{
-                if (selectedLocation) {{
+                if (selectedLocation && selectedAddress) {{
                     document.getElementById('confirm-btn').disabled = true;
                     document.getElementById('confirm-btn').innerHTML = "Confirming...";
                     
-                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                        .then(response => response.json())
-                        .then(data => {{
-                            if (data.display_name) {{
-                                var address = data.display_name;
-                                
-                                // Store the address in localStorage
-                                localStorage.setItem('confirmedAddress', address);
-                                
-                                // Update UI
-                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                                
-                                // Send the confirmed address to Streamlit
-                                window.parent.postMessage({{
-                                    type: 'confirmedAddress',
-                                    address: address
-                                }}, '*');
-                                
-                                document.getElementById('confirm-btn').disabled = false;
-                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                            }}
-                        }})
-                        .catch(error => {{
-                            console.error("Error confirming location:", error);
-                            document.getElementById('preview').innerHTML = "Error confirming location.";
-                            
-                            document.getElementById('confirm-btn').disabled = false;
-                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
-                        }});
+                    // Store the address in localStorage
+                    localStorage.setItem('confirmedAddress', selectedAddress);
+                    
+                    // Update UI
+                    document.getElementById('preview').innerHTML = `✅ ${{selectedAddress}}`;
+                    
+                    // Send the confirmed address to Streamlit
+                    window.parent.postMessage({{
+                        type: 'confirmedAddress',
+                        address: selectedAddress
+                    }}, '*');
+                    
+                    // Update Streamlit input field and trigger confirmation
+                    updateStreamlitInputField(selectedAddress, true);
+                    
+                    document.getElementById('confirm-btn').disabled = false;
+                    document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
                 }} else {{
                     alert('Please select a location first.');
                 }}
+            }}
+            
+            function updateStreamlitInputField(address, triggerConfirm = false) {{
+                // Send message to Streamlit to update the input field
+                window.parent.postMessage({{
+                    type: 'updateInputField',
+                    address: address,
+                    triggerConfirm: triggerConfirm
+                }}, '*');
             }}
             
             // Initialize map immediately as a fallback
@@ -278,28 +285,67 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
+    # Create a container for the map
+    map_container = st.container()
+    
+    # Create a container for the address input and confirmation
+    input_container = st.container()
+    
     # Display the map component with increased height
-    html(get_map_html(current_language), height=550)
+    with map_container:
+        # Add JavaScript message handler for communication from the map
+        components_js = """
+        <script>
+        // Listen for messages from the map component
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'updateInputField') {
+                // Update the input field with the selected address
+                const inputElement = document.querySelector('input[data-testid="stTextInput"]');
+                if (inputElement) {
+                    // Set the value and dispatch events to update Streamlit
+                    inputElement.value = event.data.address;
+                    inputElement.dispatchEvent(new Event('input', { bubbles: true }));
+                    
+                    // If triggerConfirm is true, click the confirm button
+                    if (event.data.triggerConfirm) {
+                        setTimeout(function() {
+                            const confirmButton = document.querySelector('button[data-testid="stButton"]');
+                            if (confirmButton) {
+                                confirmButton.click();
+                            }
+                        }, 100);
+                    }
+                }
+            }
+        });
+        </script>
+        """
+        html(components_js, height=0)
+        
+        # Display the map
+        html(get_map_html(current_language), height=550)
     
     # Add a separate button to manually confirm the location
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        # Pre-fill with any address from the map if available
-        address = st.text_input(
-            "Confirm your address", 
-            key="manual_address_input",
-            help="Enter your address or use the map above to select a location"
-        )
-    
-    with col2:
-        # Add some vertical spacing to align with the text input
-        st.write("")
-        if st.button("Confirm Address", type="primary"):
-            if address:
-                st.session_state.confirmed_address = address
-            else:
-                st.error("Please enter an address")
+    with input_container:
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Pre-fill with any address from the map if available
+            address = st.text_input(
+                "Confirm your address", 
+                key="manual_address_input",
+                help="Address will be automatically filled when you select a location on the map"
+            )
+        
+        with col2:
+            # Add some vertical spacing to align with the text input
+            st.write("")
+            if st.button("Confirm Address", type="primary"):
+                if address:
+                    st.session_state.confirmed_address = address
+                    st.success(f"✅ Location confirmed: {address}")
+                else:
+                    st.error("Please enter an address")
     
     # Display the confirmed address if available
     if st.session_state.confirmed_address:
