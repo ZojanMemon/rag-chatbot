@@ -74,7 +74,7 @@ def get_map_html(current_language: str = "English") -> str:
             /* Mobile-specific styles */
             @media screen and (max-width: 768px) {{
                 #map {{
-                    height: 300px;
+                    height: 300px;  /* Slightly smaller map on mobile */
                 }}
                 #preview {{
                     max-height: 80px;
@@ -88,8 +88,10 @@ def get_map_html(current_language: str = "English") -> str:
                     padding: 10px;
                     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
                     margin: 0;
-                    width: 100%;
+                    width: 94%;
                     justify-content: center;
+                    flex-wrap: wrap;
+
                 }}
                 button {{
                     flex: 1;
@@ -114,13 +116,17 @@ def get_map_html(current_language: str = "English") -> str:
 
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
+
+            // Initialize map
             map = L.map('map').setView(defaultLocation, 6);
 
+            // Add OpenStreetMap tiles
             L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
                 maxZoom: 19,
                 attribution: '© OpenStreetMap contributors'
             }}).addTo(map);
 
+            // Add search control
             const geocoder = L.Control.geocoder({{
                 defaultMarkGeocode: false,
                 placeholder: "{search_placeholder}",
@@ -133,15 +139,18 @@ def get_map_html(current_language: str = "English") -> str:
                 map.setView(location, 17);
             }});
 
+            // Add marker
             marker = L.marker(defaultLocation, {{
                 draggable: true
             }}).addTo(map);
 
+            // Handle marker drag
             marker.on('dragend', function(e) {{
                 const pos = e.target.getLatLng();
                 updateLocationPreview([pos.lat, pos.lng]);
             }});
 
+            // Handle map click
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
@@ -172,6 +181,7 @@ def get_map_html(current_language: str = "English") -> str:
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
             confirmedLocation = null;
+            // Use Nominatim for reverse geocoding
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                 .then(response => response.json())
                 .then(data => {{
@@ -192,16 +202,12 @@ def get_map_html(current_language: str = "English") -> str:
                             const address = data.display_name;
                             confirmedLocation = address;
                             
-                            // Store the address in localStorage and sessionStorage
+                            // Store the address in localStorage
                             localStorage.setItem('confirmedAddress', address);
-                            sessionStorage.setItem('confirmedAddress', address);
                             
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Reload the page to update Streamlit
-                            window.location.reload();
                         }}
                     }});
             }}
@@ -223,35 +229,15 @@ def show_location_picker(current_language: str = "English") -> None:
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Try to get the confirmed address from session state
-        if 'confirmed_address' not in st.session_state:
-            st.session_state.confirmed_address = ""
-            
-        # Check if there's a new confirmed address from the map
-        if st.session_state.confirmed_address == "":
-            placeholder = st.empty()
-            js_code = """
-            <script>
-                const address = sessionStorage.getItem('confirmedAddress');
-                if (address) {
-                    window.parent.document.querySelector('[data-testid="stTextInput"]').value = address;
-                }
-            </script>
-            """
-            placeholder.markdown(js_code, unsafe_allow_html=True)
-            
-        address = st.text_input(
-            "Confirm your address",
-            value=st.session_state.confirmed_address,
-            key="manual_address_input"
-        )
+        address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
         if st.button("Confirm Address", type="primary"):
             if address:
                 st.session_state.confirmed_address = address
-                st.success("✅ Location confirmed!")
+                st.success(f"Location confirmed: {address}")
             else:
                 st.error("Please enter an address")
     
+    # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
