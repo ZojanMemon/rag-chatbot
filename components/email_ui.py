@@ -21,6 +21,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
         select_location_text = "براہ کرم مقام منتخب کریں"
+        no_location_warning = "براہ کرم پہلے مقام منتخب کریں"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
@@ -28,6 +29,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
         select_location_text = "مهرباني ڪري مڪان چونڊيو"
+        no_location_warning = "مهرباني ڪري پهريان مڪان چونڊيو"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
@@ -35,6 +37,7 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
         select_location_text = "Please select a location"
+        no_location_warning = "Please select a location first"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -138,25 +141,37 @@ def show_email_ui(messages, user_email="Anonymous"):
         with col2:
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
-            if st.button(share_button_text, type="primary", use_container_width=True):
-                # Get the confirmed address from session state
+            
+            # Create a container for the share button and status messages
+            share_container = st.container()
+            
+            with share_container:
+                # Check if we have a location before enabling the share button
                 location = st.session_state.get("confirmed_address", "")
                 
-                # Always send the email since location is confirmed by the confirm button
-                email_service = EmailService()
-                success, error = email_service.send_email(
-                    recipient_email=emergency_types[emergency_type],
-                    chat_history=messages,
-                    user_email=user_email,
-                    emergency_type=emergency_type,
-                    user_name=user_name,
-                    phone_number=phone_number,
-                    location=location
-                )
-                
-                if success:
-                    st.success(success_message.format(emergency_labels[emergency_type]))
-                    # Clear location after successful send
-                    st.session_state.confirmed_address = ""
-                else:
-                    st.error(f"{error_message}: {error}")
+                if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
+                    if location:
+                        # Show a spinner while sending email
+                        with st.spinner("Sending..."):
+                            email_service = EmailService()
+                            success, error = email_service.send_email(
+                                recipient_email=emergency_types[emergency_type],
+                                chat_history=messages,
+                                user_email=user_email,
+                                emergency_type=emergency_type,
+                                user_name=user_name,
+                                phone_number=phone_number,
+                                location=location
+                            )
+                            
+                            if success:
+                                st.success(success_message.format(emergency_labels[emergency_type]))
+                                # Clear location after successful send
+                                st.session_state.confirmed_address = ""
+                                # Force rerun to update UI
+                                time.sleep(1)
+                                st.experimental_rerun()
+                            else:
+                                st.error(f"{error_message}: {error}")
+                    else:
+                        st.warning(no_location_warning)

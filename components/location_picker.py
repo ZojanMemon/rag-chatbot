@@ -44,10 +44,10 @@ def get_map_html(current_language: str = "English") -> str:
             .controls {{
                 margin-top: 10px;
                 display: flex;
-                gap: 7px;
+                gap: 10px;
             }}
             button {{
-                padding: 8px 9px;
+                padding: 8px 16px;
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
@@ -278,32 +278,54 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Display the map component with increased height
-    html(get_map_html(current_language), height=550)
+    # Create a container for the component
+    map_container = st.container()
     
-    # Add a separate button to manually confirm the location
-    col1, col2 = st.columns([3, 1])
+    # Handle messages from JavaScript
+    if "location_picker_key" not in st.session_state:
+        st.session_state.location_picker_key = 0
     
-    with col1:
-        # Pre-fill with any address from the map if available
-        address = st.text_input(
-            "Confirm your address", 
-            key="manual_address_input",
-            help="Enter your address or use the map above to select a location"
-        )
+    # Create a placeholder for the component
+    with map_container:
+        # Display the map component with increased height
+        html(get_map_html(current_language), height=550, key=f"map_component_{st.session_state.location_picker_key}")
     
-    with col2:
-        # Add some vertical spacing to align with the text input
-        st.write("")
-        if st.button("Confirm Address", type="primary"):
-            if address:
-                st.session_state.confirmed_address = address
-            else:
-                st.error("Please enter an address")
+    # Listen for messages from JavaScript using a hidden component
+    components_js = """
+    <script>
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'confirmedAddress') {
+            // Send to Streamlit
+            const data = {
+                confirmedAddress: event.data.address
+            };
+            window.parent.postMessage({
+                type: "streamlit:setComponentValue",
+                value: data
+            }, "*");
+        }
+    });
+    </script>
+    """
+    
+    # Add a custom component to listen for messages
+    from streamlit.components.v1 import html as raw_html
+    
+    # Define a callback for when the component value changes
+    def on_address_change(value):
+        if value and "confirmedAddress" in value:
+            st.session_state.confirmed_address = value["confirmedAddress"]
+            # Increment the key to force a rerender
+            st.session_state.location_picker_key += 1
+            # Force a rerun to update the UI
+            st.experimental_rerun()
+    
+    # Add the listener component
+    raw_html(components_js, height=0, key="location_listener", on_change=on_address_change)
     
     # Display the confirmed address if available
     if st.session_state.confirmed_address:
-        st.info(f"📍 Confirmed location: {st.session_state.confirmed_address}")
+        st.success(f"✅ Location confirmed: {st.session_state.confirmed_address}")
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
