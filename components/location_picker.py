@@ -209,15 +209,10 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
 
-                            // Update Streamlit session state via query parameters
-                            const searchParams = new URLSearchParams(window.location.search);
-                            searchParams.set('confirmed_address', address);
-                            window.history.replaceState({}, '', `?${{searchParams.toString()}}`);
-
-                            // Force Streamlit to rerun
+                            // Send confirmed address to Streamlit
                             window.parent.postMessage({{
                                 type: 'streamlit:setComponentValue',
-                                value: true
+                                value: address
                             }}, '*');
                         }}
                     }});
@@ -233,15 +228,10 @@ def get_map_html(current_language: str = "English") -> str:
             document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
             document.getElementById('confirm-btn').classList.add('hidden');
             
-            // Update Streamlit session state via query parameters
-            const searchParams = new URLSearchParams(window.location.search);
-            searchParams.set('confirmed_address', savedAddress);
-            window.history.replaceState({}, '', `?${{searchParams.toString()}}`);
-
-            // Force Streamlit to rerun
+            // Send saved address to Streamlit
             window.parent.postMessage({{
                 type: 'streamlit:setComponentValue',
-                value: true
+                value: savedAddress
             }}, '*');
         }}
         </script>
@@ -254,18 +244,17 @@ def show_location_picker(current_language: str = "English") -> None:
     # Create a unique key for the component
     component_key = "map_location_picker"
     
-    # Display the map component
-    html(get_map_html(current_language), height=500)
+    # Display the map component and get its value
+    map_component = html(get_map_html(current_language), height=500, key=component_key)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Get address from session state if available
-        saved_address = st.session_state.get('confirmed_address', '')
+        # Auto-fill the address if we got one from the map component
         address = st.text_input(
             "Confirm your address",
-            value=saved_address,
+            value=map_component if isinstance(map_component, str) else "",
             key="manual_address_input"
         )
     
