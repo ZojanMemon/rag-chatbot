@@ -184,8 +184,8 @@ def get_map_html(current_language: str = "English") -> str:
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
                     window.parent.postMessage({{
-                        type: 'streamlit:setComponentValue',
-                        value: savedAddress
+                        type: 'selectedAddress',
+                        address: savedAddress
                     }}, '*');
                 }} else {{
                     // Get initial address for the default location
@@ -263,8 +263,8 @@ def get_map_html(current_language: str = "English") -> str:
                             
                             // Send the selected address to Streamlit
                             window.parent.postMessage({{
-                                type: 'streamlit:setComponentValue',
-                                value: address
+                                type: 'selectedAddress',
+                                address: address
                             }}, '*');
                         }}
                     }})
@@ -293,8 +293,8 @@ def get_map_html(current_language: str = "English") -> str:
                                 
                                 // Send the confirmed address to Streamlit
                                 window.parent.postMessage({{
-                                    type: 'streamlit:setComponentValue',
-                                    value: address
+                                    type: 'confirmedAddress',
+                                    address: address
                                 }}, '*');
                                 
                                 document.getElementById('confirm-btn').disabled = false;
@@ -324,25 +324,41 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
-    # Initialize session state for confirmed address if not exists
+    # Initialize session state variables if they don't exist
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Display the map component with increased height
-    map_html = get_map_html(current_language)
-    result = html(map_html, height=550)
+    if "selected_address" not in st.session_state:
+        st.session_state.selected_address = ""
     
-    # Process any returned data from the component
-    if result:
-        # Store the address in session state
-        st.session_state.selected_address = result
+    if "address_from_map" not in st.session_state:
+        st.session_state.address_from_map = ""
         
+    # Create a container for the map
+    map_container = st.container()
+    
+    # Create a callback to handle messages from the map component
+    def handle_map_message(msg):
+        if msg:
+            st.session_state.address_from_map = msg
+            return msg
+        return ""
+    
+    # Display the map component
+    with map_container:
+        map_html = get_map_html(current_language)
+        result = html(map_html, height=550, key="map_component", on_message=handle_map_message)
+    
+    # If we received a message from the map, update the selected address
+    if st.session_state.address_from_map:
+        st.session_state.selected_address = st.session_state.address_from_map
+    
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
     
     with col1:
         # Pre-fill with selected or confirmed address if available
-        default_value = st.session_state.get('selected_address', st.session_state.confirmed_address)
+        default_value = st.session_state.selected_address or st.session_state.confirmed_address
         address = st.text_input(
             "Confirm your address", 
             value=default_value,
@@ -359,10 +375,6 @@ def show_location_picker(current_language: str = "English") -> None:
                 st.success(f"✅ Location confirmed: {address}")
             else:
                 st.error("Please enter an address")
-    
-    # Display the confirmed address if available
-    if st.session_state.confirmed_address and st.session_state.confirmed_address != default_value:
-        st.info(f"📍 Confirmed location: {st.session_state.confirmed_address}")
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
