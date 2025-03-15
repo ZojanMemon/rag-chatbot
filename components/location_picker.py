@@ -40,8 +40,6 @@ def get_map_html(current_language: str = "English") -> str:
                 margin-top: 10px;
                 display: flex;
                 gap: 10px;
-                position: relative;
-                z-index: 1000;
             }}
             button {{
                 padding: 8px 16px;
@@ -49,7 +47,6 @@ def get_map_html(current_language: str = "English") -> str:
                 border-radius: 4px;
                 cursor: pointer;
                 font-weight: 500;
-                white-space: nowrap;
             }}
             .primary {{
                 background-color: #FF4B4B;
@@ -68,33 +65,6 @@ def get_map_html(current_language: str = "English") -> str:
                 background-color: #f0f2f6;
                 border-radius: 4px;
                 font-size: 14px;
-                word-break: break-word;
-            }}
-            
-            /* Mobile-specific styles */
-            @media screen and (max-width: 768px) {{
-                #map {{
-                    height: 300px;  /* Slightly smaller map on mobile */
-                }}
-                #preview {{
-                    max-height: 80px;
-                    overflow-y: auto;
-                    -webkit-overflow-scrolling: touch;
-                }}
-                .controls {{
-                    position: sticky;
-                    bottom: 10px;
-                    background: white;
-                    padding: 10px;
-                    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                    margin: 0;
-                    width: 100%;
-                    justify-content: center;
-                }}
-                button {{
-                    flex: 1;
-                    max-width: 200px;
-                }}
             }}
         </style>
     </head>
@@ -206,15 +176,6 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
-                            
-                            // Update the Streamlit text input with more specific selector
-                            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
-                            if (addressInput) {{
-                                addressInput.value = address;
-                                // Trigger input event to ensure Streamlit recognizes the change
-                                const event = new Event('input', {{ bubbles: true }});
-                                addressInput.dispatchEvent(event);
-                            }}
                         }}
                     }});
             }}
@@ -222,17 +183,6 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
-
-        // Check if there's a previously confirmed address and update the text input
-        const savedAddress = localStorage.getItem('confirmedAddress');
-        if (savedAddress) {{
-            const addressInput = window.parent.document.querySelector('input[aria-label="Confirm your address"]');
-            if (addressInput) {{
-                addressInput.value = savedAddress;
-                const event = new Event('input', {{ bubbles: true }});
-                addressInput.dispatchEvent(event);
-            }}
-        }}
         </script>
     </body>
     </html>
