@@ -25,9 +25,9 @@ def get_map_html(current_language: str = "English") -> str:
     <html>
     <head>
         <title>Location Picker</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
         <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
             #map {{
@@ -103,6 +103,14 @@ def get_map_html(current_language: str = "English") -> str:
         let selectedLocation;
         let confirmedLocation;
 
+        // Function to send data back to Streamlit
+        function sendToStreamlit(data) {{
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                value: data
+            }}, '*');
+        }}
+
         function initMap() {{
             const defaultLocation = [30.3753, 69.3451];
 
@@ -126,8 +134,8 @@ def get_map_html(current_language: str = "English") -> str:
                 position: 'topleft',
                 geocoder: L.Control.Geocoder.nominatim({{
                     geocodingQueryParams: {{
-                        countrycodes: 'pk',  // Limit to Pakistan
-                        viewbox: '60.8742,37.0974,77.8401,23.6345',  // Pakistan bounding box
+                        countrycodes: 'pk',
+                        viewbox: '60.8742,37.0974,77.8401,23.6345',
                         bounded: 1
                     }}
                 }})
@@ -141,9 +149,9 @@ def get_map_html(current_language: str = "English") -> str:
 
             // Add marker with custom icon
             const markerIcon = L.icon({{
-                iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-                shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+                iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34],
@@ -165,6 +173,12 @@ def get_map_html(current_language: str = "English") -> str:
             map.on('click', function(e) {{
                 updateMarker([e.latlng.lat, e.latlng.lng]);
             }});
+
+            // Try to restore previous location
+            const savedAddress = localStorage.getItem('confirmedAddress');
+            if (savedAddress) {{
+                document.getElementById('preview').innerHTML = `📍 ${{savedAddress}}`;
+            }}
         }}
 
         function updateMarker(latlng) {{
@@ -192,40 +206,65 @@ def get_map_html(current_language: str = "English") -> str:
         function updateLocationPreview(latlng) {{
             selectedLocation = latlng;
             confirmedLocation = null;
+            
             // Show loading state
             document.getElementById('preview').innerHTML = '📍 Loading address...';
             document.getElementById('confirm-btn').classList.remove('hidden');
+            document.getElementById('confirm-btn').style.backgroundColor = '#FF4B4B';
             
-            // Use Nominatim for reverse geocoding
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
-                .then(response => response.json())
+            // Use Nominatim for reverse geocoding with better error handling
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json&addressdetails=1`)
+                .then(response => {{
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                }})
                 .then(data => {{
                     if (data.display_name) {{
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
+                        sendToStreamlit(address);
+                    }} else {{
+                        throw new Error('No address found');
                     }}
                 }})
                 .catch(error => {{
-                    document.getElementById('preview').innerHTML = '❌ Error loading address';
+                    console.error('Error:', error);
+                    document.getElementById('preview').innerHTML = '❌ Error loading address. Please try again.';
                 }});
         }}
 
         function confirmLocation() {{
             if (selectedLocation) {{
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
-                    .then(response => response.json())
+                // Show loading state
+                document.getElementById('preview').innerHTML = '⏳ Confirming location...';
+                
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json&addressdetails=1`)
+                    .then(response => {{
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    }})
                     .then(data => {{
                         if (data.display_name) {{
                             const address = data.display_name;
                             confirmedLocation = address;
                             
-                            // Store the address in localStorage
+                            // Store the address
                             localStorage.setItem('confirmedAddress', address);
                             
-                            // Update UI
+                            // Update UI with success state
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').style.backgroundColor = '#28a745';
+                            
+                            // Send confirmed address to Streamlit
+                            sendToStreamlit(`✅ ${{address}}`);
+                        }} else {{
+                            throw new Error('No address found');
                         }}
+                    }})
+                    .catch(error => {{
+                        console.error('Error:', error);
+                        document.getElementById('preview').innerHTML = '❌ Error confirming location. Please try again.';
+                        document.getElementById('confirm-btn').style.backgroundColor = '#FF4B4B';
                     }});
             }}
         }}
@@ -239,19 +278,14 @@ def get_map_html(current_language: str = "English") -> str:
 
 def show_location_picker(current_language: str = "English") -> None:
     """Show location picker with OpenStreetMap integration."""
+    # Initialize session state for location if not exists
+    if 'confirmed_location' not in st.session_state:
+        st.session_state.confirmed_location = None
+
     # Display the map component
-    html(get_map_html(current_language), height=500)
+    location_value = html(get_map_html(current_language), height=500)
     
-    # Add a separate button to manually confirm the location
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        address = st.text_input("Confirm your address", key="manual_address_input")
-    
-    with col2:
-        if st.button("Save Address", type="primary"):
-            if address:
-                st.session_state.confirmed_location = address
-                st.success("✅ Address saved successfully!")
-            else:
-                st.error("Please enter an address")
+    if location_value is not None:
+        st.session_state.confirmed_location = location_value
+        
+    return st.session_state.confirmed_location
