@@ -110,13 +110,8 @@ def show_email_ui(messages, user_email="Anonymous"):
         # Location picker
         st.markdown(f"#### {location_label}")
         
-        # Show the location picker and get the confirmed address
-        confirmed_location = show_location_picker(current_language)
-        st.session_state.confirmed_address = confirmed_location
-        
-        # Display a success message when location is confirmed
-        if confirmed_location:
-            st.success("Location confirmed: " + confirmed_location)
+        # Show the location picker
+        show_location_picker(current_language)
         
         # Emergency type selection
         st.markdown("#### " + ("ایمرجنسی کی قسم" if current_language == "Urdu" else 
@@ -147,37 +142,30 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             
-            # Create a container for the share button and status messages
-            share_container = st.container()
+            # Get the confirmed address from session state
+            location = st.session_state.get("confirmed_address", "")
             
-            with share_container:
-                # Get the confirmed address from session state
-                location = st.session_state.get("confirmed_address", "")
-                
-                # Create a share button
-                if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
-                    if location:
-                        # Show a spinner while sending email
-                        with st.spinner("Sending..."):
-                            email_service = EmailService()
-                            success, error = email_service.send_email(
-                                recipient_email=emergency_types[emergency_type],
-                                chat_history=messages,
-                                user_email=user_email,
-                                emergency_type=emergency_type,
-                                user_name=user_name,
-                                phone_number=phone_number,
-                                location=location
-                            )
-                            
-                            if success:
-                                st.success(success_message.format(emergency_labels[emergency_type]))
-                                # Clear location after successful send
-                                st.session_state.confirmed_address = ""
-                                # Force rerun to update UI
-                                time.sleep(1)
-                                st.experimental_rerun()
-                            else:
-                                st.error(f"{error_message}: {error}")
-                    else:
-                        st.warning(no_location_warning)
+            # Create a share button
+            if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
+                if location:
+                    # Show a spinner while sending email
+                    with st.spinner("Sending..."):
+                        email_service = EmailService()
+                        success, error = email_service.send_email(
+                            recipient_email=emergency_types[emergency_type],
+                            chat_history=messages,
+                            user_email=user_email,
+                            emergency_type=emergency_type,
+                            user_name=user_name,
+                            phone_number=phone_number,
+                            location=location
+                        )
+                        
+                        if success:
+                            st.success(success_message.format(emergency_labels[emergency_type]))
+                            # Clear location after successful send
+                            st.session_state.confirmed_address = ""
+                        else:
+                            st.error(f"{error_message}: {error}")
+                else:
+                    st.warning(no_location_warning)

@@ -148,8 +148,8 @@ def get_map_html(current_language: str = "English") -> str:
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                     // Also update Streamlit with the saved address
                     window.parent.postMessage({{
-                        type: 'confirmedAddress',
-                        address: savedAddress
+                        type: 'streamlit:setComponentValue',
+                        value: {{ confirmedAddress: savedAddress }}
                     }}, '*');
                 }} else {{
                     // Get initial address for the default location
@@ -272,49 +272,29 @@ def get_map_html(current_language: str = "English") -> str:
     </html>
     """
 
-def show_location_picker(current_language: str = "English") -> None:
+def show_location_picker(current_language: str = "English") -> str:
     """Show location picker with OpenStreetMap integration."""
     # Initialize session state for confirmed address if not exists
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Create a container for the component
-    map_container = st.container()
+    # Simple implementation without complex component callbacks
+    map_html = get_map_html(current_language)
+    html(map_html, height=550)
     
-    # Handle messages from JavaScript
-    if "location_picker_key" not in st.session_state:
-        st.session_state.location_picker_key = 0
-    
-    # Create a placeholder for the component
-    with map_container:
-        # Display the map component with increased height
-        html(get_map_html(current_language), height=550, key=f"map_component_{st.session_state.location_picker_key}")
-    
-    # Define a callback for when the component value changes
-    def on_address_change(value):
-        if value and isinstance(value, dict) and "confirmedAddress" in value:
-            # Store the confirmed address in session state
-            st.session_state.confirmed_address = value["confirmedAddress"]
-            # Force a rerun to update the UI
-            st.experimental_rerun()
-    
-    # Add a custom component to listen for messages
-    from streamlit.components.v1 import html as raw_html
-    raw_html(
-        """
-        <div id="location-listener"></div>
-        <script>
-        // Empty script to create a component that can receive messages
-        </script>
-        """, 
-        height=0, 
-        key=f"location_listener_{st.session_state.location_picker_key}",
-        on_change=on_address_change
-    )
-    
-    # Display the confirmed address if available
-    if st.session_state.confirmed_address:
-        st.success(f"✅ Location confirmed: {st.session_state.confirmed_address}")
+    # Add a simple form for manual address confirmation
+    with st.form(key="location_form"):
+        # Pre-fill with any address from the map if available
+        address = st.text_input(
+            "Confirm your location",
+            value=st.session_state.get("confirmed_address", ""),
+            key="manual_address_input"
+        )
+        
+        # Submit button
+        submit = st.form_submit_button("Confirm Address")
+        if submit and address:
+            st.session_state.confirmed_address = address
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
