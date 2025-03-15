@@ -44,10 +44,10 @@ def get_map_html(current_language: str = "English") -> str:
             .controls {{
                 margin-top: 10px;
                 display: flex;
-                gap: 10px;
+                gap: 7px;
             }}
             button {{
-                padding: 8px 16px;
+                padding: 8px 9px;
                 border: none;
                 border-radius: 4px;
                 cursor: pointer;
