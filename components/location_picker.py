@@ -189,6 +189,22 @@ def get_map_html(current_language: str = "English") -> str:
                         const address = data.display_name;
                         document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                         document.getElementById('confirm-btn').classList.remove('hidden');
+
+                        // Automatically click the confirm button
+                        const confirmBtn = document.querySelector('button[kind="primary"]');
+                        if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
+                            // First update the input field
+                            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+                            if (manualInput) {{
+                                manualInput.value = address;
+                                // Trigger input event
+                                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                // Wait for Streamlit to process the input
+                                setTimeout(() => {{
+                                    confirmBtn.click();
+                                }}, 100);
+                            }}
+                        }}
                     }}
                 }});
         }}
@@ -209,13 +225,20 @@ def get_map_html(current_language: str = "English") -> str:
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
 
-                            // Update manual input via Streamlit
-                            const manualInput = document.querySelector('input[aria-label="Confirm your address"]');
-                            if (manualInput) {{
-                                manualInput.value = address;
-                                // Trigger input event to update Streamlit
-                                const event = new Event('input', {{ bubbles: true }});
-                                manualInput.dispatchEvent(event);
+                            // Automatically click the confirm button
+                            const confirmBtn = document.querySelector('button[kind="primary"]');
+                            if (confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
+                                // First update the input field
+                                const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+                                if (manualInput) {{
+                                    manualInput.value = address;
+                                    // Trigger input event
+                                    manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                                    // Wait for Streamlit to process the input
+                                    setTimeout(() => {{
+                                        confirmBtn.click();
+                                    }}, 100);
+                                }}
                             }}
                         }}
                     }});
@@ -231,13 +254,15 @@ def get_map_html(current_language: str = "English") -> str:
             document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
             document.getElementById('confirm-btn').classList.add('hidden');
             
-            // Update manual input with saved address
-            const manualInput = document.querySelector('input[aria-label="Confirm your address"]');
-            if (manualInput) {{
+            // Automatically fill and confirm the address
+            const manualInput = document.querySelector('input[data-testid="stTextInput"]');
+            const confirmBtn = document.querySelector('button[kind="primary"]');
+            if (manualInput && confirmBtn && confirmBtn.textContent.includes('Confirm Address')) {{
                 manualInput.value = savedAddress;
-                // Trigger input event to update Streamlit
-                const event = new Event('input', {{ bubbles: true }});
-                manualInput.dispatchEvent(event);
+                manualInput.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                setTimeout(() => {{
+                    confirmBtn.click();
+                }}, 100);
             }}
         }}
         </script>
