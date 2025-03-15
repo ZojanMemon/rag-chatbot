@@ -24,17 +24,24 @@ def get_map_html(current_language: str = "English") -> str:
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Location Picker</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
+            body {{
+                margin: 0;
+                padding: 0;
+            }}
             #map {{
-                height: 400px;
+                height: 500px;
                 width: 100%;
                 margin-bottom: 10px;
                 border-radius: 8px;
+                z-index: 0;
             }}
             .controls {{
                 margin-top: 10px;
@@ -97,46 +104,68 @@ def get_map_html(current_language: str = "English") -> str:
         let selectedLocation;
         let confirmedLocation;
 
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {{
+            initMap();
+        }});
+
         function initMap() {{
-            const defaultLocation = [30.3753, 69.3451];
+            try {{
+                const defaultLocation = [30.3753, 69.3451]; // Pakistan center
 
-            // Initialize map
-            map = L.map('map').setView(defaultLocation, 6);
+                // Initialize map
+                map = L.map('map').setView(defaultLocation, 6);
 
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-                maxZoom: 19,
-                attribution: '© OpenStreetMap contributors'
-            }}).addTo(map);
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }}).addTo(map);
 
-            // Add search control
-            const geocoder = L.Control.geocoder({{
-                defaultMarkGeocode: false,
-                placeholder: "{search_placeholder}",
-                collapsed: false
-            }}).addTo(map);
+                // Add search control
+                const geocoder = L.Control.geocoder({{
+                    defaultMarkGeocode: false,
+                    placeholder: "{search_placeholder}",
+                    collapsed: false,
+                    position: 'topright'
+                }}).addTo(map);
 
-            geocoder.on('markgeocode', function(e) {{
-                const location = e.geocode.center;
-                updateMarker([location.lat, location.lng]);
-                map.setView(location, 17);
-            }});
+                geocoder.on('markgeocode', function(e) {{
+                    const location = e.geocode.center;
+                    updateMarker([location.lat, location.lng]);
+                    map.setView(location, 17);
+                }});
 
-            // Add marker
-            marker = L.marker(defaultLocation, {{
-                draggable: true
-            }}).addTo(map);
+                // Add marker
+                marker = L.marker(defaultLocation, {{
+                    draggable: true
+                }}).addTo(map);
 
-            // Handle marker drag
-            marker.on('dragend', function(e) {{
-                const pos = e.target.getLatLng();
-                updateLocationPreview([pos.lat, pos.lng]);
-            }});
+                // Handle marker drag
+                marker.on('dragend', function(e) {{
+                    const pos = e.target.getLatLng();
+                    updateLocationPreview([pos.lat, pos.lng]);
+                }});
 
-            // Handle map click
-            map.on('click', function(e) {{
-                updateMarker([e.latlng.lat, e.latlng.lng]);
-            }});
+                // Handle map click
+                map.on('click', function(e) {{
+                    updateMarker([e.latlng.lat, e.latlng.lng]);
+                }});
+
+                // Check for previously confirmed location
+                const savedAddress = localStorage.getItem('confirmedAddress');
+                if (savedAddress) {{
+                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                }}
+
+                // Force a map resize after a short delay to ensure it renders properly
+                setTimeout(function() {{
+                    map.invalidateSize();
+                }}, 100);
+            }} catch (error) {{
+                console.error("Error initializing map:", error);
+                document.getElementById('map').innerHTML = "Error loading map. Please refresh the page.";
+            }}
         }}
 
         function updateMarker(latlng) {{
@@ -152,8 +181,14 @@ def get_map_html(current_language: str = "English") -> str:
                         map.setView(pos, 17);
                         updateMarker(pos);
                     }},
-                    function() {{
-                        alert('Error: Could not detect location.');
+                    function(error) {{
+                        console.error("Geolocation error:", error);
+                        alert('Error: Could not detect location. ' + error.message);
+                    }},
+                    {{
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
                     }}
                 );
             }} else {{
@@ -177,6 +212,9 @@ def get_map_html(current_language: str = "English") -> str:
                             address: address
                         }}, '*');
                     }}
+                }})
+                .catch(error => {{
+                    console.error("Error in reverse geocoding:", error);
                 }});
         }}
 
@@ -201,18 +239,23 @@ def get_map_html(current_language: str = "English") -> str:
                                 address: address
                             }}, '*');
                         }}
+                    }})
+                    .catch(error => {{
+                        console.error("Error confirming location:", error);
                     }});
             }}
         }}
 
-        // Initialize the map
+        // Initialize the map immediately
         initMap();
         
-        // Check for previously confirmed location
-        const savedAddress = localStorage.getItem('confirmedAddress');
-        if (savedAddress) {{
-            document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
-        }}
+        // Also add a window.onload handler as a backup
+        window.onload = function() {{
+            // Force a map resize after a short delay to ensure it renders properly
+            setTimeout(function() {{
+                if (map) map.invalidateSize();
+            }}, 500);
+        }};
         </script>
     </body>
     </html>
@@ -224,8 +267,8 @@ def show_location_picker(current_language: str = "English") -> None:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Display the map component
-    html(get_map_html(current_language), height=500)
+    # Display the map component with increased height
+    html(get_map_html(current_language), height=550)
     
     # Add a separate button to manually confirm the location
     col1, col2 = st.columns([3, 1])
