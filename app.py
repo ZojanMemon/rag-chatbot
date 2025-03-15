@@ -530,8 +530,38 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    # Display main heading
-    st.markdown("<h1 class='main-heading'>🚨 Welcome to the Disaster Management Assistant</h1>", unsafe_allow_html=True)
+    # Add custom CSS with media queries for responsive heading
+    st.markdown("""
+        <style>
+        .main-heading {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #262730;
+            text-align: center;
+        }
+        
+        /* Mobile devices */
+        @media screen and (max-width: 768px) {
+            .main-heading {
+                font-size: 1.75rem;
+                margin-bottom: 1rem;
+                padding: 0 10px;
+            }
+        }
+        
+        /* Extra small devices */
+        @media screen and (max-width: 480px) {
+            .main-heading {
+                font-size: 1.5rem;
+                margin-bottom: 0.75rem;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+    # Display the responsive heading
+    st.markdown('<h1 class="main-heading">🚨 Welcome to the Disaster Management Assistant</h1>', unsafe_allow_html=True)
 
     # Handle authentication
     is_authenticated, user = auth_page()
