@@ -208,6 +208,12 @@ def get_map_html(current_language: str = "English") -> str:
                             // Update UI
                             document.getElementById('preview').innerHTML = `✅ ${{address}}`;
                             document.getElementById('confirm-btn').classList.add('hidden');
+                            
+                            // Update the Streamlit text input
+                            window.parent.document.querySelector('[data-testid="stTextInput"] input').value = address;
+                            // Trigger input event to ensure Streamlit recognizes the change
+                            const event = new Event('input', {{ bubbles: true }});
+                            window.parent.document.querySelector('[data-testid="stTextInput"] input').dispatchEvent(event);
                         }}
                     }});
             }}
@@ -215,6 +221,14 @@ def get_map_html(current_language: str = "English") -> str:
 
         // Initialize the map
         initMap();
+
+        // Check if there's a previously confirmed address and update the text input
+        const savedAddress = localStorage.getItem('confirmedAddress');
+        if (savedAddress) {{
+            window.parent.document.querySelector('[data-testid="stTextInput"] input').value = savedAddress;
+            const event = new Event('input', {{ bubbles: true }});
+            window.parent.document.querySelector('[data-testid="stTextInput"] input').dispatchEvent(event);
+        }}
         </script>
     </body>
     </html>
@@ -232,12 +246,9 @@ def show_location_picker(current_language: str = "English") -> None:
         address = st.text_input("Confirm your address", key="manual_address_input")
     
     with col2:
-        if st.button("Confirm Address", type="primary"):
+        if st.button("Confirm Address"):
             if address:
-                st.session_state.confirmed_address = address
-                st.success(f"Location confirmed: {address}")
+                st.session_state['confirmed_location'] = address
+                st.success("✅ Location confirmed!")
             else:
-                st.error("Please enter an address")
-    
-    # Return the confirmed address from session state
-    return st.session_state.get("confirmed_address", "")
+                st.error("Please enter an address first.")
