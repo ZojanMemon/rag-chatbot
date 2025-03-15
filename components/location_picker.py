@@ -1,5 +1,7 @@
 """Location picker component with OpenStreetMap integration."""
 import streamlit as st
+import requests
+from typing import Optional, Tuple
 from streamlit.components.v1 import html
 
 def get_map_html(current_language: str = "English") -> str:
@@ -9,20 +11,14 @@ def get_map_html(current_language: str = "English") -> str:
         search_placeholder = "مقام تلاش کریں..."
         auto_detect_text = "موجودہ مقام کا پتہ لگائیں"
         confirm_text = "اس مقام کی تصدیق کریں"
-        loading_text = "لوڈ ہو رہا ہے..."
-        error_text = "خرابی"
     elif current_language == "Sindhi":
         search_placeholder = "مڪان ڳوليو..."
         auto_detect_text = "موجود مڪان جو پتو لڳايو"
         confirm_text = "هن مڪان جي تصديق ڪريو"
-        loading_text = "لوڊ ٿي رهيو آهي..."
-        error_text = "خرابي"
     else:  # English
         search_placeholder = "Search for a location..."
         auto_detect_text = "Detect Current Location"
-        confirm_text = "Confirm This Location"
-        loading_text = "Loading..."
-        error_text = "Error"
+        confirm_text = "Confirm Location"
 
     return f"""
     <!DOCTYPE html>
@@ -32,6 +28,7 @@ def get_map_html(current_language: str = "English") -> str:
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Location Picker</title>
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
         <style>
             body {{
                 margin: 0;
@@ -72,23 +69,43 @@ def get_map_html(current_language: str = "English") -> str:
                 font-size: 14px;
                 min-height: 20px;
             }}
+            .leaflet-control-geocoder {{
+                clear: both;
+                margin-top: 10px;
+                width: 100%;
+                max-width: none;
+                border-radius: 4px;
+                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+            }}
+            .leaflet-control-geocoder-form input {{
+                width: 100%;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+                font-size: 14px;
+            }}
         </style>
     </head>
     <body>
         <div id="map"></div>
-        <div id="preview">{loading_text}</div>
+        <div id="preview"></div>
         <div class="controls">
             <button class="secondary" id="detect-btn" onclick="detectLocation()">{auto_detect_text}</button>
             <button class="primary" id="confirm-btn" onclick="confirmLocation()">{confirm_text}</button>
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <script>
-            var map, marker, selectedLocation, currentAddress;
+            var map, marker, selectedLocation;
             var defaultLocation = [30.3753, 69.3451]; // Pakistan center
             
-            // Initialize map
-            function initMap() {{
+            // Initialize map when DOM is fully loaded
+            document.addEventListener('DOMContentLoaded', function() {{
+                initializeMap();
+            }});
+            
+            function initializeMap() {{
                 // Create map
                 map = L.map('map').setView(defaultLocation, 5);
                 
@@ -101,62 +118,73 @@ def get_map_html(current_language: str = "English") -> str:
                 marker = L.marker(defaultLocation, {{ draggable: true }}).addTo(map);
                 selectedLocation = defaultLocation;
                 
+                // Add geocoder control
+                var geocoder = L.Control.geocoder({{
+                    defaultMarkGeocode: false,
+                    placeholder: '{search_placeholder}',
+                    collapsed: false
+                }}).addTo(map);
+                
+                geocoder.on('markgeocode', function(e) {{
+                    var location = e.geocode.center;
+                    updateMarker([location.lat, location.lng]);
+                    map.setView([location.lat, location.lng], 15);
+                }});
+                
                 // Handle marker drag
                 marker.on('dragend', function(e) {{
                     var pos = e.target.getLatLng();
-                    selectedLocation = [pos.lat, pos.lng];
-                    getAddressFromCoordinates(selectedLocation);
+                    updateLocationPreview([pos.lat, pos.lng]);
                 }});
                 
                 // Handle map click
                 map.on('click', function(e) {{
-                    marker.setLatLng(e.latlng);
-                    selectedLocation = [e.latlng.lat, e.latlng.lng];
-                    getAddressFromCoordinates(selectedLocation);
+                    updateMarker([e.latlng.lat, e.latlng.lng]);
                 }});
                 
-                // Get initial address
-                getAddressFromCoordinates(defaultLocation);
-            }}
-            
-            // Get address from coordinates using Nominatim
-            function getAddressFromCoordinates(latlng) {{
-                document.getElementById('preview').innerHTML = "{loading_text}";
+                // Check for previously confirmed location
+                var savedAddress = localStorage.getItem('confirmedAddress');
+                if (savedAddress) {{
+                    document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
+                    // Also update Streamlit with the saved address
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        value: {{ confirmedAddress: savedAddress }}
+                    }}, '*');
+                }} else {{
+                    // Get initial address for the default location
+                    updateLocationPreview(defaultLocation);
+                }}
                 
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
-                    .then(response => response.json())
-                    .then(data => {{
-                        if (data.display_name) {{
-                            currentAddress = data.display_name;
-                            document.getElementById('preview').innerHTML = `📍 ${{currentAddress}}`;
-                        }} else {{
-                            document.getElementById('preview').innerHTML = `📍 Latitude: ${{latlng[0].toFixed(6)}}, Longitude: ${{latlng[1].toFixed(6)}}`;
-                        }}
-                    }})
-                    .catch(error => {{
-                        document.getElementById('preview').innerHTML = `📍 Latitude: ${{latlng[0].toFixed(6)}}, Longitude: ${{latlng[1].toFixed(6)}}`;
-                    }});
+                // Force map to resize after a delay
+                setTimeout(function() {{
+                    map.invalidateSize();
+                }}, 300);
             }}
             
-            // Detect current location
+            function updateMarker(latlng) {{
+                marker.setLatLng(latlng);
+                updateLocationPreview(latlng);
+            }}
+            
             function detectLocation() {{
                 if (navigator.geolocation) {{
                     document.getElementById('detect-btn').disabled = true;
-                    document.getElementById('detect-btn').innerHTML = "{loading_text}";
+                    document.getElementById('detect-btn').innerHTML = "Detecting...";
                     
                     navigator.geolocation.getCurrentPosition(
                         function(position) {{
                             var pos = [position.coords.latitude, position.coords.longitude];
                             map.setView(pos, 15);
-                            marker.setLatLng(pos);
-                            selectedLocation = pos;
-                            getAddressFromCoordinates(selectedLocation);
+                            updateMarker(pos);
                             
                             document.getElementById('detect-btn').disabled = false;
                             document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
                         }},
                         function(error) {{
-                            document.getElementById('preview').innerHTML = "{error_text}: " + error.message;
+                            console.error("Geolocation error:", error);
+                            alert('Error: Could not detect location. ' + error.message);
+                            
                             document.getElementById('detect-btn').disabled = false;
                             document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
                         }},
@@ -167,35 +195,78 @@ def get_map_html(current_language: str = "English") -> str:
                         }}
                     );
                 }} else {{
-                    document.getElementById('preview').innerHTML = "{error_text}: Geolocation not supported";
+                    alert('Error: Geolocation is not supported by your browser.');
                 }}
             }}
             
-            // Confirm location
+            function updateLocationPreview(latlng) {{
+                selectedLocation = latlng;
+                document.getElementById('preview').innerHTML = "Loading address...";
+                
+                // Use Nominatim for reverse geocoding
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
+                    .then(response => response.json())
+                    .then(data => {{
+                        if (data.display_name) {{
+                            var address = data.display_name;
+                            document.getElementById('preview').innerHTML = `📍 ${{address}}`;
+                            
+                            // Send the selected address to Streamlit
+                            window.parent.postMessage({{
+                                type: 'selectedAddress',
+                                address: address
+                            }}, '*');
+                        }}
+                    }})
+                    .catch(error => {{
+                        console.error("Error in reverse geocoding:", error);
+                        document.getElementById('preview').innerHTML = "Error loading address.";
+                    }});
+            }}
+            
             function confirmLocation() {{
                 if (selectedLocation) {{
-                    // Get the current address from the preview
-                    var addressToConfirm = document.getElementById('preview').innerText;
-                    if (addressToConfirm.startsWith('📍 ')) {{
-                        addressToConfirm = addressToConfirm.substring(2); // Remove the 📍 emoji
-                    }}
+                    document.getElementById('confirm-btn').disabled = true;
+                    document.getElementById('confirm-btn').innerHTML = "Confirming...";
                     
-                    document.getElementById('preview').innerHTML = `✅ ${{addressToConfirm}}`;
-                    
-                    // Try to get the parent window to set a value
-                    try {{
-                        window.parent.postMessage({{
-                            type: 'location',
-                            value: addressToConfirm
-                        }}, '*');
-                    }} catch (e) {{
-                        console.error("Error posting message:", e);
-                    }}
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
+                        .then(response => response.json())
+                        .then(data => {{
+                            if (data.display_name) {{
+                                var address = data.display_name;
+                                
+                                // Store the address in localStorage
+                                localStorage.setItem('confirmedAddress', address);
+                                
+                                // Update UI
+                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                                
+                                // Send the confirmed address to Streamlit
+                                window.parent.postMessage({{
+                                    type: 'streamlit:setComponentValue',
+                                    value: {{ confirmedAddress: address }}
+                                }}, '*');
+                                
+                                document.getElementById('confirm-btn').disabled = false;
+                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                            }}
+                        }})
+                        .catch(error => {{
+                            console.error("Error confirming location:", error);
+                            document.getElementById('preview').innerHTML = "Error confirming location.";
+                            
+                            document.getElementById('confirm-btn').disabled = false;
+                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                        }});
+                }} else {{
+                    alert('Please select a location first.');
                 }}
             }}
             
-            // Initialize map when page loads
-            window.onload = initMap;
+            // Initialize map immediately as a fallback
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {{
+                setTimeout(initializeMap, 1);
+            }}
         </script>
     </body>
     </html>
@@ -207,28 +278,23 @@ def show_location_picker(current_language: str = "English") -> str:
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Display the map
-    st.markdown("### Select your location on the map")
-    html(get_map_html(current_language), height=550)
+    # Simple implementation without complex component callbacks
+    map_html = get_map_html(current_language)
+    html(map_html, height=550)
     
-    # Manual input form
-    with st.form("location_form"):
-        location = st.text_input(
-            "Or enter location manually",
-            value=st.session_state.get("confirmed_address", "")
+    # Add a simple form for manual address confirmation
+    with st.form(key="location_form"):
+        # Pre-fill with any address from the map if available
+        address = st.text_input(
+            "Confirm your location",
+            value=st.session_state.get("confirmed_address", ""),
+            key="manual_address_input"
         )
         
-        submit = st.form_submit_button("Confirm Location")
-        
-        if submit and location:
-            st.session_state.confirmed_address = location
-            st.success(f"✅ Location confirmed: {location}")
+        # Submit button
+        submit = st.form_submit_button("Confirm Address")
+        if submit and address:
+            st.session_state.confirmed_address = address
     
-    # Add a button to clear the location if one is set
-    if st.session_state.confirmed_address:
-        if st.button("Clear Location"):
-            st.session_state.confirmed_address = ""
-            st.experimental_rerun()
-    
-    # Return the confirmed address
+    # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
