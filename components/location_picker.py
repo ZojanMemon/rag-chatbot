@@ -220,7 +220,7 @@ def get_map_html(current_language: str = "English") -> str:
                     .then(data => {{
                         if (data.display_name) {{
                             currentAddress = data.display_name;
-                            previewDiv.innerHTML = `📍 ${{currentAddress}}`;
+                            previewDiv.innerHTML = "📍 " + currentAddress;
                             copyButton.disabled = false;
                             
                             // Send the selected address to Streamlit
@@ -287,10 +287,23 @@ def show_location_picker(current_language: str = "English") -> str:
             key="manual_address_input"
         )
         
+        # Submit button with language-specific labels
+        if current_language == "Urdu":
+            submit_label = "مقام کی تصدیق کریں"
+            success_message = "✅ مقام کی تصدیق ہو گئی"
+        elif current_language == "Sindhi":
+            submit_label = "مڪان جي تصديق ڪريو"
+            success_message = "✅ مڪان جي تصديق ٿي وئي"
+        else:  # English
+            submit_label = "Confirm Address"
+            success_message = "✅ Location Confirmed"
+            
         # Submit button
-        submit = st.form_submit_button("Confirm Address")
+        submit = st.form_submit_button(submit_label)
         if submit and address:
             st.session_state.confirmed_address = address
+            # Show clean success message
+            st.success(success_message)
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
