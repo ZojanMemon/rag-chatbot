@@ -27,21 +27,25 @@ def get_map_html(current_language: str = "English") -> str:
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Location Picker</title>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
         <style>
             body {{
                 margin: 0;
                 padding: 0;
+                font-family: Arial, sans-serif;
+            }}
+            #map-container {{
+                position: relative;
+                height: 400px;
+                width: 100%;
             }}
             #map {{
-                height: 500px;
+                height: 100%;
                 width: 100%;
-                margin-bottom: 10px;
                 border-radius: 8px;
-                z-index: 0;
             }}
             .controls {{
                 margin-top: 10px;
@@ -63,199 +67,188 @@ def get_map_html(current_language: str = "English") -> str:
                 background-color: #f0f2f6;
                 color: #262730;
             }}
-            .hidden {{
-                display: none;
-            }}
             #preview {{
                 margin-top: 10px;
                 padding: 10px;
                 background-color: #f0f2f6;
                 border-radius: 4px;
                 font-size: 14px;
-            }}
-            .leaflet-control-geocoder {{
-                clear: both;
-                margin-top: 10px;
-                width: 100%;
-                max-width: none;
-                border-radius: 4px;
-                box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-            }}
-            .leaflet-control-geocoder-form input {{
-                width: 100%;
-                padding: 8px;
-                border-radius: 4px;
-                border: 1px solid #ccc;
-                font-size: 14px;
+                min-height: 20px;
             }}
         </style>
     </head>
     <body>
-        <div id="map"></div>
-        <div id="preview" style="min-height: 20px;"></div>
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+        <div id="preview"></div>
         <div class="controls">
-            <button class="secondary" onclick="detectLocation()">{auto_detect_text}</button>
-            <button id="confirm-btn" class="primary" onclick="confirmLocation()">{confirm_text}</button>
+            <button class="secondary" id="detect-btn" onclick="detectLocation()">{auto_detect_text}</button>
+            <button class="primary" id="confirm-btn" onclick="confirmLocation()">{confirm_text}</button>
         </div>
 
         <script>
-        let map;
-        let marker;
-        let selectedLocation;
-        let confirmedLocation;
-
-        // Wait for the DOM to be fully loaded
-        document.addEventListener('DOMContentLoaded', function() {{
-            initMap();
-        }});
-
-        function initMap() {{
-            try {{
-                const defaultLocation = [30.3753, 69.3451]; // Pakistan center
-
-                // Initialize map
-                map = L.map('map').setView(defaultLocation, 6);
-
-                // Add OpenStreetMap tiles
+            // Initialize variables
+            var map, marker, selectedLocation;
+            
+            // Initialize map when the page loads
+            window.onload = function() {{
+                initMap();
+            }};
+            
+            function initMap() {{
+                // Default location (center of Pakistan)
+                var defaultLocation = [30.3753, 69.3451];
+                
+                // Create map
+                map = L.map('map').setView(defaultLocation, 5);
+                
+                // Add tile layer
                 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-                    maxZoom: 19,
-                    attribution: '© OpenStreetMap contributors'
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 }}).addTo(map);
-
-                // Add search control
-                const geocoder = L.Control.geocoder({{
+                
+                // Add geocoder control
+                var geocoder = L.Control.geocoder({{
                     defaultMarkGeocode: false,
-                    placeholder: "{search_placeholder}",
-                    collapsed: false,
-                    position: 'topright'
+                    placeholder: '{search_placeholder}',
+                    collapsed: false
                 }}).addTo(map);
-
+                
                 geocoder.on('markgeocode', function(e) {{
-                    const location = e.geocode.center;
+                    var location = e.geocode.center;
                     updateMarker([location.lat, location.lng]);
-                    map.setView(location, 17);
+                    map.setView([location.lat, location.lng], 15);
                 }});
-
+                
                 // Add marker
                 marker = L.marker(defaultLocation, {{
                     draggable: true
                 }}).addTo(map);
-
+                
                 // Handle marker drag
                 marker.on('dragend', function(e) {{
-                    const pos = e.target.getLatLng();
+                    var pos = e.target.getLatLng();
                     updateLocationPreview([pos.lat, pos.lng]);
                 }});
-
+                
                 // Handle map click
                 map.on('click', function(e) {{
                     updateMarker([e.latlng.lat, e.latlng.lng]);
                 }});
-
+                
                 // Check for previously confirmed location
-                const savedAddress = localStorage.getItem('confirmedAddress');
+                var savedAddress = localStorage.getItem('confirmedAddress');
                 if (savedAddress) {{
                     document.getElementById('preview').innerHTML = `✅ ${{savedAddress}}`;
                 }}
-
-                // Force a map resize after a short delay to ensure it renders properly
+                
+                // Force map to resize after a delay
                 setTimeout(function() {{
                     map.invalidateSize();
-                }}, 100);
-            }} catch (error) {{
-                console.error("Error initializing map:", error);
-                document.getElementById('map').innerHTML = "Error loading map. Please refresh the page.";
+                }}, 200);
             }}
-        }}
-
-        function updateMarker(latlng) {{
-            marker.setLatLng(latlng);
-            updateLocationPreview(latlng);
-        }}
-
-        function detectLocation() {{
-            if (navigator.geolocation) {{
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {{
-                        const pos = [position.coords.latitude, position.coords.longitude];
-                        map.setView(pos, 17);
-                        updateMarker(pos);
-                    }},
-                    function(error) {{
-                        console.error("Geolocation error:", error);
-                        alert('Error: Could not detect location. ' + error.message);
-                    }},
-                    {{
-                        enableHighAccuracy: true,
-                        timeout: 5000,
-                        maximumAge: 0
-                    }}
-                );
-            }} else {{
-                alert('Error: Geolocation is not supported by your browser.');
+            
+            function updateMarker(latlng) {{
+                marker.setLatLng(latlng);
+                updateLocationPreview(latlng);
             }}
-        }}
-
-        function updateLocationPreview(latlng) {{
-            selectedLocation = latlng;
-            // Use Nominatim for reverse geocoding
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
-                .then(response => response.json())
-                .then(data => {{
-                    if (data.display_name) {{
-                        const address = data.display_name;
-                        document.getElementById('preview').innerHTML = `📍 ${{address}}`;
-                        
-                        // Send the selected address to Streamlit
-                        window.parent.postMessage({{
-                            type: 'selectedAddress',
-                            address: address
-                        }}, '*');
-                    }}
-                }})
-                .catch(error => {{
-                    console.error("Error in reverse geocoding:", error);
-                }});
-        }}
-
-        function confirmLocation() {{
-            if (selectedLocation) {{
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
+            
+            function detectLocation() {{
+                if (navigator.geolocation) {{
+                    document.getElementById('detect-btn').disabled = true;
+                    document.getElementById('detect-btn').innerHTML = "Detecting...";
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        function(position) {{
+                            var pos = [position.coords.latitude, position.coords.longitude];
+                            map.setView(pos, 15);
+                            updateMarker(pos);
+                            
+                            document.getElementById('detect-btn').disabled = false;
+                            document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
+                        }},
+                        function(error) {{
+                            console.error("Geolocation error:", error);
+                            alert('Error: Could not detect location. ' + error.message);
+                            
+                            document.getElementById('detect-btn').disabled = false;
+                            document.getElementById('detect-btn').innerHTML = "{auto_detect_text}";
+                        }},
+                        {{
+                            enableHighAccuracy: true,
+                            timeout: 5000,
+                            maximumAge: 0
+                        }}
+                    );
+                }} else {{
+                    alert('Error: Geolocation is not supported by your browser.');
+                }}
+            }}
+            
+            function updateLocationPreview(latlng) {{
+                selectedLocation = latlng;
+                document.getElementById('preview').innerHTML = "Loading address...";
+                
+                // Use Nominatim for reverse geocoding
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{latlng[0]}}&lon=${{latlng[1]}}&format=json`)
                     .then(response => response.json())
                     .then(data => {{
                         if (data.display_name) {{
-                            const address = data.display_name;
-                            confirmedLocation = address;
+                            var address = data.display_name;
+                            document.getElementById('preview').innerHTML = `📍 ${{address}}`;
                             
-                            // Store the address in localStorage
-                            localStorage.setItem('confirmedAddress', address);
-                            
-                            // Update UI
-                            document.getElementById('preview').innerHTML = `✅ ${{address}}`;
-                            
-                            // Send the confirmed address to Streamlit
+                            // Send the selected address to Streamlit
                             window.parent.postMessage({{
-                                type: 'confirmedAddress',
+                                type: 'selectedAddress',
                                 address: address
                             }}, '*');
                         }}
                     }})
                     .catch(error => {{
-                        console.error("Error confirming location:", error);
+                        console.error("Error in reverse geocoding:", error);
+                        document.getElementById('preview').innerHTML = "Error loading address.";
                     }});
             }}
-        }}
-
-        // Initialize the map immediately
-        initMap();
-        
-        // Also add a window.onload handler as a backup
-        window.onload = function() {{
-            // Force a map resize after a short delay to ensure it renders properly
-            setTimeout(function() {{
-                if (map) map.invalidateSize();
-            }}, 500);
-        }};
+            
+            function confirmLocation() {{
+                if (selectedLocation) {{
+                    document.getElementById('confirm-btn').disabled = true;
+                    document.getElementById('confirm-btn').innerHTML = "Confirming...";
+                    
+                    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${{selectedLocation[0]}}&lon=${{selectedLocation[1]}}&format=json`)
+                        .then(response => response.json())
+                        .then(data => {{
+                            if (data.display_name) {{
+                                var address = data.display_name;
+                                
+                                // Store the address in localStorage
+                                localStorage.setItem('confirmedAddress', address);
+                                
+                                // Update UI
+                                document.getElementById('preview').innerHTML = `✅ ${{address}}`;
+                                
+                                // Send the confirmed address to Streamlit
+                                window.parent.postMessage({{
+                                    type: 'confirmedAddress',
+                                    address: address
+                                }}, '*');
+                                
+                                document.getElementById('confirm-btn').disabled = false;
+                                document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                            }}
+                        }})
+                        .catch(error => {{
+                            console.error("Error confirming location:", error);
+                            document.getElementById('preview').innerHTML = "Error confirming location.";
+                            
+                            document.getElementById('confirm-btn').disabled = false;
+                            document.getElementById('confirm-btn').innerHTML = "{confirm_text}";
+                        }});
+                }} else {{
+                    alert('Please select a location first.');
+                }}
+            }}
         </script>
     </body>
     </html>
