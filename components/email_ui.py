@@ -21,6 +21,10 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ {} حکام کے ساتھ شیئر کیا گیا"
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
         select_location_text = "براہ کرم مقام منتخب کریں"
+        user_info_title = "رابطہ کی معلومات"
+        name_label = "آپ کا نام"
+        phone_label = "فون نمبر"
+        location_label = "مقام"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
@@ -28,6 +32,10 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ {} اختيارن سان شيئر ٿي ويو"
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
         select_location_text = "مهرباني ڪري مڪان چونڊيو"
+        user_info_title = "رابطي جي معلومات"
+        name_label = "توهان جو نالو"
+        phone_label = "فون نمبر"
+        location_label = "مڪان"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
@@ -35,6 +43,10 @@ def show_email_ui(messages, user_email="Anonymous"):
         success_message = "✅ Shared with {} authorities"
         error_message = "❌ Could not share the conversation"
         select_location_text = "Please select a location"
+        user_info_title = "Contact Information"
+        name_label = "Your Name"
+        phone_label = "Phone Number"
+        location_label = "Location"
         
     # Create an expander for the sharing interface
     with st.expander(expander_title):
@@ -58,10 +70,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                 "Medical": "طبی",
                 "General": "عام"
             }
-            user_info_title = "رابطہ کی معلومات"
-            name_label = "آپ کا نام"
-            phone_label = "فون نمبر"
-            location_label = "مقام"
         elif current_language == "Sindhi":
             emergency_labels = {
                 "Flood": "ٻوڏ",
@@ -70,10 +78,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                 "Medical": "طبي",
                 "General": "عام"
             }
-            user_info_title = "رابطي جي معلومات"
-            name_label = "توهان جو نالو"
-            phone_label = "فون نمبر"
-            location_label = "مڪان"
         else:  # English
             emergency_labels = {
                 "Flood": "Flood",
@@ -82,10 +86,6 @@ def show_email_ui(messages, user_email="Anonymous"):
                 "Medical": "Medical",
                 "General": "General"
             }
-            user_info_title = "Contact Information"
-            name_label = "Your Name"
-            phone_label = "Phone Number"
-            location_label = "Location"
         
         # Create display options with translated labels but keep keys the same
         display_options = [emergency_labels[key] for key in emergency_types.keys()]
@@ -139,8 +139,12 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Add margin-top to the share button
             st.markdown('<div style="margin-top: 24px;"></div>', unsafe_allow_html=True)
             if st.button(share_button_text, type="primary", use_container_width=True):
-                # Get the confirmed address from session state
+                # Get the confirmed address from session state or manual input
                 location = st.session_state.get("confirmed_address", "")
+                
+                # If there's no location in session state, try to get it from the manual input
+                if not location and "manual_address_input" in st.session_state:
+                    location = st.session_state.manual_address_input
                 
                 # Always send the email since location is confirmed by the confirm button
                 email_service = EmailService()

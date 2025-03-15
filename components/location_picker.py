@@ -241,32 +241,63 @@ def get_map_html(current_language: str = "English") -> str:
     </html>
     """
 
-def show_location_picker(current_language: str = "English") -> str:
-    """Show location picker with OpenStreetMap integration.
-    
-    Returns:
-        str: The confirmed address
-    """
+def show_location_picker(current_language: str = "English") -> None:
+    """Show location picker with OpenStreetMap integration."""
     # Initialize session state for confirmed address if not exists
     if "confirmed_address" not in st.session_state:
         st.session_state.confirmed_address = ""
     
-    # Display the map component
-    selected_location = html(get_map_html(current_language), height=550)
+    # Create a container for the map
+    map_container = st.container()
     
-    # Update session state if a location was selected
-    if selected_location:
-        st.session_state.confirmed_address = selected_location
+    # Create a container for the address input and confirmation
+    input_container = st.container()
+    
+    # Display the map component with increased height
+    with map_container:
+        # Display the map
+        selected_location = html(get_map_html(current_language), height=550)
         
-        # Show success message
-        if current_language == "Urdu":
-            success_message = "✅ مقام کی تصدیق کر دی گئی"
-        elif current_language == "Sindhi":
-            success_message = "✅ مڪان جي تصديق ٿي وئي"
-        else:  # English
-            success_message = "✅ Location confirmed"
+        # Update session state if a location was selected
+        if selected_location:
+            st.session_state.confirmed_address = selected_location
             
-        st.success(success_message)
+            # Show success message
+            if current_language == "Urdu":
+                success_message = "✅ مقام کی تصدیق کر دی گئی"
+            elif current_language == "Sindhi":
+                success_message = "✅ مڪان جي تصديق ٿي وئي"
+            else:  # English
+                success_message = "✅ Location confirmed"
+                
+            st.success(success_message)
+    
+    # Add a separate button to manually confirm the location
+    with input_container:
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            # Pre-fill with any address from the map if available
+            address = st.text_input(
+                "Confirm your address", 
+                value=st.session_state.get("confirmed_address", ""),
+                key="manual_address_input",
+                help="Address will be automatically filled when you select a location on the map"
+            )
+        
+        with col2:
+            # Add some vertical spacing to align with the text input
+            st.write("")
+            if st.button("Confirm Address", type="primary"):
+                if address:
+                    st.session_state.confirmed_address = address
+                    st.success(f"✅ Location confirmed: {address}")
+                else:
+                    st.error("Please enter an address")
+    
+    # Display the confirmed address if available
+    if st.session_state.confirmed_address:
+        st.info(f"📍 Confirmed location: {st.session_state.confirmed_address}")
     
     # Return the confirmed address from session state
     return st.session_state.get("confirmed_address", "")
