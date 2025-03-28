@@ -257,14 +257,15 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-    qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
-    return_source_documents=False,
-    chain_type_kwargs={
-        "prompt": PromptTemplate(
-            template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
+        # Create the QA chain with improved prompt
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+            return_source_documents=False,
+            chain_type_kwargs={
+                "prompt": PromptTemplate(
+                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
 Use the following guidelines to answer questions. Aim to provide concise and accurate answers.
 
@@ -291,13 +292,11 @@ Context: {{context}}
 
 Question: {{question}}
 
-
-
 Response (remember to be natural and helpful):""",
-            input_variables=["context", "question"],
+                    input_variables=["context", "question"],
+                )
+            }
         )
-    }
-)
         return qa_chain, llm
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
