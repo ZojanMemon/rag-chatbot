@@ -257,40 +257,45 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with improved prompt
         qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
+    llm=llm,
+    chain_type="stuff",
+    retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+    return_source_documents=False,
+    chain_type_kwargs={
+        "prompt": PromptTemplate(
+            template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
-Use the following guidelines to answer questions:
+Use the following guidelines to answer questions. Prioritize providing concise and accurate answers.
 
-1. If the context contains relevant information:
-   - Provide a detailed and comprehensive answer using the information
-   - Include specific details and procedures from the source
-   - Structure the response in a clear, readable format
-   - Use professional and precise language
+1. **Check for Complete Answers in Concise Sources (JSON Data):**
+   - If the question can be answered *completely* and *accurately* using information primarily from concise sources (like a list or direct definition), provide *only* that answer. Be as brief as possible while maintaining accuracy.
+   - Cite the source if possible: "According to [Concise Source Name], the answer is..."
 
-2. If the context does NOT contain sufficient information:
-   - Provide a general, informative response based on common disaster management principles
-   - Be honest about not having specific details
-   - Offer to help with related topics that are within your knowledge base
-   - Never make up specific numbers or procedures
-   - Guide the user towards asking more specific questions about disaster management
+2. **If Concise Sources are Insufficient, Consult Detailed Context:**
+   - If the question *cannot* be fully answered by concise sources alone, consult the detailed context for additional information.
+   - Provide a comprehensive answer, drawing from *both* concise sources and the detailed context.
+   - Include specific details and procedures as appropriate.
+   - Structure the response clearly.
+   - Use professional and precise language.
+
+3. **If the Context Contains Insufficient Information (after checking both types of sources):**
+   - Provide a general, informative response based on common disaster management principles.
+   - Be honest about not having specific details.
+   - Offer to help with related topics within your knowledge base.
+   - Never invent specific numbers or procedures.
+   - Guide the user towards asking more specific questions.
 
 Context: {{context}}
 
 Question: {{question}}
 
+
 Response (remember to be natural and helpful):""",
-                    input_variables=["context", "question"],
-                )
-            }
+            input_variables=["context", "question"],
         )
+    }
+)
         return qa_chain, llm
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
