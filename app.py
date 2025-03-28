@@ -267,15 +267,14 @@ def initialize_rag():
                 "prompt": PromptTemplate(
                     template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
-Use the following guidelines to answer questions.  Aim to provide concise and accurate answers.
+Use the following guidelines to answer questions. Aim to provide concise and accurate answers.
+1. **Keyword Extractions for Question found on JSON:**
+    - If the question is found on JSON data, extract keywords to provide similar questions from JSON database.
+    - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
 
-1. **DIRECT JSON Data Extraction:**
-   - If the JSON data contains *any* answer related to the question, *begin your response with that specific answer*, quoted directly.
-   - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
-
-2. **Keyword Extractions for Question not found on JSON:**
-   - If the question is not explicitly found on JSON data, try extracting the possible keywords to provide similar questions from JSON database.
-   - Cite the source: "Similar question found in concise data source, [Direct Quote from JSON Answer Field]."
+2. **DIRECT JSON Data Extraction:**
+    - If the JSON data contains *any* answer related to the question, *begin your response with that specific answer*, quoted directly.
+    - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
 
 3. **Augment with Relevant Context (If Available and Necessary):**
    - After including the JSON data (if any), consult the detailed context for *relevant* supporting information (details, procedures, explanations) *only* if it significantly enhances the core answer.
