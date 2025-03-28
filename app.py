@@ -270,7 +270,7 @@ def initialize_rag():
 Use the following guidelines to answer questions:
 
 1. If the context contains relevant information:
-   - First look for the short answer from the text if question is related to immediate response 
+   - Provide an direct short answer from the text if the question is related to immediate safety
    - Provide a detailed and comprehensive answer using the information
    - Include specific details and procedures from the source
    - Structure the response in a clear, readable format
