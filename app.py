@@ -267,20 +267,6 @@ def initialize_rag():
                 "prompt": PromptTemplate(
                     template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
-Use the following guidelines to answer questions:
-
-1. If the context contains relevant information:
-   - Provide a detailed and comprehensive answer using the information
-   - Include specific details and procedures from the source
-   - Structure the response in a clear, readable format
-   - Use professional and precise language
-
-2. If the context does NOT contain sufficient information:
-   - Provide a general, informative response based on common disaster management principles
-   - Be honest about not having specific details
-   - Offer to help with related topics that are within your knowledge base
-   - Never make up specific numbers or procedures
-   - Guide the user towards asking more specific questions about disaster management
 
 Context: {{context}}
 
