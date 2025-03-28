@@ -268,9 +268,7 @@ def initialize_rag():
                     template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
 
-Context: {{context}}
 
-Question: {{question}}
 
 Response (remember to be natural and helpful):""",
                     input_variables=["context", "question"],
