@@ -295,6 +295,7 @@ Context: {{context}}
 
 Question: {{question}}
 
+
 Response (remember to be natural and helpful):""",
                     input_variables=["context", "question"],
                 )
