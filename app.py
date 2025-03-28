@@ -135,57 +135,166 @@ def is_general_chat(query):
     # Only match if these are standalone phrases
     return any(query_lower == phrase.strip('^$') for phrase in general_phrases)
 
+
 def get_general_response(query):
-    """Generate appropriate responses for general chat."""
-    query_lower = query.lower()
+    """
+    Generate appropriate responses for general chat, including specific hardcoded Q&A.
+    Checks specific Q&A and greetings first, then falls back to general info.
+    """
+    query_normalized = normalize_query(query) # Normalize the input query
+
+    # Ensure session state has the language, default to English if not set
+    if 'output_language' not in st.session_state:
+        st.session_state.output_language = "English"
     output_lang = st.session_state.output_language
-    
+
     if output_lang == "Sindhi":
-        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+        # --- Greetings and Common Phrases ---
+        if any(greeting in query_normalized for greeting in ['hi', 'hello', 'hey', 'هيلو', 'سلام']):
             return "السلام عليڪم! مان توهان جو آفتن جي انتظام جو مددگار آهيان. مان توهان جي ڪهڙي مدد ڪري سگهان ٿو؟"
-        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+        elif any(time in query_normalized for time in ['good morning', 'good afternoon', 'good evening']):
             return "توهان جو مهرباني! مان توهان جي آفتن جي انتظام جي سوالن ۾ مدد ڪرڻ لاءِ حاضر آهيان."
-        elif 'how are you' in query_lower:
+        elif 'how are you' in query_normalized or 'ڪيئن آهيو' in query_normalized:
             return "مان ٺيڪ آهيان، توهان جي پڇڻ جو مهرباني! مان آفتن جي انتظام جي معلومات ڏيڻ لاءِ تيار آهيان."
-        elif 'thank' in query_lower:
+        elif 'thank' in query_normalized or 'مهرباني' in query_normalized:
             return "توهان جو مهرباني! آفتن جي انتظام بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
-        elif 'bye' in query_lower or 'goodbye' in query_lower:
+        elif 'bye' in query_normalized or 'goodbye' in query_normalized or 'خدا حافظ' in query_normalized:
             return "خدا حافظ! جيڪڏهن توهان کي آفتن جي انتظام بابت وڌيڪ سوال هجن ته پوءِ ضرور پڇو."
-        elif 'who are you' in query_lower:
+        elif 'who are you' in query_normalized or 'تون ڪير آهين' in query_normalized:
             return "مان هڪ خاص آفتن جي انتظام جو مددگار آهيان. مان آفتن جي انتظام، حفاظتي اپاءَ ۽ آفتن جي جواب جي حڪمت عملي بابت معلومات ڏئي سگهان ٿو."
+
+        # --- Specific Q&A (Hardcoded from JSON) ---
+        elif query_normalized == normalize_query("زلزلي دوران مون کي ڇا ڪرڻ گهرجي؟"):
+             return "زمين تي ڪريو، پناهه وٺو، ۽ لوڏا بند ٿيڻ تائين انتظار ڪريو."
+        elif query_normalized == normalize_query("گرمي جي لهر دوران مان ڪيئن محفوظ رهي سگھان ٿو؟"):
+             return "هائيڊريٽ رهندا، سڌو سنئون سج کان بچندا، ۽ وڌ ۾ وڌ گرمي جي ڪلاڪن دوران اندر رهندا."
+        elif query_normalized == normalize_query("جيڪڏهن مون ڏٺو ته ٻيلهه جي باهه ويجهو اچي رهي آهي ته مون کي ڇا ڪرڻ گهرجي؟"):
+             return "جيڪڏهن هدايت ڏني وڃي ته فوري طور تي نڪتو ۽ باهه کان پري محفوظ علائقي ڏانهن هليو وڃو."
+        elif query_normalized == normalize_query("هڪ سامونڊي طوفان لاءِ مان ڪيئن تياري ڪري سگھان ٿو؟"):
+             return "ٻاهران شين کي محفوظ ڪريو، ونڊوز کي مضبوط ڪريو، ۽ جيڪڏهن هدايت ڏني وڃي ته نيڪالي جا حڪم مڃيو."
+        elif query_normalized == normalize_query("منهنجي ايمرجنسي کٽ ۾ ڇا شامل ٿيڻ گهرجي؟"):
+             return "پاڻي، غير خراب ٿيڻ وارو کاڌو، ٽارچ، بيٽرين، پهرين مدد جو کٽ، ۽ ضروري دوائون."
+        elif query_normalized == normalize_query("مان پنهنجي گهر کي ٻوڏ کان ڪيئن بچائي سگھان ٿو؟"):
+             return "جيڪڏهن توهان ٻوڏ جي خطري واري علائقي ۾ رهندا آهيو ته برقي آلات کي بلند ڪريو ۽ ٻوڏ جا رڪاوٽون لڳايو."
+        elif query_normalized == normalize_query("هڪ ايمرجنسي نيڪالي ۾ پهرين قدمن ڇا آهن؟"):
+             return "پرسڪون رهو، نيڪالي جي رستن جي پيروي ڪريو، ۽ لفٽون استعمال نه ڪريو."
+        elif query_normalized == normalize_query("مان قدرتي آفت بابت ڪيئن ڄاڻ حاصل ڪري سگهان ٿو؟"):
+             return "مقامي خبرون ۽ موسم جي اپ ڊيٽس تي نظر رکندا، ۽ ايمرجنسي الرٽس لاءِ سائن اپ ڪندا."
+        elif query_normalized == normalize_query("مان مقامي اختيارين سان ڪيئن رابطو ڪري سگهان ٿو؟"):
+             return "مقامي اختيارين لاءِ، توهان +92 335 5557362 سان رابطو ڪري سگهو ٿا."
+        elif query_normalized == normalize_query("ايمرجنسي رابطو نمبر ڇا آهي؟"):
+             return "ايمرجنسي حالتن ۾، مهرباني ڪري 1736 سان رابطو ڪريو."
+        elif query_normalized == normalize_query("ڇا هتي ڪو ريسڪيو ٽيم موجود آهي؟"):
+             return "ها، ريسڪيو ٽيمون موجود آهن. توهان انهن سان 1736 يا +92 335 5557362 تي رابطو ڪري سگهو ٿا."
+        elif query_normalized == normalize_query("هتي پيئڻ جو پاڻي محفوظ آهي؟"):
+             return "اسان پيئڻ لاءِ هتي فراهم ڪيل بوتل جو پاڻي استعمال ڪرڻ جي صلاح ڏيون ٿا. ٻوڏ جو پاڻي استعمال ڪرڻ کان پاسو ڪريو ڇاڪاڻ ته اهو آلودگي ٿي سگهي ٿو."
+        elif query_normalized == normalize_query("مان طبي مدد ڪٿي حاصل ڪري سگهان ٿو؟") or query_normalized == normalize_query("طبي مدد ڪن جائين ٿوـ"): # Handle both variations
+             return "طبي ڪلينڪ سينٽر جي ڏکڻ ونگ ۾ واقع آهي. نشانين جي پيروي ڪريو يا اسان جي عملي کان هدايتون پڇو."
+        elif query_normalized == normalize_query("مان پنهنجي خاندان سان ڪيئن رابطو ڪري سگهان ٿو؟"):
+             return "اسان وٽ خاندان جي ٻيهر ملاپ لاءِ سهولتون آهن. مهرباني ڪري مدد لاءِ استقباليه تي تفصيل فراهم ڪريو."
+
+        # --- General Fallback ---
         else:
             return "مان آفتن جي انتظام جي معاملن ۾ ماهر آهيان. عام موضوعن تي مدد نه ڪري سگهندس، پر آفتن جي انتظام، ايمرجنسي طريقن يا حفاظتي اپاءَ بابت ڪو به سوال پڇڻ لاءِ آزاد محسوس ڪريو."
+
     elif output_lang == "Urdu":
-        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+        # --- Greetings and Common Phrases ---
+        if any(greeting in query_normalized for greeting in ['hi', 'hello', 'hey', 'ہیلو', 'سلام']):
             return "السلام علیکم! میں آپ کا آفات کے انتظام کا مددگار ہوں۔ میں آپ کی کیا مدد کر سکتا ہوں؟"
-        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
+        elif any(time in query_normalized for time in ['good morning', 'good afternoon', 'good evening']):
             return "آپ کا شکریہ! میں آپ کی آفات کے انتظام کے سوالات میں مدد کرنے کے لیے حاضر ہوں۔"
-        elif 'how are you' in query_lower:
+        elif 'how are you' in query_normalized or 'آپ کیسے ہیں' in query_normalized:
             return "میں ٹھیک ہوں، آپ کی پوچھنے کا شکریہ! میں آفات کے انتظام کی معلومات دینے کے لیے تیار ہوں۔"
-        elif 'thank' in query_lower:
+        elif 'thank' in query_normalized or 'شکریہ' in query_normalized:
             return "آپ کا شکریہ! آفات کے انتظام کے بارے میں کوئی بھی سوال پوچھنے کے لیے آزاد محسوس کریں۔"
-        elif 'bye' in query_lower or 'goodbye' in query_lower:
+        elif 'bye' in query_normalized or 'goodbye' in query_normalized or 'خدا حافظ' in query_normalized:
             return "خدا حافظ! اگر آپ کو آفات کے انتظام کے بارے میں مزید سوالات ہوں تو ضرور پوچھیں۔"
-        elif 'who are you' in query_lower:
+        elif 'who are you' in query_normalized or 'آپ کون ہیں' in query_normalized:
             return "میں ایک خصوصی آفات کے انتظام کا مددگار ہوں۔ میں آفات کے انتظام، حفاظتی اقدامات اور آفات کے جواب کی حکمت عملی کے بارے میں معلومات دے سکتا ہوں۔"
+
+        # --- Specific Q&A (Hardcoded from JSON) ---
+        elif query_normalized == normalize_query("زلزلے کے دوران مجھے کیا کرنا چاہئے؟"):
+             return "زمین پر گر جائیں، پناہ لیں، اور جھٹکے رکنے تک انتظار کریں۔"
+        elif query_normalized == normalize_query("گرمی کی لہر کے دوران میں کیسے محفوظ رہ سکتا ہوں؟"):
+             return "ہائیڈریٹ رہیں، براہ راست دھوپ سے بچیں، اور زیادہ گرمی کے اوقات میں اندر رہیں۔"
+        elif query_normalized == normalize_query("اگر میں دیکھوں کہ جنگل کی آگ قریب آ رہی ہے تو مجھے کیا کرنا چاہئے؟"):
+             return "اگر ہدایت دی جائے تو فوراً نکلو اور آگ سے دور محفوظ علاقے میں چلے جائیں۔"
+        elif query_normalized == normalize_query("سمندری طوفان کے لئے میں کیسے تیاری کر سکتا ہوں؟"):
+             return "باہر کے اشیاء کو محفوظ کریں، کھڑکیوں کو مضبوط کریں، اور اگر ہدایت دی جائے تو نکاسی کے احکامات پر عمل کریں۔"
+        elif query_normalized == normalize_query("میرے ایمرجنسی کٹ میں کیا شامل ہونا چاہئے؟"):
+             return "پانی، غیر خراب ہونے والا کھانا، ٹارچ، بیٹریاں، ابتدائی طبی امداد کا کٹ، اور ضروری ادویات۔"
+        elif query_normalized == normalize_query("میں اپنے گھر کو سیلاب سے کیسے بچا سکتا ہوں؟"):
+             return "اگر آپ سیلاب کے خطرے والے علاقے میں رہتے ہیں تو بجلی کے آلات کو بلند کریں اور سیلاب کی رکاوٹیں لگائیں۔"
+        elif query_normalized == normalize_query("ایمرجنسی نکاسی میں پہلے اقدامات کیا ہیں؟"):
+             return "پرسکون رہیں، نکاسی کے راستوں کی پیروی کریں، اور لفٹوں کا استعمال نہ کریں۔"
+        elif query_normalized == normalize_query("میں قدرتی آفت کے بارے میں کیسے مطلع رہ سکتا ہوں؟"):
+             return "مقامی خبریں اور موسمی اپ ڈیٹس دیکھتے رہیں، اور ایمرجنسی الرٹس کے لئے سائن اپ کریں۔"
+        elif query_normalized == normalize_query("میں مقامی حکام سے کیسے رابطہ کر سکتا ہوں؟"):
+             return "مقامی حکام کے لئے، آپ +92 335 5557362 سے رابطہ کر سکتے ہیں۔"
+        elif query_normalized == normalize_query("ایمرجنسی رابطہ نمبر کیا ہے؟"):
+             return "ہنگامی صورتحال میں، براہ کرم 1736 سے رابطہ کریں۔"
+        elif query_normalized == normalize_query("کیا یہاں کوئی ریسکیو ٹیم موجود ہے؟"):
+             return "جی ہاں، ریسکیو ٹیمیں دستیاب ہیں۔ آپ ان سے 1736 یا +92 335 5557362 پر رابطہ کر سکتے ہیں۔"
+        elif query_normalized == normalize_query("یہاں پینے کا پانی کیا محفوظ ہے؟"):
+             return "ہم پینے کے لئے یہاں دی گئی بوتل پانی کا استعمال کرنے کی تجویز دیتے ہیں۔ براہ کرم سیلاب کے پانی کو نہ پیں کیونکہ یہ آلودہ ہو سکتا ہے۔"
+        elif query_normalized == normalize_query("میں طبی مدد کہاں حاصل کروں؟") or query_normalized == normalize_query("طبي مدد ڪن جائين ٿوـ"): # Handle both variations
+             return "طبی کلینک مرکز کے جنوبی ونگ میں واقع ہے۔ نشانیوں کی پیروی کریں یا ہمارے عملے سے رہنمائی کے لئے پوچھیں۔"
+        elif query_normalized == normalize_query("میں اپنے خاندان سے کیسے رابطہ کروں؟"):
+             return "ہمارے پاس خاندان کے ملاپ کے لیے سہولیات ہیں۔ براہ کرم مدد کے لیے استقبالیہ پر تفصیلات فراہم کریں۔"
+
+        # --- General Fallback ---
         else:
             return "میں آفات کے انتظام کے معاملات میں ماہر ہوں۔ عام موضوعات پر مدد نہیں کر سکتا، لیکن آفات کے انتظام، ایمرجنسی طریقوں یا حفاظتی اقدامات کے بارے میں کوئی بھی سوال پوچھنے کے لیے آزاد محسوس کریں۔"
-    else:
-        # Original English responses
-        if any(greeting in query_lower for greeting in ['hi', 'hello', 'hey']):
+
+    else: # Default to English
+        # --- Greetings and Common Phrases ---
+        if any(greeting in query_normalized for greeting in ['hi', 'hello', 'hey']):
             return "Hello! I'm your disaster management assistant. How can I help you today?"
-        elif any(time in query_lower for time in ['good morning', 'good afternoon', 'good evening']):
-            return f"Thank you, {query}! I'm here to help you with disaster management related questions."
-        elif 'how are you' in query_lower:
+        elif any(time in query_normalized for time in ['good morning', 'good afternoon', 'good evening']):
+            return "Thank you! I'm here to help you with disaster management related questions."
+        elif 'how are you' in query_normalized:
             return "I'm functioning well, thank you for asking! I'm ready to help you with disaster management information."
-        elif 'thank' in query_lower:
+        elif 'thank' in query_normalized:
             return "You're welcome! Feel free to ask any questions about disaster management."
-        elif 'bye' in query_lower or 'goodbye' in query_lower:
+        elif 'bye' in query_normalized or 'goodbye' in query_normalized:
             return "Goodbye! If you have more questions about disaster management later, feel free to ask."
-        elif 'who are you' in query_lower:
+        elif 'who are you' in query_normalized:
             return "I'm a specialized chatbot designed to help with disaster management information and procedures. I can answer questions about emergency protocols, safety measures, and disaster response strategies."
+
+        # --- Specific Q&A (Hardcoded from JSON) ---
+        elif query_normalized == normalize_query("What should I do during an earthquake?"):
+             return "Drop, cover, and hold on until the shaking stops."
+        elif query_normalized == normalize_query("How can I stay safe during a heatwave?"):
+             return "Stay hydrated, avoid direct sunlight, and stay indoors during peak heat hours."
+        elif query_normalized == normalize_query("What should I do if I see a wildfire approaching?"):
+             return "Evacuate immediately if instructed, and move to a safe area away from the fire."
+        elif query_normalized == normalize_query("How can I prepare for a hurricane?"):
+             return "Secure outdoor objects, reinforce windows, and follow evacuation orders if given."
+        elif query_normalized == normalize_query("What should I include in my emergency kit?"):
+             return "Water, non-perishable food, flashlight, batteries, first aid kit, and essential medications."
+        elif query_normalized == normalize_query("How can I protect my home from floods?"):
+             return "Elevate electrical appliances and install flood barriers if you live in a flood-prone area."
+        elif query_normalized == normalize_query("What are the first steps in an emergency evacuation?"):
+             return "Stay calm, follow evacuation routes, and do not use elevators."
+        elif query_normalized == normalize_query("How can I stay informed about a natural disaster?"):
+             return "Monitor local news and weather updates, and sign up for emergency alerts."
+        elif query_normalized == normalize_query("How can I contact local authorities?"):
+             return "For local authorities, you can contact +92 335 5557362."
+        elif query_normalized == normalize_query("What is the emergency contact number?"):
+             return "For emergencies, please contact 1736."
+        elif query_normalized == normalize_query("Is there a rescue team available?"):
+             return "Yes, rescue teams are available. You can contact them at 1736 or +92 335 5557362."
+        elif query_normalized == normalize_query("Is the drinking water safe here?"):
+             return "We advise using bottled water provided here for drinking. Avoid consuming floodwater as it may be contaminated."
+        elif query_normalized == normalize_query("Where can I find medical help?"):
+             return "The medical clinic is located in the south wing of the center. Follow the signs or ask our staff for directions."
+        elif query_normalized == normalize_query("How can I contact my family?"):
+             return "We have facilities for family reunification. Please provide details at the reception for assistance."
+
+        # --- General Fallback ---
         else:
             return "I'm specialized in disaster management topics. While I can't help with general topics, I'd be happy to answer any questions about disaster management, emergency procedures, or safety protocols."
+
 
 def get_rag_response(qa_chain, query):
     """
