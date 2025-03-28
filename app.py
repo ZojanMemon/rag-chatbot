@@ -277,7 +277,6 @@ Use the following guidelines to answer questions:
    - Use professional and precise language
 
 2. If the context does NOT contain sufficient information:
-   - Provide an direct short answer from the text if the question is related to immediate safety
    - Provide a general, informative response based on common disaster management principles
    - Be honest about not having specific details
    - Offer to help with related topics that are within your knowledge base
