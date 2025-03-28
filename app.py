@@ -267,34 +267,24 @@ def initialize_rag():
                 "prompt": PromptTemplate(
                     template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
-Use the following guidelines to answer questions. Aim to provide concise and accurate answers.
-1. **Keyword Extractions for Question found on JSON:**
-    - If the question is found on JSON data, extract keywords to provide similar questions from JSON database.
-    - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
+Use the following guidelines to answer questions:
 
-2. **DIRECT JSON Data Extraction:**
-    - If the JSON data contains *any* answer related to the question, *begin your response with that specific answer*, quoted directly.
-    - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
+1. If the context contains relevant information:
+   - Provide a detailed and comprehensive answer using the information
+   - Include specific details and procedures from the source
+   - Structure the response in a clear, readable format
+   - Use professional and precise language
 
-3. **Augment with Relevant Context (If Available and Necessary):**
-   - After including the JSON data (if any), consult the detailed context for *relevant* supporting information (details, procedures, explanations) *only* if it significantly enhances the core answer.
-   - Keep the overall response as concise as possible.
-
-4. **If JSON data *Entirely* Lacks Relevant Answer:**
-   - If the JSON data does *not* contain *any* relevant information addressing the question, then consult the detailed context for a comprehensive answer.
-   - Provide a detailed and comprehensive answer, drawing from the detailed context.
-
-5. **If the Context Contains Insufficient Information (after checking both types of sources):**
-   - Provide a general, informative response based on common disaster management principles.
-   - Be honest about not having specific details.
-   - Offer to help with related topics within your knowledge base.
-   - Never invent specific numbers or procedures.
-   - Guide the user towards asking more specific questions.
+2. If the context does NOT contain sufficient information:
+   - Provide a general, informative response based on common disaster management principles
+   - Be honest about not having specific details
+   - Offer to help with related topics that are within your knowledge base
+   - Never make up specific numbers or procedures
+   - Guide the user towards asking more specific questions about disaster management
 
 Context: {{context}}
 
 Question: {{question}}
-
 
 Response (remember to be natural and helpful):""",
                     input_variables=["context", "question"],
