@@ -257,7 +257,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-       qa_chain = RetrievalQA.from_chain_type(
+    qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     chain_type="stuff",
     retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
@@ -290,6 +290,8 @@ Use the following guidelines to answer questions. Aim to provide concise and acc
 Context: {{context}}
 
 Question: {{question}}
+
+
 
 Response (remember to be natural and helpful):""",
             input_variables=["context", "question"],
