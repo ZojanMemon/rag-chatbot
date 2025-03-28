@@ -267,21 +267,25 @@ def initialize_rag():
                 "prompt": PromptTemplate(
                     template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
 
-Use the following guidelines to answer questions. Aim to provide concise and accurate answers.
+Use the following guidelines to answer questions.  Aim to provide concise and accurate answers.
 
-1. **Extract Core Answer from Concise Sources (JSON Data) if Possible:**
-   - If the question is addressed *at all* in the JSON data, *begin* your response by directly quoting the relevant answer from the JSON.
+1. **DIRECT JSON Data Extraction:**
+   - If the JSON data contains *any* answer related to the question, *begin your response with that specific answer*, quoted directly.
    - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
 
-2. **Augment with Detailed Context (If Available and Necessary):**
-   - If the JSON data provides a core answer *and* the detailed context contains *relevant* supporting information (details, procedures, explanations), then *briefly* augment the core answer with the most important details from the detailed context.
-   - Focus on adding only the *most essential* supporting information, keeping the overall response as concise as possible.
+2. **Keyword Extractions for Question not found on JSON:**
+   - If the question is not explicitly found on JSON data, try extracting the possible keywords to provide similar questions from JSON database.
+   - Cite the source: "Similar question found in concise data source, [Direct Quote from JSON Answer Field]."
 
-3. **If Concise Sources Lack *Any* Relevant Answer, Consult Detailed Context:**
+3. **Augment with Relevant Context (If Available and Necessary):**
+   - After including the JSON data (if any), consult the detailed context for *relevant* supporting information (details, procedures, explanations) *only* if it significantly enhances the core answer.
+   - Keep the overall response as concise as possible.
+
+4. **If JSON data *Entirely* Lacks Relevant Answer:**
    - If the JSON data does *not* contain *any* relevant information addressing the question, then consult the detailed context for a comprehensive answer.
    - Provide a detailed and comprehensive answer, drawing from the detailed context.
 
-4. **If the Context Contains Insufficient Information (after checking both types of sources):**
+5. **If the Context Contains Insufficient Information (after checking both types of sources):**
    - Provide a general, informative response based on common disaster management principles.
    - Be honest about not having specific details.
    - Offer to help with related topics within your knowledge base.
