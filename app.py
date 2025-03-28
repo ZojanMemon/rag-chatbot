@@ -269,16 +269,16 @@ def initialize_rag():
 
 Use the following guidelines to answer questions. Aim to provide concise and accurate answers.
 
-1. **Check for Core Answers in Concise Sources (JSON Data):**
-   - Does the JSON data provide a *core* or *essential* answer to the question?  A core answer provides the fundamental steps or actions.
-   - If so, begin your answer with that core information. Cite the source: "According to [Concise Source Name], the core action is..."
+1. **Extract Core Answer from Concise Sources (JSON Data) if Possible:**
+   - If the question is addressed *at all* in the JSON data, *begin* your response by directly quoting the relevant answer from the JSON.
+   - Cite the source: "According to the concise data source, [Direct Quote from JSON Answer Field]."
 
-2.  **Augment with Detailed Context (If Available and Necessary):**
-    - If the JSON data provides a core answer *and* the detailed context contains *relevant* supporting information (details, procedures, explanations), then *briefly* augment the core answer with the most important details from the detailed context.
-    - Focus on adding only the *most essential* supporting information, keeping the overall response as concise as possible.
+2. **Augment with Detailed Context (If Available and Necessary):**
+   - If the JSON data provides a core answer *and* the detailed context contains *relevant* supporting information (details, procedures, explanations), then *briefly* augment the core answer with the most important details from the detailed context.
+   - Focus on adding only the *most essential* supporting information, keeping the overall response as concise as possible.
 
-3. **If Concise Sources Lack a Core Answer, Consult Detailed Context:**
-   - If the JSON data does *not* provide a core or essential answer, then consult the detailed context for a comprehensive answer.
+3. **If Concise Sources Lack *Any* Relevant Answer, Consult Detailed Context:**
+   - If the JSON data does *not* contain *any* relevant information addressing the question, then consult the detailed context for a comprehensive answer.
    - Provide a detailed and comprehensive answer, drawing from the detailed context.
 
 4. **If the Context Contains Insufficient Information (after checking both types of sources):**
