@@ -279,7 +279,6 @@ Use the following guidelines to answer questions:
    - Provide a general, informative response based on common disaster management principles
    - Be honest about not having specific details
    - Offer to help with related topics that are within your knowledge base
-   - Never make up specific numbers or procedures
    - Guide the user towards asking more specific questions about disaster management
 
 Context: {{context}}
