@@ -649,7 +649,7 @@ def main():
                 - 🧠 Gemini Pro for text generation
                 - 🔍 Pinecone for vector storage
                 - ⚡ LangChain for the RAG pipeline
-                - 🌐 Multilingual support (English , Sindhi and Urdu)
+                -  Multilingual support (English , Sindhi and Urdu)
                 
                 # Topics 📑
                 
