@@ -16,8 +16,3 @@ textColor = "#FAFAFA"
 # Use pip as the package manager to avoid issues with deprecated plugins
 packageManager = "pip"
 
-[client]
-toolbarMode = "minimal"
-
-[global]
-showToolbar = false
