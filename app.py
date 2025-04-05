@@ -647,7 +647,7 @@ def main():
                 - ⚡ LangChain for the RAG pipeline
                 - 🌐 Multilingual support (English , Sindhi and Urdu)
                 
-                # Topics 📑
+                # Topics 📑 
                 
                 You can ask questions about:
                 
