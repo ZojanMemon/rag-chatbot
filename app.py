@@ -563,6 +563,21 @@ def main():
     # Display the responsive heading
     st.markdown('<h1 class="main-heading">🚨 Welcome to the Disaster Management Assistant</h1>', unsafe_allow_html=True)
 
+    # Hide Streamlit Cloud profile icon
+    hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            /* Hide the GitHub profile link/icon added by Streamlit Cloud */
+            ._profileContainer_gzau3_53 { display: none; }
+            /* You might need to inspect the element and adjust the class if it changes */
+            /* Another potential selector if the class name is dynamic: */
+            /* div[data-testid="stAppViewContainer"] > div > div > div > a[href*="share.streamlit.io/user/"] { display: none; } */
+            </style>
+            """
+    st.markdown(hide_st_style, unsafe_allow_html=True)
+
     # Handle authentication
     is_authenticated, user = auth_page()
     
