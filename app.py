@@ -30,6 +30,13 @@ EMERGENCY_AUTHORITIES = {
     "General": "general.emergency@example.com"
 }
 
+# Emergency phrases for detection
+EMERGENCY_PHRASES = [
+    "help me", "emergency", "danger", "trapped", "injured", "bleeding", 
+    "fire", "flood now", "earthquake", "urgent", "hurt", "dying",
+    "need help", "sos", "save", "critical", "life threatening"
+]
+
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -209,6 +216,80 @@ def get_rag_response(qa_chain, query):
         st.error(f"Error generating RAG response: {str(e)}")
         return f"I'm sorry, I couldn't generate a response. Error: {str(e)}"
 
+def get_response_type(query):
+    """
+    Determine the type of response needed based on the query content.
+    
+    Args:
+        query: User's question or statement
+        
+    Returns:
+        str: Response type - "emergency", "greeting", or "information"
+    """
+    query_lower = query.lower().strip()
+    
+    # Check if it's an emergency situation
+    if any(phrase in query_lower for phrase in EMERGENCY_PHRASES):
+        return "emergency"
+    # Check if it's a general greeting
+    elif is_general_chat(query):
+        return "greeting"
+    # Default to information request
+    else:
+        return "information"
+
+def get_emergency_response(query, qa_chain):
+    """
+    Generate a response for emergency situations with prioritized action steps.
+    
+    Args:
+        query: User's emergency question/statement
+        qa_chain: The initialized QA chain
+        
+    Returns:
+        str: Prioritized emergency response
+    """
+    output_lang = st.session_state.output_language
+    
+    # First, get relevant information from the RAG system
+    try:
+        rag_response = get_rag_response(qa_chain, query)
+    except Exception as e:
+        rag_response = "I couldn't retrieve specific information for your emergency."
+    
+    # Create emergency-focused prefix based on language
+    if output_lang == "Sindhi":
+        prefix = """🚨 **ايمرجنسي جواب**
+
+فوري طور تي:
+1. محفوظ جاءِ تي وڃو
+2. مدد لاءِ ڪال ڪريو (15 يا 1122)
+3. هيٺ ڏنل هدايتن تي عمل ڪريو
+
+"""
+    elif output_lang == "Urdu":
+        prefix = """🚨 **ایمرجنسی جواب**
+
+فوری طور پر:
+1. محفوظ جگہ پر جائیں
+2. مدد کے لیے کال کریں (15 یا 1122)
+3. نیچے دی گئی ہدایات پر عمل کریں
+
+"""
+    else:  # English
+        prefix = """🚨 **EMERGENCY RESPONSE**
+
+IMMEDIATE ACTIONS:
+1. Move to a safe location if possible
+2. Call for help (15 or 1122)
+3. Follow the specific guidance below
+
+"""
+    
+    # Extract the most actionable information from the RAG response
+    # and create a concise, action-oriented response
+    return prefix + rag_response
+
 def initialize_rag():
     try:
         # API Keys from secrets
@@ -265,28 +346,36 @@ def initialize_rag():
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
-                    template=f"""You are a knowledgeable disaster management assistant. {get_language_prompt(st.session_state.output_language)}
+                    template=f"""You are a knowledgeable disaster management assistant focused on providing timely, actionable help. {get_language_prompt(st.session_state.output_language)}
 
 Use the following guidelines to answer questions:
 
 1. If the context contains relevant information:
-   - Provide a detailed and comprehensive answer using the information
+   - Start with the most urgent and actionable information first
+   - Provide clear, step-by-step instructions when applicable
+   - Use concise language and bullet points for critical information
+   - Prioritize life-saving actions over general information
    - Include specific details and procedures from the source
-   - Structure the response in a clear, readable format
-   - Use professional and precise language
 
 2. If the context does NOT contain sufficient information:
-   - Provide a general, informative response based on common disaster management principles
+   - Start with general safety advice relevant to the situation
    - Be honest about not having specific details
-   - Offer to help with related topics that are within your knowledge base
+   - Provide actionable steps based on common disaster management principles
+   - Suggest contacting local emergency services when appropriate
    - Never make up specific numbers or procedures
-   - Guide the user towards asking more specific questions about disaster management
+
+3. For all responses:
+   - Keep information organized and easy to scan quickly
+   - Use clear headings and short paragraphs
+   - Emphasize the most critical information
+   - Be reassuring but realistic
+   - Focus on immediate needs first, then recovery information
 
 Context: {{context}}
 
 Question: {{question}}
 
-Response (remember to be natural and helpful):""",
+Response (remember to be concise, action-oriented, and helpful):""",
                     input_variables=["context", "question"],
                 )
             }
@@ -706,13 +795,26 @@ def main():
     # Create a dedicated container for the email UI
     email_ui_container = st.container()
 
+    # Check if the last message might be an emergency
+    is_emergency = False
+    if st.session_state.messages and len(st.session_state.messages) > 0:
+        last_message = st.session_state.messages[-1]
+        if last_message["role"] == "user":
+            is_emergency = any(phrase in last_message["content"].lower() for phrase in EMERGENCY_PHRASES)
+        elif last_message["role"] == "assistant" and len(st.session_state.messages) > 1:
+            # Check the user's last message too
+            user_messages = [m for m in st.session_state.messages if m["role"] == "user"]
+            if user_messages:
+                last_user_message = user_messages[-1]
+                is_emergency = any(phrase in last_user_message["content"].lower() for phrase in EMERGENCY_PHRASES)
+
     # Show email sharing UI in the dedicated container
     with email_ui_container:
         if "user" in locals():
             user_email = user.get('email', 'Anonymous')
         else:
             user_email = "Anonymous"
-        show_email_ui(st.session_state.messages, user_email)
+        show_email_ui(st.session_state.messages, user_email, is_emergency)
 
     # Chat input
     if prompt := st.chat_input("Ask Your Questions Here..."):
@@ -740,7 +842,10 @@ def main():
             """, unsafe_allow_html=True)
             
             try:
-                if is_general_chat(prompt):
+                response_type = get_response_type(prompt)
+                if response_type == "emergency":
+                    response = get_emergency_response(prompt, qa_chain)
+                elif response_type == "greeting":
                     response = get_general_response(prompt)
                 else:
                     response = get_rag_response(qa_chain, prompt)
@@ -752,7 +857,7 @@ def main():
                     metadata = {
                         'language': st.session_state.output_language,
                         'timestamp': datetime.now().isoformat(),
-                        'type': 'general' if is_general_chat(prompt) else 'rag'
+                        'type': response_type
                     }
                     sync_chat_message(user_id, "assistant", response, metadata)
                 

@@ -4,8 +4,15 @@ import time
 from services.email_service import EmailService
 from components.location_picker import show_location_picker
 
-def show_email_ui(messages, user_email="Anonymous"):
-    """Display the email sharing interface."""
+def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
+    """
+    Display the email sharing interface.
+    
+    Args:
+        messages: Chat history messages
+        user_email: User's email address
+        is_emergency: Whether this is an emergency situation (auto-expands UI)
+    """
     # Only show after some conversation
     if len(messages) < 2:
         return
@@ -22,6 +29,9 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ گفتگو شیئر نہیں کی جا سکی"
         select_location_text = "براہ کرم مقام منتخب کریں"
         no_location_warning = "براہ کرم پہلے مقام منتخب کریں"
+        emergency_help_text = "آپ ایمرجنسی میں ہیں؟ فوری مدد کے لیے اس گفتگو کو متعلقہ حکام کے ساتھ شیئر کریں۔"
+        yes_immediate_help = "ہاں، مجھے فوری مدد کی ضرورت ہے"
+        no_just_info = "نہیں، صرف معلومات چاہیے"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
@@ -30,6 +40,9 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ ڳالهه ٻولهه شيئر نه ٿي سگهي"
         select_location_text = "مهرباني ڪري مڪان چونڊيو"
         no_location_warning = "مهرباني ڪري پهريان مڪان چونڊيو"
+        emergency_help_text = "ڇا توهان ايمرجنسي ۾ آهيو؟ فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
+        yes_immediate_help = "ها، مونکي فوري مدد گهرجي"
+        no_just_info = "نه، رڳو معلومات گهرجن"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
@@ -38,10 +51,43 @@ def show_email_ui(messages, user_email="Anonymous"):
         error_message = "❌ Could not share the conversation"
         select_location_text = "Please select a location"
         no_location_warning = "Please select a location first"
+        emergency_help_text = "Are you in an emergency? Share this conversation with relevant authorities for immediate help."
+        yes_immediate_help = "Yes, I need immediate help"
+        no_just_info = "No, just information"
         
-    # Create an expander for the sharing interface
-    with st.expander(expander_title):
-        st.info(info_text)
+    # Create an expander for the sharing interface - auto-expand if emergency
+    with st.expander(expander_title, expanded=is_emergency):
+        # If it's an emergency, show prominent emergency help text
+        if is_emergency:
+            st.error(emergency_help_text)
+            
+            # Quick action buttons for emergency confirmation
+            col1, col2 = st.columns(2)
+            with col1:
+                emergency_confirmed = st.button(
+                    yes_immediate_help, 
+                    type="primary", 
+                    use_container_width=True
+                )
+            with col2:
+                emergency_denied = st.button(
+                    no_just_info,
+                    use_container_width=True
+                )
+                
+            # If user confirms emergency, store in session state
+            if emergency_confirmed:
+                st.session_state.emergency_confirmed = True
+                st.session_state.emergency_denied = False
+            elif emergency_denied:
+                st.session_state.emergency_confirmed = False
+                st.session_state.emergency_denied = True
+                
+            # If emergency is confirmed, show a more prominent message
+            if st.session_state.get("emergency_confirmed", False):
+                st.warning("📞 Please also call emergency services if possible (15 or 1122)")
+        else:
+            st.info(info_text)
         
         # Emergency type selection
         emergency_types = {
@@ -128,9 +174,23 @@ def show_email_ui(messages, user_email="Anonymous"):
             elif current_language == "Sindhi":
                 select_label = "ايمرجنسي جو قسم چونڊيو"
                 
+            # Auto-select emergency type if we can detect it from the messages
+            default_index = 0
+            if is_emergency:
+                last_message = messages[-1]["content"].lower() if messages else ""
+                if "flood" in last_message or "water" in last_message:
+                    default_index = display_options.index(emergency_labels["Flood"])
+                elif "earthquake" in last_message:
+                    default_index = display_options.index(emergency_labels["Earthquake"])
+                elif "fire" in last_message:
+                    default_index = display_options.index(emergency_labels["Fire"])
+                elif "medical" in last_message or "hurt" in last_message or "injured" in last_message:
+                    default_index = display_options.index(emergency_labels["Medical"])
+            
             selected_index = st.selectbox(
                 select_label,
                 options=display_options,
+                index=default_index,
                 key="share_emergency_type"
             )
             
@@ -145,8 +205,10 @@ def show_email_ui(messages, user_email="Anonymous"):
             # Get the confirmed address from session state
             location = st.session_state.get("confirmed_address", "")
             
-            # Create a share button
-            if st.button(share_button_text, type="primary", use_container_width=True, disabled=not location):
+            # Create a share button - make it more prominent for emergencies
+            button_type = "primary" if is_emergency else "primary"
+            
+            if st.button(share_button_text, type=button_type, use_container_width=True, disabled=not location):
                 if location:
                     # Show a spinner while sending email
                     with st.spinner("Sending..."):
