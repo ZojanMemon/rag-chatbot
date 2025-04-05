@@ -83,6 +83,50 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
         emergency_label = "Emergency:"
         local_authorities_label = "Local Authorities:"
         call_now_text = "Call Now"
+    
+    # Add custom CSS for emergency contact buttons
+    st.markdown("""
+    <style>
+    .emergency-button {
+        display: inline-block;
+        padding: 6px 12px;
+        margin: 4px;
+        background-color: #e74c3c;
+        color: white !important;
+        text-decoration: none;
+        border-radius: 4px;
+        font-weight: bold;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .emergency-button:hover {
+        background-color: #c0392b;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .emergency-contact-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .emergency-contact-label {
+        flex: 3;
+        font-weight: bold;
+    }
+    
+    .emergency-contact-number {
+        flex: 4;
+    }
+    
+    .emergency-contact-buttons {
+        flex: 3;
+        text-align: right;
+    }
+    </style>
+    """, unsafe_allow_html=True)
         
     # Create an expander for the sharing interface - auto-expand if emergency
     with st.expander(expander_title, expanded=is_emergency):
@@ -91,31 +135,37 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
             st.error(emergency_help_text)
             
             # Display emergency contact information prominently
-            st.markdown(f"### {emergency_contacts_title}")
+            st.markdown(f"<h3>{emergency_contacts_title}</h3>", unsafe_allow_html=True)
             
-            # Display emergency contacts with call buttons
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{rescue_team_label}** {rescue_team}")
-            with col2:
-                st.markdown(f"[{call_now_text}](tel:1736)")
-                
-            # Emergency numbers (15 and 1122)
-            col1, col2, col3 = st.columns([3, 1, 1])
-            with col1:
-                st.markdown(f"**{emergency_label}** {emergency}")
-            with col2:
-                st.markdown(f"[15](tel:15)")
-            with col3:
-                st.markdown(f"[1122](tel:1122)")
-                
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**{local_authorities_label}** {local_authorities}")
-            with col2:
-                st.markdown(f"[{call_now_text}](tel:+923355557362)")
+            # Display emergency contacts with styled buttons
+            st.markdown(f"""
+            <div class="emergency-contact-row">
+                <div class="emergency-contact-label">{rescue_team_label}</div>
+                <div class="emergency-contact-number">{rescue_team}</div>
+                <div class="emergency-contact-buttons">
+                    <a href="tel:1736" class="emergency-button">1736</a>
+                </div>
+            </div>
             
-            st.markdown("---")
+            <div class="emergency-contact-row">
+                <div class="emergency-contact-label">{emergency_label}</div>
+                <div class="emergency-contact-number">{emergency}</div>
+                <div class="emergency-contact-buttons">
+                    <a href="tel:15" class="emergency-button">15</a>
+                    <a href="tel:1122" class="emergency-button">1122</a>
+                </div>
+            </div>
+            
+            <div class="emergency-contact-row">
+                <div class="emergency-contact-label">{local_authorities_label}</div>
+                <div class="emergency-contact-number">{local_authorities}</div>
+                <div class="emergency-contact-buttons">
+                    <a href="tel:+923355557362" class="emergency-button">+92 335</a>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<hr>", unsafe_allow_html=True)
             
             # Quick action buttons for emergency confirmation
             col1, col2 = st.columns(2)
