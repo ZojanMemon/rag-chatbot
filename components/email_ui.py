@@ -20,6 +20,20 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
     # Get current language from session state
     current_language = st.session_state.get("output_language", "English")
     
+    # Emergency contact information based on language
+    if current_language == "Urdu":
+        rescue_team = "1736 یا +92 335 5557362"
+        emergency = "1736"
+        local_authorities = "+92 335 5557362"
+    elif current_language == "Sindhi":
+        rescue_team = "1736 يا +92 335 5557362"
+        emergency = "1736"
+        local_authorities = "+92 335 5557362"
+    else:  # English
+        rescue_team = "1736 or +92 335 5557362"
+        emergency = "1736"
+        local_authorities = "+92 335 5557362"
+    
     # Email sharing section with language-specific labels
     if current_language == "Urdu":
         expander_title = "📧 حکام کے ساتھ شیئر کریں"
@@ -32,6 +46,11 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
         emergency_help_text = "آپ ایمرجنسی میں ہیں؟ فوری مدد کے لیے اس گفتگو کو متعلقہ حکام کے ساتھ شیئر کریں۔"
         yes_immediate_help = "ہاں، مجھے فوری مدد کی ضرورت ہے"
         no_just_info = "نہیں، صرف معلومات چاہیے"
+        emergency_contacts_title = "ایمرجنسی رابطے"
+        rescue_team_label = "ریسکیو ٹیم:"
+        emergency_label = "ایمرجنسی:"
+        local_authorities_label = "مقامی حکام:"
+        call_now_text = "ابھی کال کریں"
     elif current_language == "Sindhi":
         expander_title = "📧 اختيارن سان شيئر ڪريو"
         info_text = "فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
@@ -43,6 +62,11 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
         emergency_help_text = "ڇا توهان ايمرجنسي ۾ آهيو؟ فوري مدد لاءِ هي ڳالهه ٻولهه متعلقه اختيارن سان شيئر ڪريو."
         yes_immediate_help = "ها، مونکي فوري مدد گهرجي"
         no_just_info = "نه، رڳو معلومات گهرجن"
+        emergency_contacts_title = "ايمرجنسي رابطا"
+        rescue_team_label = "ريسڪيو ٽيم:"
+        emergency_label = "ايمرجنسي:"
+        local_authorities_label = "مقامي اختيارين:"
+        call_now_text = "هاڻي ڪال ڪريو"
     else:  # English
         expander_title = "📧 Share with Authorities"
         info_text = "Share this conversation with relevant authorities for immediate assistance."
@@ -54,12 +78,41 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
         emergency_help_text = "Are you in an emergency? Share this conversation with relevant authorities for immediate help."
         yes_immediate_help = "Yes, I need immediate help"
         no_just_info = "No, just information"
+        emergency_contacts_title = "Emergency Contacts"
+        rescue_team_label = "Rescue Team:"
+        emergency_label = "Emergency:"
+        local_authorities_label = "Local Authorities:"
+        call_now_text = "Call Now"
         
     # Create an expander for the sharing interface - auto-expand if emergency
     with st.expander(expander_title, expanded=is_emergency):
         # If it's an emergency, show prominent emergency help text
         if is_emergency:
             st.error(emergency_help_text)
+            
+            # Display emergency contact information prominently
+            st.markdown(f"### {emergency_contacts_title}")
+            
+            # Display emergency contacts with call buttons
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{rescue_team_label}** {rescue_team}")
+            with col2:
+                st.markdown(f"[{call_now_text}](tel:1736)")
+                
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{emergency_label}** {emergency}")
+            with col2:
+                st.markdown(f"[{call_now_text}](tel:1736)")
+                
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{local_authorities_label}** {local_authorities}")
+            with col2:
+                st.markdown(f"[{call_now_text}](tel:+923355557362)")
+            
+            st.markdown("---")
             
             # Quick action buttons for emergency confirmation
             col1, col2 = st.columns(2)
@@ -85,7 +138,7 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
                 
             # If emergency is confirmed, show a more prominent message
             if st.session_state.get("emergency_confirmed", False):
-                st.warning("📞 Please also call emergency services if possible (15 or 1122)")
+                st.warning(f"📞 {emergency_label} {emergency}")
         else:
             st.info(info_text)
         

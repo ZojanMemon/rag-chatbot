@@ -37,6 +37,25 @@ EMERGENCY_PHRASES = [
     "need help", "sos", "save", "critical", "life threatening"
 ]
 
+# Emergency contact information
+EMERGENCY_CONTACTS = {
+    "English": {
+        "rescue_team": "1736 or +92 335 5557362",
+        "emergency": "1736",
+        "local_authorities": "+92 335 5557362"
+    },
+    "Urdu": {
+        "rescue_team": "1736 یا +92 335 5557362",
+        "emergency": "1736",
+        "local_authorities": "+92 335 5557362"
+    },
+    "Sindhi": {
+        "rescue_team": "1736 يا +92 335 5557362",
+        "emergency": "1736",
+        "local_authorities": "+92 335 5557362"
+    }
+}
+
 # Initialize session state for chat history and language preferences
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -251,6 +270,9 @@ def get_emergency_response(query, qa_chain):
     """
     output_lang = st.session_state.output_language
     
+    # Get the appropriate contact information based on language
+    contacts = EMERGENCY_CONTACTS.get(output_lang, EMERGENCY_CONTACTS["English"])
+    
     # First, get relevant information from the RAG system
     try:
         rag_response = get_rag_response(qa_chain, query)
@@ -259,30 +281,39 @@ def get_emergency_response(query, qa_chain):
     
     # Create emergency-focused prefix based on language
     if output_lang == "Sindhi":
-        prefix = """🚨 **ايمرجنسي جواب**
+        prefix = f"""🚨 **ايمرجنسي جواب**
 
 فوري طور تي:
 1. محفوظ جاءِ تي وڃو
-2. مدد لاءِ ڪال ڪريو (15 يا 1122)
+2. مدد لاءِ ڪال ڪريو ({contacts['rescue_team']})
 3. هيٺ ڏنل هدايتن تي عمل ڪريو
+
+**ايمرجنسي نمبر:** {contacts['emergency']}
+**مقامي اختيارين لاءِ:** {contacts['local_authorities']}
 
 """
     elif output_lang == "Urdu":
-        prefix = """🚨 **ایمرجنسی جواب**
+        prefix = f"""🚨 **ایمرجنسی جواب**
 
 فوری طور پر:
 1. محفوظ جگہ پر جائیں
-2. مدد کے لیے کال کریں (15 یا 1122)
+2. مدد کے لیے کال کریں ({contacts['rescue_team']})
 3. نیچے دی گئی ہدایات پر عمل کریں
+
+**ایمرجنسی نمبر:** {contacts['emergency']}
+**مقامی حکام کے لیے:** {contacts['local_authorities']}
 
 """
     else:  # English
-        prefix = """🚨 **EMERGENCY RESPONSE**
+        prefix = f"""🚨 **EMERGENCY RESPONSE**
 
 IMMEDIATE ACTIONS:
 1. Move to a safe location if possible
-2. Call for help (15 or 1122)
+2. Call for help ({contacts['rescue_team']})
 3. Follow the specific guidance below
+
+**Emergency Number:** {contacts['emergency']}
+**For Local Authorities:** {contacts['local_authorities']}
 
 """
     
