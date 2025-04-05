@@ -325,6 +325,11 @@ def main():
         }
 
 
+._ createdByLabel_g
+zau3_104. dark gzau3_91{
+display: none !important;
+}
+
         ._darkThemeShadow_gzau3_91 {
     box-shadow: 0 2px 5px 4px #9797971f, 0 0 4px 2px #0f0f151f;
     display: none important;
