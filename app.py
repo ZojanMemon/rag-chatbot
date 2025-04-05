@@ -257,16 +257,8 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with improved prompt
-        qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
-            return_source_documents=False,
-            chain_type_kwargs={
-                "prompt": PromptTemplate(
-                    input_variables=["context", "question"],
-                    template=f"""You are a knowledgeable and helpful disaster management assistant focused on user safety. Your primary language is {{{{get_language_prompt(st.session_state.output_language)}}}}.
+        # Define the template string first
+        template_string = f"""You are a knowledgeable and helpful disaster management assistant focused on user safety. Your primary language is {{{{get_language_prompt(st.session_state.output_language)}}}}.
 
 Follow these instructions carefully:
 
@@ -275,7 +267,7 @@ Follow these instructions carefully:
     *   If they confirm danger, **immediately instruct them to contact local emergency services** (e.g., police, ambulance, fire department) and provide the relevant contact number if known/configured. Do **not** attempt to handle the emergency yourself.
     *   Only proceed to step 2 if the user confirms they are NOT in immediate danger or if they ask a specific, non-urgent question.
 
-2.  **Answer Specific Questions using Context:** If the user asks a specific question about disaster management, use the provided context below to give a detailed, accurate, and helpful answer in {{{{get_language_prompt(st.session_state.output_language)}}}}. Cite the source documents if possible and relevant, but prioritize a clear narrative answer.
+2.  **Answer Specific Questions using Context:** If the user asks a specific question about disaster management, use the provided context below to give a detailed, accurate, and helpful answer in {{{{get_language_prompt(st.session_state.output_language)}}}}. Prioritize a clear narrative answer.
 
 3.  **Handle Unavailable Information:** If the context doesn't contain the answer to a specific question, clearly state that you don't have the information based on the provided documents. Do not invent answers. Suggest they consult official sources or local authorities if appropriate.
 
@@ -286,10 +278,24 @@ Follow these instructions carefully:
 
 **User Question:** {{{{question}}}}
 
-**Assistant Answer ({{{{get_language_prompt(st.session_state.output_language)}}}}):"""
-                )
-            }
+**Assistant Answer ({{{{get_language_prompt(st.session_state.output_language)}}}}):**"""
+
+        # Then create the PromptTemplate
+        prompt = PromptTemplate(
+            template=template_string,
+            input_variables=["context", "question"]
         )
+
+        # Finally, use it in RetrievalQA
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+            return_source_documents=False,
+            chain_type_kwargs={"prompt": prompt} # Pass the pre-defined prompt
+        )
+
+        st.session_state.qa_chain = qa_chain
         return qa_chain, llm
     except Exception as e:
         st.error(f"Error initializing RAG system: {str(e)}")
@@ -742,7 +748,7 @@ def main():
                 if is_general_chat(prompt):
                     response = get_general_response(prompt)
                 else:
-                    response = get_rag_response(qa_chain, prompt)
+                    response = get_rag_response(st.session_state.qa_chain, prompt)
                 
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
