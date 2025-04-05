@@ -314,23 +314,7 @@ def main():
             margin: 0 auto;
         }
         
-
-      
-
-        [data-testid="stFooter"] {
-  visibility: hidden;
-}
-
-._createdByLabel_gzau3_104 {
-  display: none !important;
-}
-
-/* Target any element containing "Created by" text */
-*:contains("Created by") {
-  display: none !important;
-}
-
-
+        
         /* Chat container */
         .chat-container {
             max-width: 800px;
