@@ -314,6 +314,16 @@ def main():
             margin: 0 auto;
         }
         
+
+        ._profileImage_gzau3_78 {
+        height: 2rem;
+        width: 2rem;
+        object-fit: cover;
+        object-position: top;
+        border-radius: 9999px;
+        display: none !important;
+        }
+
         /* Chat container */
         .chat-container {
             max-width: 800px;
