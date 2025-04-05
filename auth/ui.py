@@ -148,7 +148,19 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
             backdrop-filter: blur(10px);
             margin: 1rem 0 !important;
             padding: 1rem !important;
-            display: none !important;
+        }
+        
+        /* Error message specific styling */
+        .stAlert[data-baseweb="notification"] {
+            display: block !important;
+            background-color: rgba(231, 76, 60, 0.1) !important;
+            border-left: 4px solid #e74c3c !important;
+        }
+        
+        /* Success message specific styling */
+        .stAlert[data-baseweb="notification"][kind="success"] {
+            background-color: rgba(46, 204, 113, 0.1) !important;
+            border-left: 4px solid #2ecc71 !important;
         }
         
         /* Heading styles */
@@ -207,16 +219,19 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 )
                 
                 if st.form_submit_button("Login", type="primary", use_container_width=True):
-                    if not email or not password:
-                        st.error("Please fill in all fields")
+                    if not email:
+                        st.error("Please enter your email address")
+                    elif not password:
+                        st.error("Please enter your password")
                     else:
-                        success, message = auth.login_form(email, password)
-                        if message:
-                            if success:
-                                st.success(message)
-                                st.rerun()
-                            else:
-                                st.error(message)
+                        with st.spinner("Logging in..."):
+                            success, message = auth.login_form(email, password)
+                            if message:
+                                if success:
+                                    st.success(message)
+                                    st.rerun()
+                                else:
+                                    st.error(message)
         
         with tab2:
             with st.form("signup_form", clear_on_submit=True):
@@ -245,18 +260,25 @@ def auth_page() -> Tuple[bool, Optional[Dict]]:
                 )
                 
                 if st.form_submit_button("Sign Up", type="primary", use_container_width=True):
-                    if not email or not password or not confirm_password:
-                        st.error("Please fill in all fields")
+                    if not email:
+                        st.error("Please enter an email address")
+                    elif not password:
+                        st.error("Please enter a password")
+                    elif len(password) < 6:
+                        st.error("Password must be at least 6 characters long")
+                    elif not confirm_password:
+                        st.error("Please confirm your password")
                     elif password != confirm_password:
                         st.error("Passwords do not match")
                     else:
-                        success, message = auth.signup_form(email, password)
-                        if message:
-                            if success:
-                                st.success(message)
-                                st.rerun()
-                            else:
-                                st.error(message)
+                        with st.spinner("Creating account..."):
+                            success, message = auth.signup_form(email, password)
+                            if message:
+                                if success:
+                                    st.success(message)
+                                    st.rerun()
+                                else:
+                                    st.error(message)
     
     return False, None
 

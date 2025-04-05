@@ -51,11 +51,20 @@ class FirebaseAuthenticator:
             )
             
             if response.status_code != 200:
-                error_message = response.json().get('error', {}).get('message', 'Login failed')
+                error_data = response.json().get('error', {})
+                error_message = error_data.get('message', 'Login failed')
+                
+                # Provide user-friendly error messages
                 if error_message == 'INVALID_PASSWORD':
-                    return False, "Incorrect password"
+                    return False, "Incorrect password. Please try again."
                 elif error_message == 'EMAIL_NOT_FOUND':
-                    return False, "Email not found"
+                    return False, "Email not found. Please check your email or sign up."
+                elif error_message == 'INVALID_EMAIL':
+                    return False, "Invalid email format. Please enter a valid email address."
+                elif error_message == 'USER_DISABLED':
+                    return False, "This account has been disabled. Please contact support."
+                elif error_message == 'TOO_MANY_ATTEMPTS_TRY_LATER':
+                    return False, "Too many failed login attempts. Please try again later."
                 else:
                     return False, f"Login failed: {error_message}"
             
@@ -96,11 +105,31 @@ class FirebaseAuthenticator:
     def signup_form(self, email: str, password: str):
         """Handle signup form submission."""
         try:
+            # First check if user already exists
+            try:
+                existing_user = auth.get_user_by_email(email)
+                if existing_user:
+                    return False, "An account with this email already exists. Please login instead."
+            except:
+                # User doesn't exist, proceed with creation
+                pass
+                
             # Create user in Firebase Auth
-            user = auth.create_user(
-                email=email,
-                password=password
-            )
+            try:
+                user = auth.create_user(
+                    email=email,
+                    password=password
+                )
+            except Exception as e:
+                error_message = str(e)
+                if "WEAK_PASSWORD" in error_message:
+                    return False, "Password is too weak. Please use at least 6 characters."
+                elif "INVALID_EMAIL" in error_message:
+                    return False, "Invalid email format. Please enter a valid email address."
+                elif "EMAIL_EXISTS" in error_message:
+                    return False, "An account with this email already exists. Please login instead."
+                else:
+                    return False, f"Registration failed: {error_message}"
             
             # Store user data in session
             user_data = {
