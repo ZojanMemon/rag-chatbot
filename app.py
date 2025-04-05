@@ -21,6 +21,18 @@ from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_mes
 # Import email service
 from services.email_service import EmailService
 
+# --- Page Configuration ---
+st.set_page_config(
+    page_title="Disaster Management Assistant",
+    page_icon="🚨",
+    layout="wide",
+    menu_items={
+        'Get Help': 'https://github.com/AryanQureshi/rag-chatbot', # Optional: Link to your repo
+        'Report a bug': "https://github.com/AryanQureshi/rag-chatbot/issues", # Optional: Link to issues
+        'About': None # Hides the 'About' section which includes the 'Created by...' label
+    }
+)
+
 # Emergency authority email mapping
 EMERGENCY_AUTHORITIES = {
     "Flood": "flood.authority@example.com",
@@ -297,13 +309,6 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
-    # Page config
-    st.set_page_config(
-        page_title="Disaster Management RAG Chatbot",
-        page_icon="🤖",
-        layout="wide"
-    )
-
     # Custom CSS for layout and animations
     st.markdown("""
         <style>

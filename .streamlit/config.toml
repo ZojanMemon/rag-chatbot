@@ -3,7 +3,6 @@ enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false
-toolbarMode = "minimal"
 
 [theme]
 base = "dark"
@@ -16,3 +15,4 @@ textColor = "#FAFAFA"
 [runner]
 # Use pip as the package manager to avoid issues with deprecated plugins
 packageManager = "pip"
+
