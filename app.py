@@ -313,8 +313,7 @@ def main():
             max-width: 1200px;
             margin: 0 auto;
         }
-        
-        
+
         /* Chat container */
         .chat-container {
             max-width: 800px;
@@ -594,12 +593,6 @@ def main():
 
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
-
-
-# Call this function near the top of your app
-hide_streamlit_footer()
-
-
 
     # Sidebar with clean layout
     with st.sidebar:
