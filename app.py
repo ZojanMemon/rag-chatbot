@@ -297,15 +297,11 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
-    # Hide default Streamlit menu
+    # Page config
     st.set_page_config(
-        page_title="Disaster Management Assistant",
-        page_icon="🚨",
-        layout="wide",
-        initial_sidebar_state="expanded",
-        menu_items={
-            'About': None # This removes the 'About' item from the menu
-        }
+        page_title="Disaster Management RAG Chatbot",
+        page_icon="🤖",
+        layout="wide"
     )
 
     # Custom CSS for layout and animations
@@ -649,7 +645,7 @@ def main():
                 - 🧠 Gemini Pro for text generation
                 - 🔍 Pinecone for vector storage
                 - ⚡ LangChain for the RAG pipeline
-                -  Multilingual support (English , Sindhi and Urdu)
+                - 🌐 Multilingual support (English , Sindhi and Urdu)
                 
                 # Topics 📑
                 
