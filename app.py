@@ -315,25 +315,21 @@ def main():
         }
         
 
-        ._profileImage_gzau3_78 {
-        height: 2rem;
-        width: 2rem;
-        object-fit: cover;
-        object-position: top;
-        border-radius: 9999px;
-        display: none !important;
-        }
+      
 
-
-._ createdByLabel_g
-zau3_104. dark gzau3_91{
-display: none !important;
+        [data-testid="stFooter"] {
+  visibility: hidden;
 }
 
-        ._darkThemeShadow_gzau3_91 {
-    box-shadow: 0 2px 5px 4px #9797971f, 0 0 4px 2px #0f0f151f;
-    display: none important;
+._createdByLabel_gzau3_104 {
+  display: none !important;
 }
+
+/* Target any element containing "Created by" text */
+*:contains("Created by") {
+  display: none !important;
+}
+
 
         /* Chat container */
         .chat-container {
@@ -614,6 +610,23 @@ display: none !important;
 
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
+
+
+    # Hide Created By label
+    def hide_streamlit_footer():
+    hide_footer_style = """
+        <style>
+        footer {visibility: hidden;}
+        [data-testid="stFooter"] {visibility: hidden;}
+        ._createdByLabel_gzau3_104 {display: none !important;}
+        </style>
+    """
+    st.markdown(hide_footer_style, unsafe_allow_html=True)
+
+# Call this function near the top of your app
+hide_streamlit_footer()
+
+
 
     # Sidebar with clean layout
     with st.sidebar:
