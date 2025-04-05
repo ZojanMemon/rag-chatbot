@@ -297,11 +297,15 @@ Response (remember to be natural and helpful):""",
         st.stop()
 
 def main():
-    # Page config
+    # Hide default Streamlit menu
     st.set_page_config(
-        page_title="Disaster Management RAG Chatbot",
-        page_icon="🤖",
-        layout="wide"
+        page_title="Disaster Management Assistant",
+        page_icon="🚨",
+        layout="wide",
+        initial_sidebar_state="expanded",
+        menu_items={
+            'About': None # This removes the 'About' item from the menu
+        }
     )
 
     # Custom CSS for layout and animations
