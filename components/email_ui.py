@@ -23,15 +23,15 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
     # Emergency contact information based on language
     if current_language == "Urdu":
         rescue_team = "1736 یا +92 335 5557362"
-        emergency = "1736"
+        emergency = "15 یا 1122"
         local_authorities = "+92 335 5557362"
     elif current_language == "Sindhi":
         rescue_team = "1736 يا +92 335 5557362"
-        emergency = "1736"
+        emergency = "15 يا 1122"
         local_authorities = "+92 335 5557362"
     else:  # English
         rescue_team = "1736 or +92 335 5557362"
-        emergency = "1736"
+        emergency = "15 or 1122"
         local_authorities = "+92 335 5557362"
     
     # Email sharing section with language-specific labels
@@ -100,11 +100,14 @@ def show_email_ui(messages, user_email="Anonymous", is_emergency=False):
             with col2:
                 st.markdown(f"[{call_now_text}](tel:1736)")
                 
-            col1, col2 = st.columns([3, 1])
+            # Emergency numbers (15 and 1122)
+            col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
                 st.markdown(f"**{emergency_label}** {emergency}")
             with col2:
-                st.markdown(f"[{call_now_text}](tel:1736)")
+                st.markdown(f"[15](tel:15)")
+            with col3:
+                st.markdown(f"[1122](tel:1122)")
                 
             col1, col2 = st.columns([3, 1])
             with col1:

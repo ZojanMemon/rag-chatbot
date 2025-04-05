@@ -34,24 +34,27 @@ EMERGENCY_AUTHORITIES = {
 EMERGENCY_PHRASES = [
     "help me", "emergency", "danger", "trapped", "injured", "bleeding", 
     "fire", "flood now", "earthquake", "urgent", "hurt", "dying",
-    "need help", "sos", "save", "critical", "life threatening"
+    "need help", "sos", "save", "critical", "life threatening",
+    "i need help", "help", "accident", "stuck", "disaster", "evacuate",
+    "rescue", "medical emergency", "ambulance", "police", "danger",
+    "in trouble", "stranded", "drowning", "collapsed", "explosion"
 ]
 
 # Emergency contact information
 EMERGENCY_CONTACTS = {
     "English": {
         "rescue_team": "1736 or +92 335 5557362",
-        "emergency": "1736",
+        "emergency": "15 or 1122",
         "local_authorities": "+92 335 5557362"
     },
     "Urdu": {
         "rescue_team": "1736 یا +92 335 5557362",
-        "emergency": "1736",
+        "emergency": "15 یا 1122",
         "local_authorities": "+92 335 5557362"
     },
     "Sindhi": {
         "rescue_team": "1736 يا +92 335 5557362",
-        "emergency": "1736",
+        "emergency": "15 يا 1122",
         "local_authorities": "+92 335 5557362"
     }
 }
@@ -247,12 +250,25 @@ def get_response_type(query):
     """
     query_lower = query.lower().strip()
     
-    # Check if it's an emergency situation
+    # Simple emergency detection for very short messages like "help"
+    if query_lower in ["help", "sos", "emergency", "help me", "i need help"]:
+        return "emergency"
+    
+    # Check if it's an emergency situation with more complex phrases
     if any(phrase in query_lower for phrase in EMERGENCY_PHRASES):
         return "emergency"
+    
+    # Check for specific emergency keywords at the beginning of sentences
+    emergency_starters = ["i am in", "i'm in", "there is a", "there's a", "we have a"]
+    if any(query_lower.startswith(starter) for starter in emergency_starters):
+        emergency_contexts = ["trouble", "danger", "emergency", "disaster", "flood", "fire", "earthquake"]
+        if any(context in query_lower for context in emergency_contexts):
+            return "emergency"
+    
     # Check if it's a general greeting
     elif is_general_chat(query):
         return "greeting"
+    
     # Default to information request
     else:
         return "information"
