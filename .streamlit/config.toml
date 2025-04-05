@@ -16,3 +16,5 @@ textColor = "#FAFAFA"
 # Use pip as the package manager to avoid issues with deprecated plugins
 packageManager = "pip"
 
+[ui]
+hideTopBar = true

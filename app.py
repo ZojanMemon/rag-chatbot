@@ -563,24 +563,6 @@ def main():
     # Display the responsive heading
     st.markdown('<h1 class="main-heading">🚨 Welcome to the Disaster Management Assistant</h1>', unsafe_allow_html=True)
 
-    # Hide Streamlit Cloud profile icon and label text
-    hide_st_style = """
-            <style>
-            #MainMenu {visibility: hidden;} /* Hide Streamlit Menu */
-            footer {visibility: hidden;} /* Hide Streamlit Footer */
-            header {visibility: hidden;} /* Hide Streamlit Header */
-            
-            /* Hide Streamlit Cloud Elements */
-            ._profileContainer_gzau3_53 { display: none !important; } /* Hide profile pic container */
-            ._createdByLabel_gzau3_104 { display: none !important; } /* Hide "Created by..." label */
-            
-            /* Fallback selectors if classes change */
-            /* div[data-testid="stAppViewContainer"] > div > div > div > a[href*="share.streamlit.io/user/"] { display: none !important; } */
-            /* p[class*="_createdByLabel"] { display: none !important; } */
-            </style>
-            """
-    st.markdown(hide_st_style, unsafe_allow_html=True)
-
     # Handle authentication
     is_authenticated, user = auth_page()
     
