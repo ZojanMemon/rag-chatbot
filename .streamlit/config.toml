@@ -12,15 +12,6 @@ secondaryBackgroundColor = "#262730"
 textColor = "#FAFAFA"
 
 
-[browser]
-gatherUsageStats = false
-
-[client]
-toolbarMode = "minimal"
-
-[global]
-showToolbar = false
-
 
 [runner]
 # Use pip as the package manager to avoid issues with deprecated plugins
