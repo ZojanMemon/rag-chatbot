@@ -571,7 +571,7 @@ def main():
         <div style="text-align: center; padding: 20px;">
         <h2></h2>
         <p></p>
-        </div>
+        </div> 
         """, unsafe_allow_html=True)
         return
     
