@@ -612,17 +612,6 @@ def main():
     qa_chain, llm = initialize_rag()
 
 
-    # Hide Created By label
-    def hide_streamlit_footer():
-    hide_footer_style = """
-        <style>
-        footer {visibility: hidden;}
-        [data-testid="stFooter"] {visibility: hidden;}
-        ._createdByLabel_gzau3_104 {display: none !important;}
-        </style>
-    """
-    st.markdown(hide_footer_style, unsafe_allow_html=True)
-
 # Call this function near the top of your app
 hide_streamlit_footer()
 
