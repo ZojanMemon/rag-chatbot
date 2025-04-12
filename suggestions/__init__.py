@@ -1,1 +1,1 @@
-# Suggestions package initialization
+# Question suggestions package initialization
