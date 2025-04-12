@@ -435,6 +435,19 @@ Response (remember to be concise, action-oriented, and helpful):""",
         st.error(f"Error initializing RAG system: {str(e)}")
         st.stop()
 
+def initialize_context_system():
+    """Initialize the conversation context system."""
+    if "context_enabled" not in st.session_state:
+        st.session_state.context_enabled = True
+        
+    if "context_max_messages" not in st.session_state:
+        st.session_state.context_max_messages = 5
+        
+    # Initialize the contextual RAG system
+    if "contextual_rag" not in st.session_state:
+        from context.rag_context import ContextualRAG
+        st.session_state.contextual_rag = ContextualRAG(max_context_messages=st.session_state.context_max_messages)
+
 def main():
     # Page config
     st.set_page_config(
@@ -794,6 +807,20 @@ def main():
                     st.session_state.context_enabled = context_enabled
                     if not context_enabled:
                         clear_conversation_context()
+                
+                # Add slider for max messages to remember
+                max_messages = st.slider("Number of messages to remember", 
+                                        min_value=1, 
+                                        max_value=20, 
+                                        value=st.session_state.context_max_messages,
+                                        help="How many previous messages should the chatbot remember? Higher values provide more context but may slow down responses.")
+                
+                if max_messages != st.session_state.context_max_messages:
+                    st.session_state.context_max_messages = max_messages
+                    # Reinitialize the contextual RAG with new settings
+                    from context.rag_context import ContextualRAG
+                    st.session_state.contextual_rag = ContextualRAG(max_context_messages=max_messages)
+                    st.toast(f"Context memory updated to remember {max_messages} messages", icon="✅")
                 
                 # Debug mode toggle (for developers)
                 st.markdown("---")

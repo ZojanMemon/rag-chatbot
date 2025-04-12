@@ -8,8 +8,8 @@ from typing import Dict, Any, List, Optional, Tuple
 from .rag_context import ContextualRAG
 from .context_manager import ConversationContext
 
-# Initialize the contextual RAG system
-contextual_rag = ContextualRAG(max_context_messages=5)
+# We'll use the contextual_rag from session_state instead of initializing it here
+# This allows for dynamic configuration of the context system
 
 def get_contextual_rag_response(qa_chain: Any, query: str, lang_instruction: str = "") -> str:
     """
@@ -29,8 +29,8 @@ def get_contextual_rag_response(qa_chain: Any, query: str, lang_instruction: str
     # Get messages from session state
     messages = st.session_state.get("messages", [])
     
-    # Use the contextual RAG system to get a response
-    return contextual_rag.get_contextual_response(qa_chain, query, messages, lang_instruction)
+    # Use the contextual RAG system from session state to get a response
+    return st.session_state.contextual_rag.get_contextual_response(qa_chain, query, messages, lang_instruction)
 
 def get_contextual_response_with_language(qa_chain: Any, query: str):
     """
@@ -72,7 +72,8 @@ def clear_conversation_context() -> None:
     
     This should be called when starting a new conversation.
     """
-    contextual_rag.clear_context()
+    if "contextual_rag" in st.session_state:
+        st.session_state.contextual_rag.clear_context()
 
 def initialize_context_system() -> None:
     """
@@ -80,6 +81,6 @@ def initialize_context_system() -> None:
     
     This should be called during app initialization.
     """
-    # Initialize context-related session state variables if needed
-    if "context_enabled" not in st.session_state:
-        st.session_state.context_enabled = True
+    # This function is now a placeholder that calls the main implementation in app.py
+    # The actual initialization happens in app.py to avoid circular imports
+    pass
