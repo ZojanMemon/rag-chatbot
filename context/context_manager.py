@@ -7,6 +7,7 @@ import streamlit as st
 from typing import List, Dict, Any, Optional
 import json
 from datetime import datetime
+import re
 
 class ConversationContext:
     """Manages conversation context for the chatbot."""
@@ -26,6 +27,10 @@ class ConversationContext:
         # Initialize context summary in session state if not present
         if "context_summary" not in st.session_state:
             st.session_state.context_summary = ""
+            
+        # Initialize personal information storage
+        if "personal_info" not in st.session_state:
+            st.session_state.personal_info = {}
     
     def add_message(self, role: str, content: str, metadata: Optional[Dict[str, Any]] = None) -> None:
         """Add a message to the conversation context.
@@ -46,12 +51,65 @@ class ConversationContext:
         # Add to context history
         st.session_state.context_history.append(message)
         
+        # Extract personal information from user messages
+        if role == "user":
+            self._extract_personal_info(content)
+        
         # Trim context if it exceeds max length
         if len(st.session_state.context_history) > self.max_context_length:
             st.session_state.context_history = st.session_state.context_history[-self.max_context_length:]
         
         # Update context summary
         self._update_context_summary()
+    
+    def _extract_personal_info(self, content: str) -> None:
+        """Extract personal information from user messages.
+        
+        Args:
+            content: Message content to extract information from
+        """
+        # Extract name information
+        name_patterns = [
+            r"(?:my name is|i am|i'm|call me) ([A-Za-z]+)",
+            r"([A-Za-z]+) is my name",
+            r"name's ([A-Za-z]+)"
+        ]
+        
+        for pattern in name_patterns:
+            matches = re.findall(pattern, content.lower())
+            if matches:
+                name = matches[0].strip().capitalize()
+                st.session_state.personal_info["name"] = name
+                break
+        
+        # Extract age information
+        age_patterns = [
+            r"(?:i am|i'm) (\d+)(?: years old)?",
+            r"(\d+) years old"
+        ]
+        
+        for pattern in age_patterns:
+            matches = re.findall(pattern, content.lower())
+            if matches:
+                try:
+                    age = int(matches[0])
+                    st.session_state.personal_info["age"] = age
+                except ValueError:
+                    pass
+                break
+        
+        # Extract location information
+        location_patterns = [
+            r"(?:i live in|i am from|i'm from) ([A-Za-z\s,]+)",
+            r"(?:living|based) in ([A-Za-z\s,]+)"
+        ]
+        
+        for pattern in location_patterns:
+            matches = re.findall(pattern, content.lower())
+            if matches:
+                location = matches[0].strip().capitalize()
+                st.session_state.personal_info["location"] = location
+                break
     
     def get_context_history(self) -> List[Dict[str, Any]]:
         """Get the conversation context history.
@@ -83,10 +141,19 @@ class ConversationContext:
         
         return formatted_context
     
+    def get_personal_info(self) -> Dict[str, Any]:
+        """Get the user's personal information.
+        
+        Returns:
+            Dictionary containing personal information extracted from conversation
+        """
+        return st.session_state.personal_info
+    
     def clear_context(self) -> None:
         """Clear the conversation context."""
         st.session_state.context_history = []
         st.session_state.context_summary = ""
+        st.session_state.personal_info = {}
     
     def _update_context_summary(self) -> None:
         """Update the context summary based on the conversation history."""
@@ -95,6 +162,20 @@ class ConversationContext:
         assistant_messages = sum(1 for msg in st.session_state.context_history if msg["role"] == "assistant")
         
         summary = f"Conversation with {user_messages} user messages and {assistant_messages} assistant responses."
+        
+        # Add personal information to summary if available
+        personal_info = st.session_state.personal_info
+        if personal_info:
+            personal_details = []
+            if "name" in personal_info:
+                personal_details.append(f"name: {personal_info['name']}")
+            if "age" in personal_info:
+                personal_details.append(f"age: {personal_info['age']}")
+            if "location" in personal_info:
+                personal_details.append(f"location: {personal_info['location']}")
+            
+            if personal_details:
+                summary += f" User info: {', '.join(personal_details)}."
         
         # Extract key topics if available
         topics = set()
@@ -131,10 +212,24 @@ class ConversationContext:
         # Format the context for the RAG system
         context_for_rag = "Consider this conversation history when answering:\n"
         
+        # Add personal information if available
+        personal_info = st.session_state.personal_info
+        if personal_info:
+            context_for_rag += "User personal information:\n"
+            for key, value in personal_info.items():
+                context_for_rag += f"- User's {key}: {value}\n"
+            context_for_rag += "\n"
+        
+        # Add conversation history
+        context_for_rag += "Recent conversation:\n"
         for message in recent_context:
             role_prefix = "User: " if message["role"] == "user" else "Assistant: "
             context_for_rag += f"{role_prefix}{message['content']}\n"
         
         context_for_rag += f"\nCurrent question: {current_query}\n"
+        
+        # Add special instructions for personal queries
+        if "name" in personal_info and any(phrase in current_query.lower() for phrase in ["who am i", "what is my name", "my name"]):
+            context_for_rag += f"\nIMPORTANT: The user's name is {personal_info['name']}. Make sure to use this information in your response.\n"
         
         return context_for_rag

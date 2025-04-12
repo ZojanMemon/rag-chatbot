@@ -258,8 +258,21 @@ def get_rag_response(qa_chain, query):
         context_manager = ConversationContext()
         context_for_rag = context_manager.get_context_for_rag(query)
         
+        # Check if this is a personal information query
+        query_lower = query.lower()
+        is_personal_query = any(phrase in query_lower for phrase in [
+            "who am i", "what is my name", "my name", "do you know me", 
+            "what's my name", "remember me", "who i am"
+        ])
+        
+        # Add special instruction for personal information queries
+        if is_personal_query:
+            personal_instruction = "\nIMPORTANT: If the user has previously mentioned their name or personal details, please reference that information in your response. If they asked 'who am I' or 'what is my name' and you know their name from previous messages, tell them their name.\n"
+        else:
+            personal_instruction = ""
+        
         # Get response from RAG system with context
-        enhanced_query = f"{context_for_rag}\n\n{query}\n\n{lang_instruction}"
+        enhanced_query = f"{context_for_rag}\n\n{query}\n\n{personal_instruction}{lang_instruction}"
         response = qa_chain({"query": enhanced_query})
         return response['result']
     except Exception as e:
