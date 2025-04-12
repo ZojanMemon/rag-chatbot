@@ -64,13 +64,26 @@ EMERGENCY_CONTACTS = {
     }
 }
 
-# Initialize session state for chat history and language preferences
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "input_language" not in st.session_state:
-    st.session_state.input_language = "English"
-if "output_language" not in st.session_state:
-    st.session_state.output_language = "English"
+def initialize_session_state():
+    """Initialize all session state variables."""
+    # Initialize messages
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+        
+    # Initialize language preferences
+    if "input_language" not in st.session_state:
+        st.session_state.input_language = "English"
+        
+    if "output_language" not in st.session_state:
+        st.session_state.output_language = "English"
+    
+    # Initialize thinking state
+    if "thinking" not in st.session_state:
+        st.session_state.thinking = False
+        
+    # Initialize submitted flag
+    if "submitted" not in st.session_state:
+        st.session_state.submitted = False
 
 def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
@@ -516,6 +529,9 @@ def process_user_message(qa_chain, llm):
         st.session_state.thinking = False
 
 def main():
+    # Initialize session state
+    initialize_session_state()
+
     # Page config
     st.set_page_config(
         page_title="Disaster Management RAG Chatbot",
@@ -669,7 +685,6 @@ def main():
             border: none !important;
         }
 
-        /* Selectbox options */
         .stSelectbox > div > div > div {
             background-color: #252525 !important;
             color: #e0e0e0 !important;
