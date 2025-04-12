@@ -24,10 +24,6 @@ from services.email_service import EmailService
 # Import context management system
 from context.integration import get_contextual_rag_response, clear_conversation_context, initialize_context_system, get_contextual_response_with_language
 
-# Import question suggestions
-from suggestions.question_suggestions import show_suggestions
-from suggestions.styles import inject_suggestion_styles
-
 # Emergency authority email mapping
 EMERGENCY_AUTHORITIES = {
     "Flood": "flood.authority@example.com",
@@ -904,33 +900,6 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
-    # Display question suggestions for new conversations
-    if "messages" not in st.session_state or len(st.session_state.messages) == 0:
-        # Inject custom CSS for suggestions
-        inject_suggestion_styles()
-        
-        # Function to handle suggestion clicks
-        def handle_suggestion_click(suggestion):
-            # Add the suggestion as a user message
-            if "messages" not in st.session_state:
-                st.session_state.messages = []
-            st.session_state.messages.append({"role": "user", "content": suggestion})
-            
-            # If user is authenticated, sync the message
-            if is_authenticated:
-                metadata = {
-                    'language': st.session_state.input_language,
-                    'timestamp': datetime.now().isoformat()
-                }
-                sync_chat_message(user_id, "user", suggestion, metadata)
-            
-            # Process the suggestion as a query
-            st.session_state.thinking = True
-            st.rerun()
-        
-        # Show suggestions based on the input language
-        show_suggestions(st.session_state.input_language, handle_suggestion_click)
-
     # Create a dedicated container for the email UI
     email_ui_container = st.container()
 
@@ -955,13 +924,19 @@ def main():
             user_email = "Anonymous"
         show_email_ui(st.session_state.messages, user_email, is_emergency)
 
-    # Process thinking state and generate response
-    if st.session_state.get('thinking', False):
-        # Reset thinking state
-        st.session_state.thinking = False
+    # Chat input
+    if prompt := st.chat_input("Ask Your Questions Here..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
         
-        # Get the last user message
-        last_message = st.session_state.messages[-1]["content"]
+        if is_authenticated:
+            metadata = {
+                'language': st.session_state.input_language,
+                'timestamp': datetime.now().isoformat()
+            }
+            sync_chat_message(user_id, "user", prompt, metadata)
+        
+        with st.chat_message("user"):
+            st.markdown(prompt)
         
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
@@ -975,55 +950,37 @@ def main():
             """, unsafe_allow_html=True)
             
             try:
-                response_type = get_response_type(last_message)
-                
+                response_type = get_response_type(prompt)
                 if response_type == "emergency":
-                    # Emergency response
-                    response = get_emergency_response(last_message, qa_chain)
+                    response = get_emergency_response(prompt, qa_chain)
                 elif response_type == "greeting":
-                    # Greeting response
-                    response = get_general_response(last_message)
+                    response = get_general_response(prompt)
                 else:
-                    # Information response with context
-                    response = get_contextual_response_with_language(qa_chain, last_message)
+                    # Use the context-aware RAG response function
+                    from context.integration import get_contextual_response_with_language
+                    response = get_contextual_response_with_language(qa_chain, prompt)
                 
-                # Update placeholder with response
                 message_placeholder.markdown(response)
-                
-                # Add assistant response to chat history
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
                 if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
                         'timestamp': datetime.now().isoformat(),
-                        'response_type': response_type
+                        'type': response_type
                     }
                     sync_chat_message(user_id, "assistant", response, metadata)
-                    
+                
+                # Force Streamlit to rerun to refresh the UI and show the email sharing component
+                st.rerun()
+                
             except Exception as e:
-                error_message = f"Error: {str(e)}"
+                error_message = f"Error generating response: {str(e)}"
                 message_placeholder.error(error_message)
                 st.session_state.messages.append({"role": "assistant", "content": error_message})
-
-    # Chat input
-    if prompt := st.chat_input("Ask Your Questions Here..."):
-        # Add user message to chat history
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        if is_authenticated:
-            metadata = {
-                'language': st.session_state.input_language,
-                'timestamp': datetime.now().isoformat()
-            }
-            sync_chat_message(user_id, "user", prompt, metadata)
-        
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        
-        # Set thinking state to trigger response generation on next rerun
-        st.session_state.thinking = True
-        st.rerun()
+                
+                # Force Streamlit to rerun even in case of error
+                st.rerun()
 
 if __name__ == "__main__":
     main()
