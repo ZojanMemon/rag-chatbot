@@ -35,7 +35,7 @@ EMERGENCY_PHRASES = [
     "help me", "emergency", "danger", "trapped", "injured", "bleeding", 
     "fire", "flood now", "earthquake", "urgent", "hurt", "dying",
     "need help", "sos", "save", "critical", "life threatening",
-    "i need help", "help", "accident", "stuck", "disaster", "evacuate",
+    "i need help", "help", "accident", "stuck","evacuate",
     "rescue", "medical emergency", "ambulance", "police", "danger",
     "in trouble", "stranded", "drowning", "collapsed", "explosion"
 ]
