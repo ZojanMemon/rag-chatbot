@@ -18,9 +18,6 @@ from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
 from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_message, load_user_preferences, save_user_preferences
 
-# Import context manager
-from context.context_manager import format_chat_history_for_prompt
-
 # Import email service
 from services.email_service import EmailService
 
@@ -231,17 +228,11 @@ def get_rag_response(qa_chain, query):
         str: Generated response
     """
     try:
-        # Format chat history
-        chat_history_str = format_chat_history_for_prompt(st.session_state.messages)
-
         # Add language-specific instructions based on output language
         lang_instruction = get_language_prompt(st.session_state.output_language)
         
-        # Get response from RAG system, including chat history
-        response = qa_chain({
-            "query": f"{query}\n\n{lang_instruction}",
-            "chat_history": chat_history_str
-        })
+        # Get response from RAG system
+        response = qa_chain({"query": f"{query}\n\n{lang_instruction}"})
         return response['result']
     except Exception as e:
         st.error(f"Error generating RAG response: {str(e)}")
@@ -394,7 +385,7 @@ def initialize_rag():
             max_output_tokens=2048
         )
 
-        # Create the QA chain with improved prompt including chat history
+        # Create the QA chain with improved prompt
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
@@ -404,10 +395,7 @@ def initialize_rag():
                 "prompt": PromptTemplate(
                     template=f"""You are a knowledgeable disaster management assistant focused on providing timely, actionable help. {get_language_prompt(st.session_state.output_language)}
 
-Consider the previous conversation history when answering the current question:
-{{chat_history}}
-
-Use the following guidelines and retrieved context to answer the question:
+Use the following guidelines to answer questions:
 
 1. If the context contains relevant information:
    - Start with the most urgent and actionable information first
@@ -430,12 +418,12 @@ Use the following guidelines and retrieved context to answer the question:
    - Be reassuring but realistic
    - Focus on immediate needs first, then recovery information
 
-Retrieved Context: {{context}}
+Context: {{context}}
 
 Question: {{question}}
 
-Response (remember to consider the chat history, be concise, action-oriented, and helpful):""",
-                    input_variables=["context", "question", "chat_history"], # Added chat_history
+Response (remember to be concise, action-oriented, and helpful):""",
+                    input_variables=["context", "question"],
                 )
             }
         )
