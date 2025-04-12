@@ -25,7 +25,8 @@ from services.email_service import EmailService
 from context.integration import get_contextual_rag_response, clear_conversation_context, initialize_context_system, get_contextual_response_with_language
 
 # Import question suggestions
-from suggestions.ui import render_suggestion_buttons, initialize_suggestion_state, reset_suggestions
+from suggestions.question_suggestions import show_suggestions
+from suggestions.styles import inject_suggestion_styles
 
 # Emergency authority email mapping
 EMERGENCY_AUTHORITIES = {
@@ -66,25 +67,12 @@ EMERGENCY_CONTACTS = {
 }
 
 # Initialize session state for chat history and language preferences
-def initialize_session_state():
-    """Initialize session state variables."""
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    
-    if "thinking" not in st.session_state:
-        st.session_state.thinking = False
-    
-    if "input_language" not in st.session_state:
-        st.session_state.input_language = "English"
-    
-    if "output_language" not in st.session_state:
-        st.session_state.output_language = "English"
-    
-    if "user_input" not in st.session_state:
-        st.session_state.user_input = ""
-        
-    # Initialize suggestion state
-    initialize_suggestion_state()
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "input_language" not in st.session_state:
+    st.session_state.input_language = "English"
+if "output_language" not in st.session_state:
+    st.session_state.output_language = "English"
 
 def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
@@ -464,22 +452,6 @@ def initialize_context_system():
         from context.rag_context import ContextualRAG
         st.session_state.contextual_rag = ContextualRAG(max_context_messages=st.session_state.context_max_messages)
 
-def new_conversation():
-    """Start a new conversation."""
-    # Create new session and clear messages
-    history_manager = ChatHistoryManager()
-    user_id = st.session_state.user['uid']
-    session_id = history_manager.create_new_session(user_id)
-    st.session_state.messages = []
-    st.session_state.thinking = False
-    st.session_state.current_session_id = session_id
-    
-    # Clear conversation context
-    clear_conversation_context()
-    
-    # Reset suggestions to show them for the new conversation
-    reset_suggestions()
-
 def main():
     # Page config
     st.set_page_config(
@@ -796,7 +768,13 @@ def main():
         else:
             # New Chat Button
             if st.button("✨ New Conversation", type="primary", use_container_width=True):
-                new_conversation()
+                # Create new session and clear messages
+                history_manager = ChatHistoryManager()
+                session_id = history_manager.create_new_session(user_id)
+                st.session_state.messages = []
+                st.session_state.current_session_id = session_id
+                # Clear conversation context when starting a new conversation
+                clear_conversation_context()
                 st.rerun()
             
             chat_history_sidebar(user_id)
@@ -921,18 +899,37 @@ def main():
                         mime="text/plain"
                     )
     
-    # Chat message container
-    chat_container = st.container()
-    
     # Display chat messages
-    with chat_container:
-        # Show question suggestions for new conversations
-        render_suggestion_buttons()
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Display question suggestions for new conversations
+    if "messages" not in st.session_state or len(st.session_state.messages) == 0:
+        # Inject custom CSS for suggestions
+        inject_suggestion_styles()
         
-        # Display existing messages
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        # Function to handle suggestion clicks
+        def handle_suggestion_click(suggestion):
+            # Add the suggestion as a user message
+            if "messages" not in st.session_state:
+                st.session_state.messages = []
+            st.session_state.messages.append({"role": "user", "content": suggestion})
+            
+            # If user is authenticated, sync the message
+            if is_authenticated:
+                metadata = {
+                    'language': st.session_state.input_language,
+                    'timestamp': datetime.now().isoformat()
+                }
+                sync_chat_message(user_id, "user", suggestion, metadata)
+            
+            # Process the suggestion as a query
+            st.session_state.thinking = True
+            st.rerun()
+        
+        # Show suggestions based on the input language
+        show_suggestions(st.session_state.input_language, handle_suggestion_click)
 
     # Create a dedicated container for the email UI
     email_ui_container = st.container()
@@ -958,19 +955,13 @@ def main():
             user_email = "Anonymous"
         show_email_ui(st.session_state.messages, user_email, is_emergency)
 
-    # Chat input
-    if prompt := st.chat_input("Ask Your Questions Here..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    # Process thinking state and generate response
+    if st.session_state.get('thinking', False):
+        # Reset thinking state
+        st.session_state.thinking = False
         
-        if is_authenticated:
-            metadata = {
-                'language': st.session_state.input_language,
-                'timestamp': datetime.now().isoformat()
-            }
-            sync_chat_message(user_id, "user", prompt, metadata)
-        
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        # Get the last user message
+        last_message = st.session_state.messages[-1]["content"]
         
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
@@ -984,38 +975,55 @@ def main():
             """, unsafe_allow_html=True)
             
             try:
-                response_type = get_response_type(prompt)
-                if response_type == "emergency":
-                    response = get_emergency_response(prompt, qa_chain)
-                elif response_type == "greeting":
-                    response = get_general_response(prompt)
-                else:
-                    # Use the context-aware RAG response function
-                    from context.integration import get_contextual_response_with_language
-                    response = get_contextual_response_with_language(qa_chain, prompt)
+                response_type = get_response_type(last_message)
                 
+                if response_type == "emergency":
+                    # Emergency response
+                    response = get_emergency_response(last_message, qa_chain)
+                elif response_type == "greeting":
+                    # Greeting response
+                    response = get_general_response(last_message)
+                else:
+                    # Information response with context
+                    response = get_contextual_response_with_language(qa_chain, last_message)
+                
+                # Update placeholder with response
                 message_placeholder.markdown(response)
+                
+                # Add assistant response to chat history
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
                 if is_authenticated:
                     metadata = {
                         'language': st.session_state.output_language,
                         'timestamp': datetime.now().isoformat(),
-                        'type': response_type
+                        'response_type': response_type
                     }
                     sync_chat_message(user_id, "assistant", response, metadata)
-                
-                # Force Streamlit to rerun to refresh the UI and show the email sharing component
-                st.rerun()
-                
+                    
             except Exception as e:
-                error_message = f"Error generating response: {str(e)}"
+                error_message = f"Error: {str(e)}"
                 message_placeholder.error(error_message)
                 st.session_state.messages.append({"role": "assistant", "content": error_message})
-                
-                # Force Streamlit to rerun even in case of error
-                st.rerun()
+
+    # Chat input
+    if prompt := st.chat_input("Ask Your Questions Here..."):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        if is_authenticated:
+            metadata = {
+                'language': st.session_state.input_language,
+                'timestamp': datetime.now().isoformat()
+            }
+            sync_chat_message(user_id, "user", prompt, metadata)
+        
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        # Set thinking state to trigger response generation on next rerun
+        st.session_state.thinking = True
+        st.rerun()
 
 if __name__ == "__main__":
-    initialize_session_state()
     main()
