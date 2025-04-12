@@ -12,6 +12,8 @@ import io
 import textwrap
 from typing import Literal
 from components.email_ui import show_email_ui
+from suggestions.question_cards import render_question_cards, should_show_question_cards
+from suggestions.card_handler import handle_card_click
 
 # Import authentication modules
 from auth.authenticator import FirebaseAuthenticator
@@ -447,6 +449,71 @@ def initialize_context_system():
     if "contextual_rag" not in st.session_state:
         from context.rag_context import ContextualRAG
         st.session_state.contextual_rag = ContextualRAG(max_context_messages=st.session_state.context_max_messages)
+
+def process_user_message(qa_chain, llm):
+    """Process the last user message and generate a response."""
+    # Get the last user message
+    last_message = st.session_state.messages[-1]
+    prompt = last_message["content"]
+    
+    # Display assistant message
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        
+        # Show thinking animation
+        message_placeholder.markdown("""
+        <div class="thinking-container">
+            <div class="thinking-spinner"></div>
+            <span class="thinking-text">Thinking...</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        try:
+            # Determine response type
+            response_type = get_response_type(prompt)
+            
+            # Generate appropriate response based on type
+            if response_type == "emergency":
+                response = get_emergency_response(prompt, qa_chain)
+            elif response_type == "greeting":
+                response = get_general_response(prompt)
+            else:
+                # Use the context-aware RAG response function
+                response = get_contextual_response_with_language(qa_chain, prompt)
+            
+            # Update the placeholder with the response
+            message_placeholder.markdown(response)
+            
+            # Add the response to the message history
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+            # Sync with Firebase if authenticated
+            if "user_id" in st.session_state and st.session_state.user_id:
+                user_id = st.session_state.user_id
+                
+                # Sync user message
+                metadata_user = {
+                    'language': st.session_state.input_language,
+                    'timestamp': datetime.now().isoformat()
+                }
+                sync_chat_message(user_id, "user", prompt, metadata_user)
+                
+                # Sync assistant message
+                metadata_assistant = {
+                    'language': st.session_state.output_language,
+                    'timestamp': datetime.now().isoformat(),
+                    'type': response_type
+                }
+                sync_chat_message(user_id, "assistant", response, metadata_assistant)
+            
+        except Exception as e:
+            # Handle errors
+            error_message = f"Error generating response: {str(e)}"
+            message_placeholder.error(error_message)
+            st.session_state.messages.append({"role": "assistant", "content": error_message})
+        
+        # Reset thinking state
+        st.session_state.thinking = False
 
 def main():
     # Page config
@@ -900,6 +967,15 @@ def main():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
+    # Show question cards for new conversations
+    if should_show_question_cards():
+        # Define a callback for card clicks
+        def on_card_click(question: str):
+            handle_card_click(question)
+        
+        # Render the question cards
+        render_question_cards(on_card_click)
+
     # Create a dedicated container for the email UI
     email_ui_container = st.container()
 
@@ -916,71 +992,38 @@ def main():
                 last_user_message = user_messages[-1]
                 is_emergency = any(phrase in last_user_message["content"].lower() for phrase in EMERGENCY_PHRASES)
 
-    # Show email sharing UI in the dedicated container
+    # Show email UI if there's an emergency
     with email_ui_container:
-        if "user" in locals():
-            user_email = user.get('email', 'Anonymous')
+        user_email = ""
+        if user and "email" in user:
+            user_email = user["email"]
         else:
             user_email = "Anonymous"
         show_email_ui(st.session_state.messages, user_email, is_emergency)
 
-    # Chat input
-    if prompt := st.chat_input("Ask Your Questions Here..."):
+    # Chat input and processing
+    if prompt := st.chat_input("Ask me anything about disaster management..."):
+        # Add user message to chat history
         st.session_state.messages.append({"role": "user", "content": prompt})
         
-        if is_authenticated:
-            metadata = {
-                'language': st.session_state.input_language,
-                'timestamp': datetime.now().isoformat()
-            }
-            sync_chat_message(user_id, "user", prompt, metadata)
-        
+        # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        with st.chat_message("assistant"):
-            message_placeholder = st.empty()
-            
-            # Show thinking animation
-            message_placeholder.markdown("""
-            <div class="thinking-container">
-                <div class="thinking-spinner"></div>
-                <span class="thinking-text">Thinking...</span>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            try:
-                response_type = get_response_type(prompt)
-                if response_type == "emergency":
-                    response = get_emergency_response(prompt, qa_chain)
-                elif response_type == "greeting":
-                    response = get_general_response(prompt)
-                else:
-                    # Use the context-aware RAG response function
-                    from context.integration import get_contextual_response_with_language
-                    response = get_contextual_response_with_language(qa_chain, prompt)
-                
-                message_placeholder.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-                
-                if is_authenticated:
-                    metadata = {
-                        'language': st.session_state.output_language,
-                        'timestamp': datetime.now().isoformat(),
-                        'type': response_type
-                    }
-                    sync_chat_message(user_id, "assistant", response, metadata)
-                
-                # Force Streamlit to rerun to refresh the UI and show the email sharing component
-                st.rerun()
-                
-            except Exception as e:
-                error_message = f"Error generating response: {str(e)}"
-                message_placeholder.error(error_message)
-                st.session_state.messages.append({"role": "assistant", "content": error_message})
-                
-                # Force Streamlit to rerun even in case of error
-                st.rerun()
+        # Set the submitted flag to process the message
+        st.session_state.submitted = True
+        
+    # Process submitted messages (from chat input or question cards)
+    if st.session_state.get("submitted", False):
+        # Reset the submitted flag
+        st.session_state.submitted = False
+        
+        # Set thinking state
+        st.session_state.thinking = True
+        st.rerun()
+    elif st.session_state.thinking:
+        # Process the last user message
+        process_user_message(qa_chain, llm)
 
 if __name__ == "__main__":
     main()
