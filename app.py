@@ -13,9 +13,6 @@ import textwrap
 from typing import Literal
 from components.email_ui import show_email_ui
 
-# Import context manager
-from context.context_manager import ConversationContext
-
 # Import authentication modules
 from auth.authenticator import FirebaseAuthenticator
 from auth.chat_history import ChatHistoryManager
@@ -38,7 +35,7 @@ EMERGENCY_PHRASES = [
     "help me", "emergency", "danger", "trapped", "injured", "bleeding", 
     "fire", "flood now", "earthquake", "urgent", "hurt", "dying",
     "need help", "sos", "save", "critical", "life threatening",
-    "i need help", "help", "accident", "stuck", "evacuate",
+    "i need help", "help", "accident", "stuck", "disaster", "evacuate",
     "rescue", "medical emergency", "ambulance", "police", "danger",
     "in trouble", "stranded", "drowning", "collapsed", "explosion"
 ]
@@ -69,26 +66,6 @@ if "input_language" not in st.session_state:
     st.session_state.input_language = "English"
 if "output_language" not in st.session_state:
     st.session_state.output_language = "English"
-if "context_initialized" not in st.session_state:
-    st.session_state.context_initialized = False
-
-def initialize_context():
-    """
-    Initialize or reset the conversation context.
-    This should be called when starting a new conversation.
-    """
-    context_manager = ConversationContext()
-    context_manager.clear_context()
-    st.session_state.context_initialized = True
-    
-    # If there are existing messages in the session state, add them to the context
-    if st.session_state.messages:
-        for message in st.session_state.messages:
-            context_manager.add_message(
-                role=message["role"],
-                content=message["content"],
-                metadata={"language": st.session_state.output_language}
-            )
 
 def get_language_prompt(output_lang: Literal["English", "Sindhi", "Urdu"]) -> str:
     """Get the language-specific prompt instruction."""
@@ -254,26 +231,8 @@ def get_rag_response(qa_chain, query):
         # Add language-specific instructions based on output language
         lang_instruction = get_language_prompt(st.session_state.output_language)
         
-        # Get conversation context if available
-        context_manager = ConversationContext()
-        context_for_rag = context_manager.get_context_for_rag(query)
-        
-        # Check if this is a personal information query
-        query_lower = query.lower()
-        is_personal_query = any(phrase in query_lower for phrase in [
-            "who am i", "what is my name", "my name", "do you know me", 
-            "what's my name", "remember me", "who i am"
-        ])
-        
-        # Add special instruction for personal information queries
-        if is_personal_query:
-            personal_instruction = "\nIMPORTANT: If the user has previously mentioned their name or personal details, please reference that information in your response. If they asked 'who am I' or 'what is my name' and you know their name from previous messages, tell them their name.\n"
-        else:
-            personal_instruction = ""
-        
-        # Get response from RAG system with context
-        enhanced_query = f"{context_for_rag}\n\n{query}\n\n{personal_instruction}{lang_instruction}"
-        response = qa_chain({"query": enhanced_query})
+        # Get response from RAG system
+        response = qa_chain({"query": f"{query}\n\n{lang_instruction}"})
         return response['result']
     except Exception as e:
         st.error(f"Error generating RAG response: {str(e)}")
@@ -770,11 +729,7 @@ def main():
 
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
-    
-    # Initialize conversation context if not already done
-    if not st.session_state.get("context_initialized", False):
-        initialize_context()
-    
+
     # Sidebar with clean layout
     with st.sidebar:
         if st.session_state.get('show_settings', False):
@@ -791,7 +746,6 @@ def main():
                 session_id = history_manager.create_new_session(user_id)
                 st.session_state.messages = []
                 st.session_state.current_session_id = session_id
-                initialize_context()
                 st.rerun()
             
             chat_history_sidebar(user_id)
@@ -911,14 +865,7 @@ def main():
 
     # Chat input
     if prompt := st.chat_input("Ask Your Questions Here..."):
-        # Initialize context manager if needed
-        context_manager = ConversationContext()
-        
-        # Add user message to session state
         st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        # Add user message to context manager
-        context_manager.add_message("user", prompt, {"language": st.session_state.input_language})
         
         if is_authenticated:
             metadata = {
@@ -951,15 +898,7 @@ def main():
                     response = get_rag_response(qa_chain, prompt)
                 
                 message_placeholder.markdown(response)
-                
-                # Add assistant response to session state
                 st.session_state.messages.append({"role": "assistant", "content": response})
-                
-                # Add assistant response to context manager
-                context_manager.add_message("assistant", response, {
-                    "language": st.session_state.output_language,
-                    "response_type": response_type
-                })
                 
                 if is_authenticated:
                     metadata = {
