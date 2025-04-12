@@ -72,7 +72,8 @@ class ConversationContext:
         st.session_state.context_summary = summary
     
     def get_query_with_context(self, query: str, messages: List[Dict[str, Any]]) -> str:
-        """Combine the user query with conversation context.
+        """
+        Combine the user query with conversation context.
         
         Args:
             query: The current user query
@@ -85,8 +86,20 @@ class ConversationContext:
         if not context:
             return query
         
-        # Combine context with query
-        return f"""Context from previous conversation:\n{context}\n\nCurrent question: {query}\n\nPlease answer the current question taking into account the conversation context."""
+        # Combine context with query in a more explicit format
+        return f"""
+### Conversation History:
+{context}
+
+### Current Question: 
+{query}
+
+### Instructions:
+You MUST use the conversation history to provide context for your answer. 
+If the user refers to information from previous messages, use that context in your response.
+If the user asks about their name or other personal details mentioned earlier, refer to that information.
+Answer the current question taking into account the conversation context.
+"""
     
     def clear_context(self) -> None:
         """Clear the conversation context."""

@@ -40,7 +40,13 @@ class ContextualRAG:
         
         # Get response from RAG system
         try:
+            # Use a higher temperature for more contextual responses
             response = qa_chain({"query": contextual_query})
+            
+            # Debug logging (can be removed in production)
+            if "debug_context" in st.session_state and st.session_state.debug_context:
+                st.session_state.last_contextual_query = contextual_query
+                
             return response['result']
         except Exception as e:
             return f"I'm sorry, I couldn't generate a response with context. Error: {str(e)}"

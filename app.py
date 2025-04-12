@@ -735,6 +735,10 @@ def main():
 
     # Initialize context management system
     initialize_context_system()
+    
+    # Debug option for context system
+    if "debug_context" not in st.session_state:
+        st.session_state.debug_context = False
 
     # Sidebar with clean layout
     with st.sidebar:
@@ -780,6 +784,28 @@ def main():
                 if output_language != st.session_state.output_language:
                     st.session_state.output_language = output_language
                     save_user_preferences(user_id)
+            
+            # Context Settings
+            with st.expander("📝 Conversation Memory"):
+                st.markdown("**Conversation Context Settings**")
+                context_enabled = st.toggle("Enable conversation memory", value=st.session_state.context_enabled)
+                
+                if context_enabled != st.session_state.context_enabled:
+                    st.session_state.context_enabled = context_enabled
+                    if not context_enabled:
+                        clear_conversation_context()
+                
+                # Debug mode toggle (for developers)
+                st.markdown("---")
+                st.markdown("**Developer Options**")
+                debug_context = st.toggle("Debug context system", value=st.session_state.debug_context)
+                
+                if debug_context != st.session_state.debug_context:
+                    st.session_state.debug_context = debug_context
+                
+                if st.session_state.debug_context and "last_contextual_query" in st.session_state:
+                    st.markdown("### Last Contextual Query")
+                    st.text_area("Query sent to LLM", st.session_state.last_contextual_query, height=300)
             
             # About Section
             with st.expander("ℹ️ About"):

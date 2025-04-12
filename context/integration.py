@@ -54,8 +54,14 @@ def get_contextual_response_with_language(qa_chain: Any, query: str):
         # Add language-specific instructions based on output language
         lang_instruction = get_language_prompt(st.session_state.output_language)
         
-        # Get response with context
-        return get_contextual_rag_response(qa_chain, query, lang_instruction)
+        # Check if context is enabled
+        if st.session_state.get("context_enabled", True):
+            # Get response with context
+            return get_contextual_rag_response(qa_chain, query, lang_instruction)
+        else:
+            # Use the original RAG response without context
+            from app import get_rag_response
+            return get_rag_response(qa_chain, query)
     except Exception as e:
         st.error(f"Error generating contextual response: {str(e)}")
         return f"I'm sorry, I couldn't generate a response. Error: {str(e)}"
