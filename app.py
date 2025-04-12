@@ -21,6 +21,9 @@ from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_mes
 # Import email service
 from services.email_service import EmailService
 
+# Import context management system
+from context.integration import get_contextual_rag_response, clear_conversation_context, initialize_context_system, get_contextual_response_with_language
+
 # Emergency authority email mapping
 EMERGENCY_AUTHORITIES = {
     "Flood": "flood.authority@example.com",
@@ -730,6 +733,9 @@ def main():
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
 
+    # Initialize context management system
+    initialize_context_system()
+
     # Sidebar with clean layout
     with st.sidebar:
         if st.session_state.get('show_settings', False):
@@ -746,6 +752,8 @@ def main():
                 session_id = history_manager.create_new_session(user_id)
                 st.session_state.messages = []
                 st.session_state.current_session_id = session_id
+                # Clear conversation context when starting a new conversation
+                clear_conversation_context()
                 st.rerun()
             
             chat_history_sidebar(user_id)
@@ -895,7 +903,9 @@ def main():
                 elif response_type == "greeting":
                     response = get_general_response(prompt)
                 else:
-                    response = get_rag_response(qa_chain, prompt)
+                    # Use the context-aware RAG response function
+                    from context.integration import get_contextual_response_with_language
+                    response = get_contextual_response_with_language(qa_chain, prompt)
                 
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
