@@ -21,9 +21,6 @@ from auth.ui import auth_page, user_sidebar, chat_history_sidebar, sync_chat_mes
 # Import email service
 from services.email_service import EmailService
 
-# Import context management system
-from context.integration import get_contextual_rag_response, clear_conversation_context, initialize_context_system, get_contextual_response_with_language
-
 # Emergency authority email mapping
 EMERGENCY_AUTHORITIES = {
     "Flood": "flood.authority@example.com",
@@ -435,19 +432,6 @@ Response (remember to be concise, action-oriented, and helpful):""",
         st.error(f"Error initializing RAG system: {str(e)}")
         st.stop()
 
-def initialize_context_system():
-    """Initialize the conversation context system."""
-    if "context_enabled" not in st.session_state:
-        st.session_state.context_enabled = True
-        
-    if "context_max_messages" not in st.session_state:
-        st.session_state.context_max_messages = 5
-        
-    # Initialize the contextual RAG system
-    if "contextual_rag" not in st.session_state:
-        from context.rag_context import ContextualRAG
-        st.session_state.contextual_rag = ContextualRAG(max_context_messages=st.session_state.context_max_messages)
-
 def main():
     # Page config
     st.set_page_config(
@@ -746,13 +730,6 @@ def main():
     # Initialize RAG system
     qa_chain, llm = initialize_rag()
 
-    # Initialize context management system
-    initialize_context_system()
-    
-    # Debug option for context system
-    if "debug_context" not in st.session_state:
-        st.session_state.debug_context = False
-
     # Sidebar with clean layout
     with st.sidebar:
         if st.session_state.get('show_settings', False):
@@ -769,8 +746,6 @@ def main():
                 session_id = history_manager.create_new_session(user_id)
                 st.session_state.messages = []
                 st.session_state.current_session_id = session_id
-                # Clear conversation context when starting a new conversation
-                clear_conversation_context()
                 st.rerun()
             
             chat_history_sidebar(user_id)
@@ -797,42 +772,6 @@ def main():
                 if output_language != st.session_state.output_language:
                     st.session_state.output_language = output_language
                     save_user_preferences(user_id)
-            
-            # Context Settings
-            with st.expander("📝 Conversation Memory"):
-                st.markdown("**Conversation Context Settings**")
-                context_enabled = st.toggle("Enable conversation memory", value=st.session_state.context_enabled)
-                
-                if context_enabled != st.session_state.context_enabled:
-                    st.session_state.context_enabled = context_enabled
-                    if not context_enabled:
-                        clear_conversation_context()
-                
-                # Add slider for max messages to remember
-                max_messages = st.slider("Number of messages to remember", 
-                                        min_value=1, 
-                                        max_value=20, 
-                                        value=st.session_state.context_max_messages,
-                                        help="How many previous messages should the chatbot remember? Higher values provide more context but may slow down responses.")
-                
-                if max_messages != st.session_state.context_max_messages:
-                    st.session_state.context_max_messages = max_messages
-                    # Reinitialize the contextual RAG with new settings
-                    from context.rag_context import ContextualRAG
-                    st.session_state.contextual_rag = ContextualRAG(max_context_messages=max_messages)
-                    st.toast(f"Context memory updated to remember {max_messages} messages", icon="✅")
-                
-                # Debug mode toggle (for developers)
-                st.markdown("---")
-                st.markdown("**Developer Options**")
-                debug_context = st.toggle("Debug context system", value=st.session_state.debug_context)
-                
-                if debug_context != st.session_state.debug_context:
-                    st.session_state.debug_context = debug_context
-                
-                if st.session_state.debug_context and "last_contextual_query" in st.session_state:
-                    st.markdown("### Last Contextual Query")
-                    st.text_area("Query sent to LLM", st.session_state.last_contextual_query, height=300)
             
             # About Section
             with st.expander("ℹ️ About"):
@@ -956,9 +895,7 @@ def main():
                 elif response_type == "greeting":
                     response = get_general_response(prompt)
                 else:
-                    # Use the context-aware RAG response function
-                    from context.integration import get_contextual_response_with_language
-                    response = get_contextual_response_with_language(qa_chain, prompt)
+                    response = get_rag_response(qa_chain, prompt)
                 
                 message_placeholder.markdown(response)
                 st.session_state.messages.append({"role": "assistant", "content": response})
