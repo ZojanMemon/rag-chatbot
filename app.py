@@ -348,16 +348,9 @@ def initialize_rag():
             
         genai.configure(api_key=GOOGLE_API_KEY)
 
-        # Initialize Pinecone - handle both package names gracefully
-        try:
-            # Try the new package name first
-            from pinecone import Pinecone
-            pc = Pinecone(api_key=PINECONE_API_KEY)
-        except ImportError:
-            # Fall back to the old package name if needed
-            import pinecone
-            pinecone.init(api_key=PINECONE_API_KEY)
-            pc = pinecone
+        # Initialize Pinecone
+        from pinecone import Pinecone
+        pc = Pinecone(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
         try:
@@ -375,20 +368,11 @@ def initialize_rag():
 
         # Initialize vector store
         index_name = "pdfinfo"
-        try:
-            # Try the new Pinecone package approach
-            vectorstore = Pinecone(
-                index=pc.Index(index_name),
-                embedding=embeddings,
-                text_key="text"
-            )
-        except (AttributeError, TypeError):
-            # Fall back to the old approach if needed
-            vectorstore = Pinecone.from_existing_index(
-                index_name=index_name,
-                embedding=embeddings,
-                text_key="text"
-            )
+        vectorstore = Pinecone(
+            index=pc.Index(index_name),
+            embedding=embeddings,
+            text_key="text"
+        )
 
         # Create Gemini LLM
         llm = ChatGoogleGenerativeAI(
@@ -404,7 +388,7 @@ def initialize_rag():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
+            retriever=vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 6}),
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
