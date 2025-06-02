@@ -4,14 +4,13 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_pinecone import PineconeVectorStore
 from langchain_community.vectorstores import FAISS
-from langchain_core.retrievers import BaseRetriever
-from langchain_core.documents import Document
 from datetime import datetime
 from fpdf import FPDF
 import io
 import textwrap
-from typing import Literal, List, Dict, Any
+from typing import Literal
 from components.email_ui import show_email_ui
 
 # Import authentication modules
@@ -351,7 +350,7 @@ def initialize_rag():
         genai.configure(api_key=GOOGLE_API_KEY)
 
         # Initialize Pinecone
-        from pinecone import Pinecone, Index
+        from pinecone import Pinecone
         pc = Pinecone(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
@@ -368,38 +367,12 @@ def initialize_rag():
             st.error(f"Error initializing embeddings: {str(e)}")
             st.stop()
 
-        # Initialize Pinecone index
+        # Initialize vector store
         index_name = "pdfinfo"
-        index = pc.Index(index_name)
-        
-        # Create a custom retriever for Pinecone
-        class PineconeRetriever(BaseRetriever):
-            def __init__(self, index: Index, embedding_function, text_key: str = "text", k: int = 6):
-                self.pinecone_index = index
-                self.embedding_function = embedding_function
-                self.text_key = text_key
-                self.k = k
-                
-            def get_relevant_documents(self, query: str) -> List[Document]:
-                query_embedding = self.embedding_function.embed_query(query)
-                results = self.pinecone_index.query(vector=query_embedding, top_k=self.k, include_metadata=True)
-                documents = []
-                for match in results["matches"]:
-                    metadata = match["metadata"]
-                    text = metadata.get(self.text_key, "")
-                    documents.append(Document(page_content=text, metadata=metadata))
-                return documents
-                
-            async def aget_relevant_documents(self, query: str) -> List[Document]:
-                # Async implementation (required by BaseRetriever)
-                return self.get_relevant_documents(query)
-        
-        # Create the custom retriever
-        retriever = PineconeRetriever(
-            index=index,
-            embedding_function=embeddings,
-            text_key="text",
-            k=6
+        vectorstore = PineconeVectorStore(
+            index=pc.Index(index_name),
+            embedding=embeddings,
+            text_key="text"
         )
 
         # Create Gemini LLM
@@ -416,7 +389,7 @@ def initialize_rag():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=retriever,
+            retriever=vectorstore.as_retriever(search_kwargs={"k": 6}),
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
