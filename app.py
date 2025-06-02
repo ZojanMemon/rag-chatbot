@@ -372,16 +372,16 @@ def initialize_rag():
         index = pc.Index(index_name)
         
         # Create a custom retriever for Pinecone
-        class PineconeRetriever(VectorStoreRetriever):
+        class PineconeRetriever:
             def __init__(self, index: Index, embedding_function, text_key: str = "text", k: int = 6):
-                self.index = index
+                self.pinecone_index = index
                 self.embedding_function = embedding_function
                 self.text_key = text_key
                 self.k = k
                 
             def get_relevant_documents(self, query: str) -> List[Dict[str, Any]]:
                 query_embedding = self.embedding_function.embed_query(query)
-                results = self.index.query(vector=query_embedding, top_k=self.k, include_metadata=True)
+                results = self.pinecone_index.query(vector=query_embedding, top_k=self.k, include_metadata=True)
                 documents = []
                 for match in results["matches"]:
                     metadata = match["metadata"]
