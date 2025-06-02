@@ -5,7 +5,8 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_core.vectorstores import VectorStoreRetriever
+from langchain_core.retrievers import BaseRetriever
+from langchain_core.documents import Document
 from datetime import datetime
 from fpdf import FPDF
 import io
@@ -372,22 +373,26 @@ def initialize_rag():
         index = pc.Index(index_name)
         
         # Create a custom retriever for Pinecone
-        class PineconeRetriever:
+        class PineconeRetriever(BaseRetriever):
             def __init__(self, index: Index, embedding_function, text_key: str = "text", k: int = 6):
                 self.pinecone_index = index
                 self.embedding_function = embedding_function
                 self.text_key = text_key
                 self.k = k
                 
-            def get_relevant_documents(self, query: str) -> List[Dict[str, Any]]:
+            def get_relevant_documents(self, query: str) -> List[Document]:
                 query_embedding = self.embedding_function.embed_query(query)
                 results = self.pinecone_index.query(vector=query_embedding, top_k=self.k, include_metadata=True)
                 documents = []
                 for match in results["matches"]:
                     metadata = match["metadata"]
                     text = metadata.get(self.text_key, "")
-                    documents.append({"page_content": text, "metadata": metadata})
+                    documents.append(Document(page_content=text, metadata=metadata))
                 return documents
+                
+            async def aget_relevant_documents(self, query: str) -> List[Document]:
+                # Async implementation (required by BaseRetriever)
+                return self.get_relevant_documents(query)
         
         # Create the custom retriever
         retriever = PineconeRetriever(
