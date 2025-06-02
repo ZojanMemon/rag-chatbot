@@ -4,12 +4,13 @@ import google.generativeai as genai
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS, Pinecone
+from langchain_community.vectorstores import FAISS
+from langchain_core.vectorstores import VectorStoreRetriever
 from datetime import datetime
 from fpdf import FPDF
 import io
 import textwrap
-from typing import Literal
+from typing import Literal, List, Dict, Any
 from components.email_ui import show_email_ui
 
 # Import authentication modules
@@ -349,7 +350,7 @@ def initialize_rag():
         genai.configure(api_key=GOOGLE_API_KEY)
 
         # Initialize Pinecone
-        from pinecone import Pinecone
+        from pinecone import Pinecone, Index
         pc = Pinecone(api_key=PINECONE_API_KEY)
 
         # Initialize embeddings
@@ -366,12 +367,34 @@ def initialize_rag():
             st.error(f"Error initializing embeddings: {str(e)}")
             st.stop()
 
-        # Initialize vector store
+        # Initialize Pinecone index
         index_name = "pdfinfo"
-        vectorstore = Pinecone(
-            index=pc.Index(index_name),
-            embedding=embeddings,
-            text_key="text"
+        index = pc.Index(index_name)
+        
+        # Create a custom retriever for Pinecone
+        class PineconeRetriever(VectorStoreRetriever):
+            def __init__(self, index: Index, embedding_function, text_key: str = "text", k: int = 6):
+                self.index = index
+                self.embedding_function = embedding_function
+                self.text_key = text_key
+                self.k = k
+                
+            def get_relevant_documents(self, query: str) -> List[Dict[str, Any]]:
+                query_embedding = self.embedding_function.embed_query(query)
+                results = self.index.query(vector=query_embedding, top_k=self.k, include_metadata=True)
+                documents = []
+                for match in results["matches"]:
+                    metadata = match["metadata"]
+                    text = metadata.get(self.text_key, "")
+                    documents.append({"page_content": text, "metadata": metadata})
+                return documents
+        
+        # Create the custom retriever
+        retriever = PineconeRetriever(
+            index=index,
+            embedding_function=embeddings,
+            text_key="text",
+            k=6
         )
 
         # Create Gemini LLM
@@ -388,7 +411,7 @@ def initialize_rag():
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             chain_type="stuff",
-            retriever=vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 6}),
+            retriever=retriever,
             return_source_documents=False,
             chain_type_kwargs={
                 "prompt": PromptTemplate(
